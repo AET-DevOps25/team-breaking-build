@@ -7,6 +7,8 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Image {
-    private String url;
+public class RecipeIngredient {
+    private String name;
+    private String unit;
+    private Float amount;
 }

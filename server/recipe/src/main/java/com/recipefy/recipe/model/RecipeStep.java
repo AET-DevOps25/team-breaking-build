@@ -4,12 +4,13 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Metadata {
-    private int servingSize;
-    private String title;
-    private String description;
-    private Image image;
+public class RecipeStep {
+    private Integer order;
+    private String details;
+    private List<RecipeImage> recipeImages;
 }

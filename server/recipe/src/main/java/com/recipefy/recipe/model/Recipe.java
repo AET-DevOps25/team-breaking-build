@@ -11,7 +11,7 @@ import java.util.List;
 @AllArgsConstructor
 public class Recipe {
     private Long id;
-    private Metadata metadata;
-    private List<Ingredient> ingredients;
-    private List<Step> steps;
+    private RecipeMetadata recipeMetadata;
+    private List<RecipeIngredient> recipeIngredients;
+    private List<RecipeStep> recipeSteps;
 }
