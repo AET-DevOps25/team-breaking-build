@@ -11,6 +11,22 @@ const compat = new FlatCompat({
 
 const eslintConfig = [
   ...compat.extends("next/core-web-vitals", "next/typescript"),
+  "plugin:tailwindcss/recommended",
+  "plugin:no-relative-import-paths/recommended",
+  {
+    plugins: ["tailwindcss", "no-relative-import-paths"],
+    rules: {
+      "indent": "error",
+      "no-relative-import-paths/no-relative-import-paths": [
+        "error",
+        {
+          allowSameFolder: true,
+          prefix: "@",
+          rootDir: "src",
+        },
+      ],
+    },
+  },
 ];
 
 export default eslintConfig;
