@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { inter } from '@/app/ui/fonts';
+import NavBar from "@/app/components/navigation/NavBar";
 
 export const metadata: Metadata = {
   title: "Recipefy",
-  description: "Collaborative recipe making redefined",
+  description: "Collaborative recipe making redefined.",
 };
 
 export default function RootLayout({
@@ -15,9 +16,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${inter.className} antialiased`}
+        className={`${inter.className} antialiased bg-[#fafafa]`}
       >
-        {children}
+      <NavBar />
+      <main className="p-4">{children}</main>
       </body>
     </html>
   );
