@@ -24,7 +24,7 @@ export default function NavLinks() {
             className={clsx(
               'flex h-[48px] flex-none grow items-center justify-start gap-2 rounded-md p-2 px-3 text-sm font-bold text-[#FF7C75] hover:bg-rose-100 hover:text-rose-600',
               {
-                'underline underline-offset-5 decoration-3': pathname === link.href,
+                'underline underline-offset-4 decoration-4': pathname === link.href,
               },
             )}
           >
