@@ -14,14 +14,14 @@ const compat = new FlatCompat({
 });
 
 const eslintConfig = [
-  ...compat.extends('next/core-web-vitals', 'next/typescript', 'plugin:tailwindcss/recommended'),
+  ...compat.extends('next/core-web-vitals', 'next/typescript', 'plugin:tailwindcss/recommended', 'prettier'),
   {
     plugins: {
       tailwindcss,
       'no-relative-import-paths': noRelativeImportPaths,
     },
     rules: {
-      indent: 'error',
+      indent: ['error', 2],
       'no-relative-import-paths/no-relative-import-paths': [
         'error',
         {
