@@ -1,4 +1,4 @@
-package com.recipefy.recipe.model;
+package com.recipefy.recipe.model.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -9,8 +9,8 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class RecipeStep {
+public class RecipeStepDTO {
     private Integer order;
     private String details;
-    private List<RecipeImage> recipeImages;
+    private List<RecipeImageDTO> recipeImageDTOS;
 }

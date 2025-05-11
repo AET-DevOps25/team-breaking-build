@@ -1,4 +1,4 @@
-package com.recipefy.recipe.model;
+package com.recipefy.recipe.model.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class RecipeIngredient {
+public class RecipeIngredientDTO {
     private String name;
     private String unit;
     private Float amount;
