@@ -1,5 +1,6 @@
 'use client';
 import Image from 'next/image';
+import { Button } from '@/components/ui/button';
 
 const Hero = () => {
   return (
@@ -30,12 +31,13 @@ const Hero = () => {
               all in one intuitive app.
             </p>
             <div className='flex flex-row items-center justify-center gap-4 lg:justify-start'>
-              <button className='rounded-lg bg-[#FF7C75] px-6 py-3 font-semibold text-white shadow-lg transition duration-300 hover:bg-[#ff4e41]'>
-                Get Started
-              </button>
-              <button className='rounded-lg border-2 border-[#FF7C75] bg-transparent px-6 py-3 font-semibold text-[#FF7C75] shadow-lg transition duration-300 hover:bg-[#FF7C75] hover:text-white'>
+              <Button size='lg'>Get Started</Button>
+              <Button
+                variant='outline'
+                size='lg'
+              >
                 Login
-              </button>
+              </Button>
             </div>
           </div>
           <div className='relative col-span-6 flex justify-center'>

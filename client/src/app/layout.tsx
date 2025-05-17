@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { inter } from '@/app/ui/fonts';
-import NavBar from '@/app/components/navigation/NavBar';
+import NavBar from '@/components/navigation/NavBar';
 
 export const metadata: Metadata = {
   title: 'Recipefy',
