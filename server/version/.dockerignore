@@ -1,0 +1,23 @@
+# Gradle & build artifacts
+/build
+/.gradle
+/bin
+/*.jar
+/*.war
+*.class
+*.log
+
+# IDE / tooling
+.idea
+.vscode
+*.iml
+*.ipr
+*.iws
+
+# OS cruft
+.DS_Store
+Thumbs.db
+
+# Environment & secrets
+.env*
+*.local
