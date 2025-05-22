@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/recipe_database
+    url: jdbc:postgresql://localhost:5434/recipe_database
     username: admin
     password: admin
     driver-class-name: org.postgresql.Driver
