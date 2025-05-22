@@ -47,6 +47,31 @@ services:
     volumes:
       - version-mongo-data:/data/db
 
+  
+  # ---- RECIPE MICROSERVICE ----
+  recipe:
+    build:
+      context: ./server/recipe
+    ports:
+      - "8082:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+    depends_on:
+      - recipe-postgres
+  
+  recipe-postgres:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_DB: recipe_database
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+    ports:
+      - "5434:5432"
+    volumes:
+      - recipe-postgres-data:/var/lib/postgresql/data
+
 volumes:
+  recipe-postgres-data:
   version-postgres-data:
   version-mongo-data:
