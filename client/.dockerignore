@@ -1,0 +1,29 @@
+# Node / pnpm _______________________________________
+node_modules
+.pnpm        # pnpm’s global store & workspace metadata
+.pnp.mjs
+.pnpm-debug.log*
+.pnpm-state.yaml
+
+# Next.js build artifacts ___________________________
+.next
+out          # if you sometimes export static builds
+.next/cache  # Turbo / SWC cache
+
+# Env & config _____________________________________
+.env*
+*.local
+.nx
+.vercel
+dist
+coverage
+cypress
+playwright
+
+# OS / editor cruft ________________________________
+.DS_Store
+Thumbs.db
+.idea
+.vscode
+*.swp
+*.swo
