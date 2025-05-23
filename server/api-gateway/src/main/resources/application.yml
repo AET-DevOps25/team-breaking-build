@@ -1,0 +1,28 @@
+spring:
+  application:
+    name: gateway
+  cloud:
+    gateway:
+      routes:
+        - id: users
+          uri: ${clients.user}
+          predicates:
+            - Path=/users
+app:
+  security:
+    cors:
+      allowed-origins:
+        - localhost
+
+keycloak:
+  base-url: http://localhost:8085
+  realms: recipfy
+  token-url: /realms/${keycloak.realms}/protocol/openid-connect/token
+  introspect-url: ${keycloak.base-url}/realms/${keycloak.realms}/protocol/openid-connect/token/introspect
+  client-id: ${CLIENT_ID}
+  client-secret: ${CLIENT_SECRET}
+  grant-type: password
+
+clients:
+  user: http://localhost:8033
+
