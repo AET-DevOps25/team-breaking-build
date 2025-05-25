@@ -44,7 +44,7 @@ class KeyCloakClient(
     }
 
     private fun preparePasswordRequest(tokenRequest: TokenRequest, formData: LinkedMultiValueMap<String, String>) {
-        assert(tokenRequest.password.isNullOrBlank())
+        assert(!tokenRequest.password.isNullOrBlank())
         formData.add("username", tokenRequest.username)
         formData.add("password", tokenRequest.password)
         formData.add("grant_type", GRANT_TYPE_PASSWORD)
@@ -53,7 +53,7 @@ class KeyCloakClient(
     }
 
     private fun prepareRefreshTokenRequest(tokenRequest: TokenRequest, formData: LinkedMultiValueMap<String, String>) {
-        assert(tokenRequest.refreshToken.isNullOrBlank())
+        assert(!tokenRequest.refreshToken.isNullOrBlank())
         formData.add("grant_type", GRANT_TYPE_REFRESH_TOKEN)
         formData.add("client_id", keyCloakProperties.clientId)
         formData.add("client_secret", keyCloakProperties.clientSecret)
