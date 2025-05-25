@@ -14,4 +14,4 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
   data:
     mongodb:
-      uri: mongodb://${VERSION_MONGO_USER}:${VERSION_MONGO_USER}@${VERSION_MONGO_URL_HOST}:${VERSION_MONGO_URL_HOST}/${VERSION_MONGO_DB_NAME}
+      uri: mongodb://${VERSION_MONGO_USER}:${VERSION_MONGO_PASSWORD}@${VERSION_MONGO_URL_HOST}:${VERSION_MONGO_URL_PORT}/${VERSION_MONGO_DB_NAME}

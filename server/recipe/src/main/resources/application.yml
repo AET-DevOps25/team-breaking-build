@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: recipe
+  datasource:
+    url: jdbc:postgresql://${RECIPE_POSTGRES_URL_HOST}:${RECIPE_POSTGRES_URL_PORT}/${RECIPE_POSTGRES_DB_NAME}
+    username: ${RECIPE_POSTGRES_USER}
+    password: ${RECIPE_POSTGRES_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
