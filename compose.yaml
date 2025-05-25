@@ -72,6 +72,6 @@ services:
       - recipe-postgres-data:/var/lib/postgresql/data
 
 volumes:
-  recipe-postgres-data:
-  version-postgres-data:
-  version-mongo-data:
+  postgres-data:
+  mongo-data:
+  keycloak_data:

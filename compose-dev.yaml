@@ -1,0 +1,111 @@
+services:
+
+  # ---- CLIENT -----
+  client:
+    build:
+      context: ./client
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./.env.dev
+    depends_on:
+      - version
+
+  # ----  GATEWAY MICROSERVICE ----
+  gateway:
+    build:
+      context: ./server/api-gateway
+    env_file:
+      - ./.env.dev
+    restart: always
+    container_name: api-gateway
+    depends_on:
+      - keycloak
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_CLOUD_GATEWAY_ROUTES_0_ID: users
+      SPRING_CLOUD_GATEWAY_ROUTES_0_URI: http://localhost:8082
+      SPRING_CLOUD_GATEWAY_ROUTES_0_PREDICATES_0: Path=/users
+
+      APP_SECURITY_CORS_ALLOWED_ORIGINS_0: localhost
+      APP_SECURITY_CORS_ALLOWED_ORIGINS_1: nebeklion.com
+
+      KEYCLOAK_BASE_URL: http://keycloak:8080
+      KEYCLOAK_REALMS: recipefy
+
+  # ---- RECIPE MICROSERVICE -----
+  recipe:
+    build:
+      context: ./server/version
+    ports:
+      - "8081:8080"
+    env_file:
+      - ./.env.dev
+    depends_on:
+      - postgres
+
+  # ---- VERSION MICROSERVICE -----
+  version:
+    build:
+      context: ./server/version
+    ports:
+      - "8082:8080"
+    env_file:
+      - ./.env.dev
+    depends_on:
+      - postgres
+      - mongo
+
+  # ---- POSTGRESQL -----
+  postgres:
+    image: postgres:17
+    restart: always
+    env_file:
+      - ./.env.dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  # ---- MONGO DB -----
+  mongo:
+    image: mongo:6.0
+    restart: always
+    env_file:
+      - ./.env.dev
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_USER}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD}
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  # ---- KEYCLOACK ----
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.2.4
+    container_name: keycloak
+    env_file:
+      - ./.env.dev
+    depends_on:
+      - postgres
+    restart: always
+    environment:
+      KC_HOSTNAME: keycloak
+      KC_PROXY: edge
+      KC_LOG_LEVEL: info
+      KC_METRICS_ENABLED: true
+      KC_HEALTH_ENABLED: true
+      KC_HTTP_ENABLED: true
+    command: start
+    ports:
+      - "8083:8080"
+      - "8443:8443"
+    volumes:
+      - ./keycloak_data:/opt/keycloak/data
+
+volumes:
+  postgres-data:
+  mongo-data:
+  keycloak_data:
