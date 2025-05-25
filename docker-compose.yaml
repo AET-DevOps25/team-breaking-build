@@ -10,7 +10,7 @@ services:
     env_file:
       - ./.env
     depends_on:
-      - version
+      - gateway
 
   # ----  GATEWAY MICROSERVICE ----
   gateway:
@@ -44,11 +44,15 @@ services:
   # ---- RECIPE MICROSERVICE -----
   recipe:
     container_name: recipe
+    restart: always
     build:
       context: ./server/recipe
     environment:
-      - RECIPE_POSTGRES_URL_HOST=postgres
-      - RECIPE_POSTGRES_URL_PORT=5432
+      - RECIPE_POSTGRES_URL_HOST=${RECIPE_POSTGRES_URL_HOST}
+      - RECIPE_POSTGRES_URL_PORT=${RECIPE_POSTGRES_URL_PORT}
+      - RECIPE_POSTGRES_USER=${RECIPE_POSTGRES_USER}
+      - RECIPE_POSTGRES_PASSWORD=${RECIPE_POSTGRES_PASSWORD}
+      - RECIPE_POSTGRES_DB_NAME=${RECIPE_POSTGRES_DB_NAME}
     ports:
       - "8081:8080"
     env_file:
@@ -59,11 +63,13 @@ services:
   # ---- VERSION MICROSERVICE -----
   version:
     container_name: version
+    restart: always
     environment:
-      - VERSION_POSTGRES_URL_HOST=postgres
-      - VERSION_POSTGRES_URL_PORT=5432
-      - VERSION_MONGO_URL_HOST=mongo
-      - VERSION_MONGO_URL_PORT=27017
+      - VERSION_POSTGRES_URL_HOST=${VERSION_POSTGRES_URL_HOST}
+      - VERSION_POSTGRES_URL_PORT=${VERSION_POSTGRES_URL_PORT}
+      - VERSION_MONGO_URL_HOST=${VERSION_MONGO_URL_HOST}
+      - VERSION_MONGO_URL_PORT=${VERSION_MONGO_URL_PORT}
+      - VERSION_POSTGRES_DB_NAME=${VERSION_POSTGRES_DB_NAME}
     build:
       context: ./server/version
     ports:
@@ -79,6 +85,10 @@ services:
     container_name: postgres
     image: postgres:17
     restart: always
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     env_file:
       - ./.env
     ports:
@@ -94,6 +104,7 @@ services:
     env_file:
       - ./.env
     environment:
+      - MONGO_INITDB_DATABASE=${MONGO_DB}
       - MONGO_INITDB_ROOT_USERNAME=${MONGO_USER}
       - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD}
     ports:
@@ -111,12 +122,24 @@ services:
       - postgres
     restart: always
     environment:
-      KC_HOSTNAME: keycloak
-      KC_PROXY: edge
-      KC_LOG_LEVEL: info
-      KC_METRICS_ENABLED: true
-      KC_HEALTH_ENABLED: true
-      KC_HTTP_ENABLED: true
+      - CLIENT_ID=${CLIENT_ID}
+      - CLIENT_SECRET=${CLIENT_SECRET}
+
+      - KC_BOOTSTRAP_ADMIN_USERNAME=${KC_BOOTSTRAP_ADMIN_USERNAME}
+      - KC_BOOTSTRAP_ADMIN_PASSWORD=${KC_BOOTSTRAP_ADMIN_PASSWORD}
+
+      - KC_DB_URL_HOST=${KC_DB_URL_HOST}
+      - KC_DB_URL_PORT=${KC_DB_URL_PORT}
+      - KC_DB_DATABASE=${KC_DB_DATABASE}
+      - KC_DB_USERNAME=${KC_DB_USERNAME}
+      - KC_DB_PASSWORD=${KC_DB_PASSWORD}
+
+      - KC_HOSTNAME=keycloak
+      - KC_PROXY=edge
+      - KC_LOG_LEVEL=info
+      - KC_METRICS_ENABLED=true
+      - KC_HEALTH_ENABLED=true
+      - KC_HTTP_ENABLED=true
     command: start --import-realm
     ports:
       - "8083:8080"
@@ -124,8 +147,3 @@ services:
     volumes:
       - ./config/realm-export.json:/opt/keycloak/data/import/realm.json
       - ./keycloak-data:/opt/keycloak/data
-
-volumes:
-  postgres-data:
-  mongo-data:
-  keycloak-data:
