@@ -98,11 +98,12 @@ services:
       KC_METRICS_ENABLED: true
       KC_HEALTH_ENABLED: true
       KC_HTTP_ENABLED: true
-    command: start
+    command: start --import-realm
     ports:
       - "8083:8080"
       - "8443:8443"
     volumes:
+      - ./config/realm-export.json:/opt/keycloak/data/import/realm.json
       - ./keycloak_data:/opt/keycloak/data
 
 volumes:
