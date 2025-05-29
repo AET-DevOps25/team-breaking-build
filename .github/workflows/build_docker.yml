@@ -10,26 +10,58 @@ on:
 
 jobs:
   test:
-    name: Run Java Tests
+    name: Build projects
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - "client,node,client"
+          - "recipe,gradle,server/recipe"
+          - "version,gradle,server/version"
+          - "api-gateway,gradle,server/api-gateway"
 
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up JDK 21
+      - name: Parse service info
+        id: vars
+        run: |
+          IFS=',' read -r name type path <<< "${{ matrix.service }}"
+          echo "name=$name" >> $GITHUB_OUTPUT
+          echo "type=$type" >> $GITHUB_OUTPUT
+          echo "path=$path" >> $GITHUB_OUTPUT
+
+      - name: Setup Node.js (for pnpm)
+        if: steps.vars.outputs.type == 'node'
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Build Next.js Client with pnpm
+        if: steps.vars.outputs.type == 'node'
+        working-directory: ${{ steps.vars.outputs.path }}
+        run: |
+          pnpm install
+          pnpm run build
+
+      - name: Set up JDK 21 for Gradle builds
+        if: steps.vars.outputs.type == 'gradle'
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Set up Gradle
+      - name: Set up Gradle for Gradle builds
+        if: steps.vars.outputs.type == 'gradle'
         uses: gradle/actions/setup-gradle@v4
 
       - name: Run Gradle Build
-        run: |
-          cd server
-          ./gradlew build --no-daemon
+        if: steps.vars.outputs.type == 'gradle'
+        working-directory: ${{ steps.vars.outputs.path }}
+        run: ./gradlew build --no-daemon
 
   build:
     name: Build and Push Docker Images
