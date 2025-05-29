@@ -1,1 +1,17 @@
-spring.application.name: version
+spring:
+  application:
+    name: version
+  datasource:
+    url: jdbc:postgresql://${VERSION_POSTGRES_URL_HOST}:${VERSION_POSTGRES_URL_PORT}/${VERSION_POSTGRES_DB_NAME}
+    username: ${VERSION_POSTGRES_USER}
+    password: ${VERSION_POSTGRES_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  data:
+    mongodb:
+      uri: mongodb://${VERSION_MONGO_USER}:${VERSION_MONGO_PASSWORD}@${VERSION_MONGO_URL_HOST}:${VERSION_MONGO_URL_PORT}/${VERSION_MONGO_DB_NAME}

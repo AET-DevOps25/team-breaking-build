@@ -1,0 +1,149 @@
+services:
+
+  # ---- CLIENT -----
+  client:
+    container_name: client
+    build:
+      context: ./client
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./.env
+    depends_on:
+      - gateway
+
+  # ----  GATEWAY MICROSERVICE ----
+  gateway:
+    build:
+      context: ./server/api-gateway
+    env_file:
+      - ./.env
+    restart: always
+    container_name: api-gateway
+    depends_on:
+      - keycloak
+      - recipe
+      - version
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_CLOUD_GATEWAY_ROUTES_0_ID: version-control-system
+      SPRING_CLOUD_GATEWAY_ROUTES_0_URI: http://version:8080
+      SPRING_CLOUD_GATEWAY_ROUTES_0_PREDICATES_0: Path=/vcs/**
+
+      SPRING_CLOUD_GATEWAY_ROUTES_1_ID: recipes
+      SPRING_CLOUD_GATEWAY_ROUTES_1_URI: http://recipe:8080
+      SPRING_CLOUD_GATEWAY_ROUTES_1_PREDICATES_0: Path=/recipes/**
+
+      APP_SECURITY_CORS_ALLOWED_ORIGINS_0: localhost
+      APP_SECURITY_CORS_ALLOWED_ORIGINS_1: nebeklion.com
+
+      KEYCLOAK_BASE_URL: http://keycloak:8080
+      KEYCLOAK_REALMS: recipefy
+
+  # ---- RECIPE MICROSERVICE -----
+  recipe:
+    container_name: recipe
+    restart: always
+    build:
+      context: ./server/recipe
+    environment:
+      - RECIPE_POSTGRES_URL_HOST=${RECIPE_POSTGRES_URL_HOST}
+      - RECIPE_POSTGRES_URL_PORT=${RECIPE_POSTGRES_URL_PORT}
+      - RECIPE_POSTGRES_USER=${RECIPE_POSTGRES_USER}
+      - RECIPE_POSTGRES_PASSWORD=${RECIPE_POSTGRES_PASSWORD}
+      - RECIPE_POSTGRES_DB_NAME=${RECIPE_POSTGRES_DB_NAME}
+    ports:
+      - "8081:8080"
+    env_file:
+      - ./.env
+    depends_on:
+      - postgres
+
+  # ---- VERSION MICROSERVICE -----
+  version:
+    container_name: version
+    restart: always
+    environment:
+      - VERSION_POSTGRES_URL_HOST=${VERSION_POSTGRES_URL_HOST}
+      - VERSION_POSTGRES_URL_PORT=${VERSION_POSTGRES_URL_PORT}
+      - VERSION_MONGO_URL_HOST=${VERSION_MONGO_URL_HOST}
+      - VERSION_MONGO_URL_PORT=${VERSION_MONGO_URL_PORT}
+      - VERSION_POSTGRES_DB_NAME=${VERSION_POSTGRES_DB_NAME}
+    build:
+      context: ./server/version
+    ports:
+      - "8082:8080"
+    env_file:
+      - ./.env
+    depends_on:
+      - postgres
+      - mongo
+
+  # ---- POSTGRESQL -----
+  postgres:
+    container_name: postgres
+    image: postgres:17
+    restart: always
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    env_file:
+      - ./.env
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+
+  # ---- MONGO DB -----
+  mongo:
+    container_name: mongo
+    image: mongo:6.0
+    restart: always
+    env_file:
+      - ./.env
+    environment:
+      - MONGO_INITDB_DATABASE=${MONGO_DB}
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_USER}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD}
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./mongo-data:/data/db
+
+  # ---- KEYCLOACK ----
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.2.4
+    container_name: keycloak
+    env_file:
+      - ./.env
+    depends_on:
+      - postgres
+    restart: always
+    environment:
+      - CLIENT_ID=${CLIENT_ID}
+      - CLIENT_SECRET=${CLIENT_SECRET}
+
+      - KC_BOOTSTRAP_ADMIN_USERNAME=${KC_BOOTSTRAP_ADMIN_USERNAME}
+      - KC_BOOTSTRAP_ADMIN_PASSWORD=${KC_BOOTSTRAP_ADMIN_PASSWORD}
+
+      - KC_DB_URL_HOST=${KC_DB_URL_HOST}
+      - KC_DB_URL_PORT=${KC_DB_URL_PORT}
+      - KC_DB_DATABASE=${KC_DB_DATABASE}
+      - KC_DB_USERNAME=${KC_DB_USERNAME}
+      - KC_DB_PASSWORD=${KC_DB_PASSWORD}
+
+      - KC_HOSTNAME=keycloak
+      - KC_PROXY=edge
+      - KC_LOG_LEVEL=info
+      - KC_METRICS_ENABLED=true
+      - KC_HEALTH_ENABLED=true
+      - KC_HTTP_ENABLED=true
+    command: start --import-realm
+    ports:
+      - "8083:8080"
+      - "8443:8443"
+    volumes:
+      - ./config/realm-export.json:/opt/keycloak/data/import/realm.json
+      - ./keycloak-data:/opt/keycloak/data
