@@ -23,6 +23,7 @@ public class RecipeMetadata extends BaseEntity {
     private String title;
     private String description;
     private String thumbnail;
+    private Integer servingSize;
 
     @ManyToMany
     @JoinTable(

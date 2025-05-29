@@ -20,7 +20,8 @@ public class RecipeMetadataDTO {
 
     private String title;
     private String description;
-    private String thumbnail;
+    private RecipeImageDTO thumbnail;
+    private Integer servingSize;
 
     private List<RecipeTagDTO> tags;
 }
