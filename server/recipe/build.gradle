@@ -27,6 +27,7 @@ dependencies {
 	// Spring
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
 
 	// Lombok
 	compileOnly 'org.projectlombok:lombok'
@@ -34,10 +35,14 @@ dependencies {
 
 	// Spring Test
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'com.h2database:h2:1.3.148'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
 	// Database
 	runtimeOnly 'org.postgresql:postgresql'
+
+	// Jackson
+	implementation 'com.fasterxml.jackson.core:jackson-databind'
 }
 
 tasks.named('test') {

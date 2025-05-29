@@ -33,13 +33,13 @@ public class RecipeTagDTOMapperTest {
     }
 
     @Test
-    void toSingleDTO_shouldMapCorrectly() {
+    void toDTO_shouldMapCorrectly() {
         Long tagId = 1L;
         String tagName = Tag.LOW_CARB.name().toLowerCase(Locale.ROOT);
         RecipeTag tag = new RecipeTag(tagName, new HashSet<>());
         tag.setId(tagId);
 
-        RecipeTagDTO dto = RecipeTagDTOMapper.toSingleDTO(tag);
+        RecipeTagDTO dto = RecipeTagDTOMapper.toDTO(tag);
 
         assertThat(dto.getId()).isEqualTo(tagId);
         assertThat(dto.getName()).isEqualTo(tagName);

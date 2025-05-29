@@ -4,6 +4,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Only for VCS Service propagation
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

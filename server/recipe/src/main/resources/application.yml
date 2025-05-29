@@ -12,3 +12,7 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
+  vcs:
+    service:
+      url: http://vcs-service:8080
+

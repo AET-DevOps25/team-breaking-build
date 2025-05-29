@@ -1,5 +1,6 @@
 package com.recipefy.recipe.mapper.dto;
 
+import com.recipefy.recipe.model.dto.RecipeImageDTO;
 import com.recipefy.recipe.model.dto.RecipeMetadataDTO;
 import com.recipefy.recipe.model.entity.RecipeMetadata;
 
@@ -16,10 +17,31 @@ public class RecipeMetadataDTOMapper {
 
         dto.setTitle(recipeMetadata.getTitle());
         dto.setDescription(recipeMetadata.getDescription());
-        dto.setThumbnail(recipeMetadata.getThumbnail());
+        dto.setThumbnail(new RecipeImageDTO(recipeMetadata.getThumbnail()));
+        dto.setServingSize(recipeMetadata.getServingSize());
 
         dto.setTags(RecipeTagDTOMapper.toDTO(recipeMetadata.getTags()));
 
         return dto;
+    }
+
+    public  static RecipeMetadata toEntity(RecipeMetadataDTO dto) {
+        RecipeMetadata metadata = new RecipeMetadata();
+
+        metadata.setId(dto.getId());
+        metadata.setUserId(dto.getUserId());
+        metadata.setForkedFrom(dto.getForkedFrom());
+
+        metadata.setCreatedAt(dto.getCreatedAt());
+        metadata.setUpdatedAt(dto.getUpdatedAt());
+
+        metadata.setTitle(dto.getTitle());
+        metadata.setDescription(dto.getDescription());
+        metadata.setThumbnail(dto.getThumbnail().getUrl());
+        metadata.setServingSize(dto.getServingSize());
+
+        metadata.setTags(RecipeTagDTOMapper.toEntity(dto.getTags()));
+
+        return metadata;
     }
 }

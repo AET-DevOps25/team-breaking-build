@@ -6,6 +6,9 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
+/**
+ * Only for VCS Service propagation
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
