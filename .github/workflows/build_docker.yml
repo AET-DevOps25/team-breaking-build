@@ -33,12 +33,11 @@ jobs:
           echo "type=$type" >> $GITHUB_OUTPUT
           echo "path=$path" >> $GITHUB_OUTPUT
             
-      - name: Setup Node.js (for pnpm)
+      - name: Setup Node.js
         if: steps.vars.outputs.type == 'node'
         uses: actions/setup-node@v3
         with:
           node-version: 20
-          cache: 'pnpm'
 
       - name: Install pnpm
         if: steps.vars.outputs.type == 'node'
