@@ -22,9 +22,7 @@ class KeyCloakClient(
         private const val GRANT_TYPE_REFRESH_TOKEN = "refresh_token"
     }
 
-    fun getToken(
-        tokenRequest: TokenRequest
-    ): Mono<TokenResponse> {
+    fun getToken(tokenRequest: TokenRequest): Mono<TokenResponse> {
         val formData = LinkedMultiValueMap<String, String>()
         prepareTokenRequest(tokenRequest, formData)
         return keyCloakClient
@@ -36,14 +34,20 @@ class KeyCloakClient(
             .bodyToMono<TokenResponse>()
     }
 
-    private fun prepareTokenRequest(tokenRequest: TokenRequest, formData: LinkedMultiValueMap<String, String>) {
+    private fun prepareTokenRequest(
+        tokenRequest: TokenRequest,
+        formData: LinkedMultiValueMap<String, String>
+    ) {
         when (tokenRequest.grantType) {
             GRANT_TYPE_PASSWORD -> preparePasswordRequest(tokenRequest, formData)
             GRANT_TYPE_REFRESH_TOKEN -> prepareRefreshTokenRequest(tokenRequest, formData)
         }
     }
 
-    private fun preparePasswordRequest(tokenRequest: TokenRequest, formData: LinkedMultiValueMap<String, String>) {
+    private fun preparePasswordRequest(
+        tokenRequest: TokenRequest,
+        formData: LinkedMultiValueMap<String, String>
+    ) {
         assert(!tokenRequest.password.isNullOrBlank())
         formData.add("username", tokenRequest.username)
         formData.add("password", tokenRequest.password)
@@ -52,12 +56,14 @@ class KeyCloakClient(
         formData.add("client_secret", keyCloakProperties.clientSecret)
     }
 
-    private fun prepareRefreshTokenRequest(tokenRequest: TokenRequest, formData: LinkedMultiValueMap<String, String>) {
+    private fun prepareRefreshTokenRequest(
+        tokenRequest: TokenRequest,
+        formData: LinkedMultiValueMap<String, String>
+    ) {
         assert(!tokenRequest.refreshToken.isNullOrBlank())
         formData.add("grant_type", GRANT_TYPE_REFRESH_TOKEN)
         formData.add("client_id", keyCloakProperties.clientId)
         formData.add("client_secret", keyCloakProperties.clientSecret)
         formData.add("refresh_token", tokenRequest.refreshToken)
     }
-
 }
