@@ -17,7 +17,5 @@ class AuthController(
     @PostMapping("/token")
     fun createToken(
         @RequestBody tokenRequest: TokenRequest
-    ): Mono<TokenResponse> {
-        return authService.getToken(tokenRequest)
-    }
+    ): Mono<TokenResponse> = authService.getToken(tokenRequest)
 }

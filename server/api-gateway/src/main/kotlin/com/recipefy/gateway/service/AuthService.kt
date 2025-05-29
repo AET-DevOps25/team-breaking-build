@@ -10,7 +10,5 @@ import reactor.core.publisher.Mono
 class AuthService(
     private val keyCloakClient: KeyCloakClient
 ) {
-    fun getToken(
-        tokenRequest: TokenRequest
-    ): Mono<TokenResponse> = keyCloakClient.getToken(tokenRequest)
+    fun getToken(tokenRequest: TokenRequest): Mono<TokenResponse> = keyCloakClient.getToken(tokenRequest)
 }
