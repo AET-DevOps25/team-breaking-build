@@ -2,7 +2,7 @@ name: Build and Push Docker Images
 
 on:
   push:
-    branches: [main]
+    branches: [main] # Only run on main branch; adjust as needed
     paths:
       - 'client/**'
       - 'server/**'
@@ -12,6 +12,10 @@ jobs:
   test:
     name: Run Java Tests
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [client, server/api-gateway, server/recipe, server/version]
 
     steps:
       - name: Checkout
@@ -28,7 +32,6 @@ jobs:
 
       - name: Run Gradle Build
         run: |
-          cd server
           ./gradlew build --no-daemon
 
   build:
@@ -50,7 +53,7 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
-          username: ${{ github.actor }}
+          username: ${{ github.axctor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up QEMU
