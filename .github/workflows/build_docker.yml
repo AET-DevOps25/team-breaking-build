@@ -32,12 +32,18 @@ jobs:
           echo "name=$name" >> $GITHUB_OUTPUT
           echo "type=$type" >> $GITHUB_OUTPUT
           echo "path=$path" >> $GITHUB_OUTPUT
-
+          
+      - name: Setup pnpm
+        if: steps.vars.outputs.type == 'node'
+        uses: pnpm/action-setup@v3
+        with:
+            version: 10  
+            
       - name: Setup Node.js (for pnpm)
         if: steps.vars.outputs.type == 'node'
         uses: actions/setup-node@v3
         with:
-          node-version: '20'
+          node-version: 20
           cache: 'pnpm'
 
       - name: Build Next.js Client with pnpm
