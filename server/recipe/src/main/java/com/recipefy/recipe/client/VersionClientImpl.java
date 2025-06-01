@@ -9,7 +9,7 @@ import org.springframework.web.client.RestTemplate;
 
 @Service
 @RequiredArgsConstructor
-public class VCSClientImpl implements VCSClient {
+public class VersionClientImpl implements VersionClient {
     private final RestTemplate restTemplate;
 
     @Value("${vcs.service.url}")
