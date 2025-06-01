@@ -1,6 +1,6 @@
 package com.recipefy.recipe.service;
 
-import com.recipefy.recipe.client.VCSClient;
+import com.recipefy.recipe.client.VersionClient;
 import com.recipefy.recipe.mapper.dto.RecipeMetadataDTOMapper;
 import com.recipefy.recipe.model.dto.RecipeMetadataDTO;
 import com.recipefy.recipe.model.dto.RecipeTagDTO;
@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 public class RecipeServiceImpl implements RecipeService {
     private final RecipeRepository recipeRepository;
     private final TagRepository recipeTagRepository;
-    private final VCSClient vcsClient;
+    private final VersionClient versionClient;
 
     @Override
     public Page<RecipeMetadataDTO> getAllRecipes(Pageable pageable) {
@@ -55,7 +55,7 @@ public class RecipeServiceImpl implements RecipeService {
                 ).collect(Collectors.toSet());
         recipe.setTags(tags);
 
-        vcsClient.initRecipe(recipe.getId(), request);
+        versionClient.initRecipe(recipe.getId(), request);
 
         RecipeMetadata saved = recipeRepository.save(recipe);
         return RecipeMetadataDTOMapper.toDTO(saved);
@@ -93,7 +93,7 @@ public class RecipeServiceImpl implements RecipeService {
         copy.setUpdatedAt(LocalDateTime.now());
         copy.setTags(original.getTags()); // safe since Set<RecipeTag> is reused
 
-        vcsClient.copyRecipe(branchId, new CopyBranchRequest(recipeId));
+        versionClient.copyRecipe(branchId, new CopyBranchRequest(recipeId));
 
         RecipeMetadata saved = recipeRepository.save(copy);
         return RecipeMetadataDTOMapper.toDTO(saved);

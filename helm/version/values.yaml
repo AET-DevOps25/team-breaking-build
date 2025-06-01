@@ -1,0 +1,113 @@
+prefix: recipefy
+name: version
+
+replicaCount: 2
+
+image:
+  repository: ghcr.io/aet-devops25/team-breaking-build/server/version
+  tag: latest
+  pullPolicy: Always
+
+service:
+  type: ClusterIP
+  port: 8080
+
+container:
+  name: version
+  port: 8080
+  portName: http
+  protocol: TCP
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/path: "/actuator/prometheus"
+  prometheus.io/port: "8080"
+  cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
+  app.kubernetes.io/version: "1.0.0"
+  sidecar.istio.io/inject: "true"
+
+podLabels: {}
+
+serviceAccount:
+  create: true
+  automount: false
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 70
+
+livenessProbe:
+  httpGet:
+    path: /actuator/health/liveness
+    port: 8080
+  initialDelaySeconds: 30
+  periodSeconds: 10
+
+readinessProbe:
+  httpGet:
+    path: /actuator/health/readiness
+    port: 8080
+  initialDelaySeconds: 20
+  periodSeconds: 5
+
+env:
+  - name: VERSION_POSTGRES_URL_HOST
+    valueFrom:
+      configMapKeyRef:
+        name: recipefy-version-config
+        key: VERSION_POSTGRES_URL_HOST
+  - name: VERSION_POSTGRES_URL_PORT
+    valueFrom:
+      configMapKeyRef:
+        name: recipefy-version-config
+        key: VERSION_POSTGRES_URL_PORT
+  - name: VERSION_POSTGRES_DB_NAME
+    valueFrom:
+      configMapKeyRef:
+        name: recipefy-version-config
+        key: VERSION_POSTGRES_DB_NAME
+  - name: VERSION_MONGO_URL_HOSTS
+    valueFrom:
+      configMapKeyRef:
+        name: recipefy-version-config
+        key: VERSION_MONGO_URL_HOSTS
+  - name: VERSION_MONGO_REPLICA_SET
+    valueFrom:
+      configMapKeyRef:
+        name: recipefy-version-config
+        key: VERSION_MONGO_REPLICA_SET
+  - name: VERSION_MONGO_DB_NAME
+    valueFrom:
+      configMapKeyRef:
+        name: recipefy-version-config
+        key: VERSION_MONGO_DB_NAME
+  - name: VERSION_POSTGRES_USER
+    valueFrom:
+      secretKeyRef:
+        name: recipefy-version-secret
+        key: VERSION_POSTGRES_USER
+  - name: VERSION_POSTGRES_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: recipefy-version-secret
+        key: VERSION_POSTGRES_PASSWORD
+  - name: VERSION_MONGO_USER
+    valueFrom:
+      secretKeyRef:
+        name: recipefy-version-secret
+        key: VERSION_MONGO_USER
+  - name: VERSION_MONGO_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: recipefy-version-secret
+        key: VERSION_MONGO_PASSWORD
