@@ -4,8 +4,9 @@ on:
   push:
     branches: [main]
     paths:
-      - 'recipe/**'
+      - 'server/recipe/**'
       - 'helm/recipe/**'
+  workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
