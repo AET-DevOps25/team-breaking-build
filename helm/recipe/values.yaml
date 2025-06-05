@@ -90,7 +90,7 @@ env:
     valueFrom:
       configMapKeyRef:
         name: recipefy-config
-        key: RECIPE_POSTGRES_PASSWORD
+        key: VERSION_SERVICE_HOST
   - name: VERSION_SERVICE_PORT
     valueFrom:
       configMapKeyRef:
