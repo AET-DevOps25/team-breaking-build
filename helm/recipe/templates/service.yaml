@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "recipe.serviceName" . }}
+  labels:
+    {{- include "recipe.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: {{ .Values.container.port }}
+      protocol: {{ .Values.container.protocol }}
+      name: {{ .Values.container.portName }}
+  selector:
+    {{- include "recipe.selectorLabels" . | nindent 4 }}
