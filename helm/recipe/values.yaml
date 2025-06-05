@@ -86,3 +86,13 @@ env:
       secretKeyRef:
         name: recipefy-recipe-secret
         key: RECIPE_POSTGRES_PASSWORD
+  - name: VERSION_SERVICE_HOST
+    valueFrom:
+      configMapKeyRef:
+        name: recipefy-config
+        key: RECIPE_POSTGRES_PASSWORD
+  - name: VERSION_SERVICE_PORT
+    valueFrom:
+      configMapKeyRef:
+        name: recipefy-config
+        key: VERSION_SERVICE_PORT
