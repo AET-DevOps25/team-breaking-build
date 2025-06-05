@@ -1,0 +1,88 @@
+prefix: recipefy
+name: recipe
+
+replicaCount: 2
+
+image:
+  repository: ghcr.io/aet-devops25/team-breaking-build/server/recipe
+  tag: latest
+  pullPolicy: Always
+
+service:
+  type: ClusterIP
+  port: 8080
+
+container:
+  name: recipe
+  port: 8080
+  portName: http
+  protocol: TCP
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/path: "/actuator/prometheus"
+  prometheus.io/port: "8080"
+  cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
+  app.kubernetes.io/version: "1.0.0"
+  sidecar.istio.io/inject: "true"
+
+podLabels: {}
+
+serviceAccount:
+  create: true
+  automount: false
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 70
+
+livenessProbe:
+  httpGet:
+    path: /actuator/health/liveness
+    port: 8080
+  initialDelaySeconds: 30
+  periodSeconds: 10
+
+readinessProbe:
+  httpGet:
+    path: /actuator/health/readiness
+    port: 8080
+  initialDelaySeconds: 20
+  periodSeconds: 5
+
+env:
+  - name: RECIPE_POSTGRES_URL_HOST
+    valueFrom:
+      configMapKeyRef:
+        name: recipefy-recipe-config
+        key: RECIPE_POSTGRES_URL_HOST
+  - name: RECIPE_POSTGRES_URL_PORT
+    valueFrom:
+      configMapKeyRef:
+        name: recipefy-recipe-config
+        key: RECIPE_POSTGRES_URL_PORT
+  - name: RECIPE_POSTGRES_DB_NAME
+    valueFrom:
+      configMapKeyRef:
+        name: recipefy-recipe-config
+        key: RECIPE_POSTGRES_DB_NAME
+  - name: RECIPE_POSTGRES_USER
+    valueFrom:
+      secretKeyRef:
+        name: recipefy-recipe-secret
+        key: RECIPE_POSTGRES_USER
+  - name: RECIPE_POSTGRES_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: recipefy-recipe-secret
+        key: RECIPE_POSTGRES_PASSWORD
