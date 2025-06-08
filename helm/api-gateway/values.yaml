@@ -1,0 +1,73 @@
+prefix: recipefy
+name: gateway
+
+replicaCount: 2
+
+image:
+  repository: ghcr.io/aet-devops25/team-breaking-build/server/api-gateway
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8080
+
+container:
+  name: gateway
+  port: 8080
+  portName: http
+  protocol: TCP
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/path: "/actuator/prometheus"
+  prometheus.io/port: "8080"
+  cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
+  app.kubernetes.io/version: "1.0.0"
+  sidecar.istio.io/inject: "true"
+
+podLabels: {}
+
+serviceAccount:
+  create: true
+  automount: false
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 200m
+    memory: 256Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 70
+
+livenessProbe:
+  httpGet:
+    path: /actuator/health/liveness
+    port: 8080
+  initialDelaySeconds: 30
+  periodSeconds: 10
+
+readinessProbe:
+  httpGet:
+    path: /actuator/health/readiness
+    port: 8080
+  initialDelaySeconds: 20
+  periodSeconds: 5
+
+env:
+  SPRING_CLOUD_GATEWAY_ROUTES_0_ID: 
+  SPRING_CLOUD_GATEWAY_ROUTES_0_URI: 
+  SPRING_CLOUD_GATEWAY_ROUTES_0_PREDICATES_0: 
+  SPRING_CLOUD_GATEWAY_ROUTES_1_ID: 
+  SPRING_CLOUD_GATEWAY_ROUTES_1_URI: 
+  SPRING_CLOUD_GATEWAY_ROUTES_1_PREDICATES_0:
+  APP_SECURITY_CORS_ALLOWED_ORIGINS_0: 
+  APP_SECURITY_CORS_ALLOWED_ORIGINS_1: 
+  KEYCLOAK_BASE_URL: http://keycloak:8080
+  KEYCLOAK_REALMS: recipefy
