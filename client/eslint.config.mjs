@@ -21,7 +21,6 @@ const eslintConfig = [
       'no-relative-import-paths': noRelativeImportPaths,
     },
     rules: {
-      indent: ['error', 2],
       'no-relative-import-paths/no-relative-import-paths': [
         'error',
         {

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import '@/styles/globals.css';
 import { inter } from '@/lib/fonts';
 import NavBar from '@/components/navigation/NavBar';
+import { Toaster } from 'sonner';
 
 export const metadata: Metadata = {
   title: 'Recipefy',
@@ -20,6 +21,7 @@ export default function RootLayout({
         <main>
           <div>{children}</div>
         </main>
+        <Toaster />
       </body>
     </html>
   );

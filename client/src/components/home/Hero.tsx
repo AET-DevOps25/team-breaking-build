@@ -11,7 +11,7 @@ const Hero = () => {
       <div className='container mx-auto px-8 pt-20 md:max-w-screen-md lg:max-w-screen-xl lg:pt-32'>
         <div className='grid grid-cols-1 items-center gap-8 lg:grid-cols-12'>
           <div className='col-span-6'>
-            <h1 className='md:4px mb-5 text-center text-4xl font-semibold text-black lg:text-start lg:text-7xl'>
+            <h1 className='mb-5 text-center text-4xl font-semibold text-black lg:text-start lg:text-7xl'>
               Collaborative recipe making&nbsp;
               <span className='inline-block whitespace-nowrap text-[#FF7C75]'>redefined</span>
             </h1>
