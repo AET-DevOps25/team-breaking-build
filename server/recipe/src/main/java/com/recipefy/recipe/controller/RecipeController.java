@@ -25,7 +25,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/recipes")
+@RequestMapping("/recipes")
 @RequiredArgsConstructor
 public class RecipeController {
     private final RecipeService recipeService;
