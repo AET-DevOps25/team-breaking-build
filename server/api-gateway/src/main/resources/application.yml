@@ -4,10 +4,14 @@ spring:
   cloud:
     gateway:
       routes:
-        - id: users
-          uri: ${clients.user}
+        - id: recipe
+          uri: http://localhost:8081
           predicates:
-            - Path=/users
+            - Path=/recipe
+        - id: version
+          uri: http://localhost:8082
+          predicates:
+            - Path=/version
 app:
   security:
     cors:
@@ -17,12 +21,17 @@ app:
 keycloak:
   base-url: http://localhost:8085
   realms: recipfy
-  token-url: /realms/${keycloak.realms}/protocol/openid-connect/token
   introspect-url: ${keycloak.base-url}/realms/${keycloak.realms}/protocol/openid-connect/token/introspect
   client-id: ${CLIENT_ID}
   client-secret: ${CLIENT_SECRET}
-  grant-type: password
 
-clients:
-  user: http://localhost:8033
-
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: always
+  endpoints:
+    web:
+      exposure:
+        include: health,info

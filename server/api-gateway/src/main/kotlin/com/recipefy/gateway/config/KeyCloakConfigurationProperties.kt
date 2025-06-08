@@ -6,9 +6,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 data class KeyCloakConfigurationProperties(
     val baseUrl: String,
     val realms: String,
-    val tokenUrl: String,
     val introspectUrl: String,
     val clientId: String,
-    val clientSecret: String,
-    val grantType: String
+    val clientSecret: String
 )
