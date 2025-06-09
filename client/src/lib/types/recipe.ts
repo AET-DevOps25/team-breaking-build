@@ -32,7 +32,7 @@ export interface Ingredient {
 export interface Step {
   order: number;
   details: string;
-  image?: string;
+  image?: File;
 }
 
 export interface RecipeFormData {

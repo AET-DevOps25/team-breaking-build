@@ -41,7 +41,7 @@ const recipeSchema = z.object({
 type RecipeFormData = z.infer<typeof recipeSchema>;
 
 interface RecipeFormProps {
-  onSubmit: (data: FormData) => Promise<void>;
+  onSubmit: (data: RecipeFormData) => Promise<void>;
   isSubmitting?: boolean;
 }
 
@@ -265,23 +265,9 @@ export function RecipeForm({ onSubmit, isSubmitting }: RecipeFormProps) {
     }
   };
 
-  const handleFormSubmit = (data: RecipeFormData) => {
-    const formData = new FormData();
-    formData.append('title', data.title);
-    formData.append('description', data.description);
-    formData.append('servingSize', data.servingSize.toString());
-    data.tags.forEach((tag) => formData.append('tags', tag));
-    if (data.thumbnail) {
-      formData.append('thumbnail', data.thumbnail);
-    }
-    formData.append('ingredients', JSON.stringify(data.ingredients));
-    formData.append('steps', JSON.stringify(data.steps));
-    onSubmit(formData);
-  };
-
   return (
     <form
-      onSubmit={handleSubmit(handleFormSubmit)}
+      onSubmit={handleSubmit(onSubmit)}
       className='space-y-6'
     >
       <div className='space-y-6'>

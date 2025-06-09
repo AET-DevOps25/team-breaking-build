@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Recipe } from '@/lib/types/recipe';
-import { getRecipes } from '@/lib/services/mockRecipeService';
+import { getRecipes } from '@/lib/services/mockRecipeService'; // Change it to original service when available
 import { RecipeCard } from '@/components/recipe/recipe-card';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
@@ -22,8 +22,8 @@ export default function RecipesPage() {
     setLoading(true);
     try {
       const response = await getRecipes(page);
-      setRecipes((prev) => [...prev, ...response.recipes]);
-      setHasMore(response.recipes.length > 0);
+      setRecipes((prev) => [...prev, ...response]);
+      setHasMore(response.length > 0);
       setPage((prev) => prev + 1);
     } catch (error) {
       console.error('Error loading recipes:', error);
