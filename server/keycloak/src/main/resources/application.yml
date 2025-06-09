@@ -1,0 +1,28 @@
+spring:
+  application:
+    name: keycloak
+
+keycloak:
+  baseUrl: https://keycloak.team-breaking-build.student.k8s.aet.cit.tum.de
+  realm: recipefy
+  adminUri: "/admin/realms/${keycloak.realm}"
+  keycloakUri:  "/realms/${keycloak.realm}/protocol/openid-connect"
+  credentials:
+    recipefy:
+      clientId: web
+      clientSecret: web-secret
+    admin:
+      clientId: admin-cli
+      clientSecret: admin-secret
+
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: always
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
