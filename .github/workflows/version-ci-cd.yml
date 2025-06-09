@@ -2,7 +2,6 @@ name: CI/CD Pipeline for Version Microservice
 
 on:
   push:
-    branches: [main]
     paths:
       - 'server/version/**'
       - 'helm/version/**'
@@ -38,7 +37,8 @@ jobs:
         run: ./gradlew build --no-daemon
 
   build:
-    name: Build and Push Docker Image
+    name: Build and Push Docker Images
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     needs: test
 
@@ -84,6 +84,7 @@ jobs:
 
   deploy:
     name: Deploy to Rancher with Helm
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     needs: build
 

@@ -1,23 +1,23 @@
-name: CI/CD Pipeline for Client
+name: CI/CD Pipeline for API-Gateway
 
 on:
   push:
     paths:
-      - 'client/**'
-      - 'helm/client/**'
+      - 'server/api-gateway/**'
+      - 'helm/api-gateway/**'
   workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: client
-  WORKING_DIRECTORY: client
+  IMAGE_NAME: api-gateway
+  WORKING_DIRECTORY: server/api-gateway
   HELM_NAMESPACE: team-breaking-build
-  HELM_RELEASE_NAME: recipefy-client
-  CHART_PATH: ./helm/client
+  HELM_RELEASE_NAME: recipefy-api-gateway
+  CHART_PATH: ./helm/api-gateway
 
 jobs:
   test:
-    name: Test Project
+    name: Test
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -27,19 +27,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
         with:
-          node-version: 20
+          java-version: '21'
+          distribution: 'temurin'
 
-      - name: Install pnpm
-        run: npm install -g pnpm
-
-      - name: Build Next.js Client with pnpm
-        working-directory: ${{ env.WORKING_DIRECTORY }}
-        run: |
-          pnpm install
-          pnpm run build
+      - name: Run Gradle Build
+        run: ./gradlew build --no-daemon
 
   build:
     name: Build and Push Docker Images
@@ -77,7 +72,7 @@ jobs:
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
 
-      - name: Build and Push Docker Images
+      - name: Build and Push Docker Image
         uses: docker/build-push-action@v5
         with:
           context: ./${{ env.WORKING_DIRECTORY }}
@@ -86,6 +81,7 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
 
   deploy:
     name: Deploy to Rancher with Helm
@@ -109,5 +105,4 @@ jobs:
       - name: Deploy Helm Chart
         run: |
           helm upgrade --install ${{ env.HELM_RELEASE_NAME }} ${{ env.CHART_PATH }} \
-            --namespace ${{ env.HELM_NAMESPACE }} \
-            --wait --timeout 5m
+            --namespace ${{ env.HELM_NAMESPACE }}

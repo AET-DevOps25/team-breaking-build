@@ -8,6 +8,7 @@ on:
       - '.github/workflows/**'
 
 jobs:
+  if: false
   test:
     name: Build projects
     runs-on: ubuntu-latest

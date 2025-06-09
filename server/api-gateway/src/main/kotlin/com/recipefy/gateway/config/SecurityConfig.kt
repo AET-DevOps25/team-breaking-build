@@ -19,7 +19,7 @@ class SecurityConfig(
         http
             .authorizeExchange { exchanges ->
                 exchanges
-                    .pathMatchers("/actuator/**", "/auth/token")
+                    .pathMatchers("/actuator/**")
                     .permitAll()
                     .anyExchange()
                     .authenticated()

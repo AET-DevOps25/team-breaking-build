@@ -1,0 +1,75 @@
+auth:
+  existingSecret: keycloak-auth-credentials
+  passwordSecretKey: KEYCLOAK_ADMIN_PASSWORD
+
+proxyAddressForwarding: true
+
+service:
+  type: ClusterIP
+  port: 8080
+
+replicaCount: 3
+
+ingress:
+  hostname: keycloak.team-breaking-build.student.k8s.aet.cit.tum.de
+  enabled: true
+  ingressClassName: nginx
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  tls: true
+  existingSecret: team-breaking-build-tls
+
+postgresql:
+  enabled: false
+
+externalDatabase:
+  enabled: true
+  existingSecret: keycloak-postgres-credentials
+  existingSecretUserKey: KEYCLOAK_USER
+  existingSecretDatabaseKey: KEYCLOAK_DB_NAME
+  existingSecretPasswordKey: KEYCLOAK_PASSWORD
+
+image:
+  registry: docker.io
+  repository: bitnami/keycloak
+  tag: latest
+  pullPolicy: IfNotPresent
+
+serviceAccount:
+  create: true
+  name: ""
+
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 80
+
+global:
+  security:
+    allowInsecure: true
+
+metrics:
+  enabled: true
+  service:
+    ports:
+      http: 8080
+      https: 8443
+      metrics: 9000
+    annotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "{{ .Values.metrics.service.ports.metrics }}"
+
+extraEnvVars:
+  - name: KEYCLOAK_DATABASE_HOST
+    valueFrom:
+      configMapKeyRef:
+        name: recipefy-config
+        key: KEYCLOAK_DATABASE_HOST
+  - name: KEYCLOAK_DATABASE_PORT
+    valueFrom:
+      configMapKeyRef:
+        name: recipefy-config
+        key: KEYCLOAK_DATABASE_PORT
