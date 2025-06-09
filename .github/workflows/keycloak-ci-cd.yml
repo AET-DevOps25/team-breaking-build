@@ -3,6 +3,7 @@ name: CI/CD Pipeline for Keycloak SPI
 on:
   push:
     paths:
+      - ".github/workflows/keycloak-ci-cd.yml"
       - 'server/keycloak/**'
       - 'helm/keycloak/**'
   workflow_dispatch:
