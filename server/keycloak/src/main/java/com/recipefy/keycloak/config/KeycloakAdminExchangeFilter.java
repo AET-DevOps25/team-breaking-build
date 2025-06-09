@@ -54,7 +54,7 @@ public class KeycloakAdminExchangeFilter implements ExchangeFilterFunction {
                 .bodyToMono(TokenResponse.class)
                 .map(body -> {
                     String access = body.getAccessToken();
-                    long expiresIn = body.getExpiresIn();   // seconds
+                    long expiresIn = body.getExpiresIn();
                     Instant exp = Instant.now().plusSeconds(expiresIn);
                     return new CachedToken(access, exp);
                 });
