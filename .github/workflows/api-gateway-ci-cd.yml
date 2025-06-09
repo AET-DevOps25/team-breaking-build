@@ -9,7 +9,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: api-gateway
+  IMAGE_NAME: server/api-gateway
   WORKING_DIRECTORY: server/api-gateway
   HELM_NAMESPACE: team-breaking-build
   HELM_RELEASE_NAME: recipefy-api-gateway
