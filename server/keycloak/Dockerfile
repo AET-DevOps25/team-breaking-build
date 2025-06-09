@@ -1,6 +1,3 @@
-##########################
-# 1️⃣ Build stage
-##########################
 FROM gradle:8.7-jdk21 AS builder
 
 WORKDIR /app
@@ -19,4 +16,4 @@ COPY --from=build /src/build/libs/keycloak.jar /app/keycloak.jar
 
 EXPOSE 8080
 
-ENTRYPOINT ["java", "-jar", "gateway.jar"]
+ENTRYPOINT ["java", "-jar", "keycloak.jar"]
