@@ -5,8 +5,8 @@ import NavLinks from './NavLinks';
 export default function NavBar() {
   return (
     <div className='sticky top-0 z-20 shadow-md'>
-      <div className='flex justify-between bg-white px-8 py-4'>
-        <Link href='/'>
+      <div className='flex justify-between bg-white px-16 py-4'>
+        <Link href='/client/public'>
           <Image
             src='/logo-color.svg'
             alt='Recipefy Logo'

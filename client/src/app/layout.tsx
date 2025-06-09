@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
-import './globals.css';
-import { inter } from '@/app/ui/fonts';
-import NavBar from '@/app/components/navigation/NavBar';
+import '@/styles/globals.css';
+import { inter } from '@/lib/fonts';
+import NavBar from '@/components/navigation/NavBar';
+import { Toaster } from 'sonner';
 
 export const metadata: Metadata = {
   title: 'Recipefy',
@@ -18,8 +19,9 @@ export default function RootLayout({
       <body className={`${inter.className} bg-[#fafafa] antialiased`}>
         <NavBar />
         <main>
-          <div className='min-w-[1200px] p-16'>{children}</div>
+          <div>{children}</div>
         </main>
+        <Toaster />
       </body>
     </html>
   );
