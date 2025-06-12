@@ -29,8 +29,9 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
 
 	implementation("com.nimbusds:oauth2-oidc-sdk:11.24")
+    implementation("org.springdoc:springdoc-openapi-starter-webflux-ui:2.3.0")
 
-	implementation("org.jetbrains.kotlin:kotlin-reflect")
+    implementation("org.jetbrains.kotlin:kotlin-reflect")
 
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testImplementation("org.springframework.security:spring-security-test")
