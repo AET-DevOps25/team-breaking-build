@@ -1,0 +1,1 @@
+OPENAI_API_KEY=sk-your_openai_api_key_here

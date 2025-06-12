@@ -1,0 +1,11 @@
+uvicorn[standard]
+
+langchain>=0.1.0
+langchain-community
+langchain-openai
+langchain-text-splitters
+
+chromadb
+
+unstructured
+python-dotenv
