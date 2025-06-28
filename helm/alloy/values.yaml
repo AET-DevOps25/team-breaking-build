@@ -1,0 +1,71 @@
+alloy:
+  mounts:
+    varlog: true
+  configMap:
+    create: false
+    name: alloy-settings
+    key: config.alloy
+
+rbac:
+  create: false
+
+crds:
+  create: false
+
+extraObjects:
+  - apiVersion: rbac.authorization.k8s.io/v1
+    kind: Role
+    metadata:
+      name: alloy
+      namespace: team-breaking-build
+      rules:
+        # Core Kubernetes objects Alloy might need to discover/scrape
+        - apiGroups: [ "", "discovery.k8s.io", "networking.k8s.io" ]
+          resources:
+            - pods
+            - pods/log
+            - services
+            - endpoints
+            - endpointslices
+            - ingresses
+            - namespaces
+          verbs: [ "get", "list", "watch" ]
+
+        # ConfigMaps, Secrets, Events – hot‑reload + diagnostics
+        - apiGroups: [ "" ]
+          resources: [ "configmaps", "secrets", "events" ]
+          verbs: [ "get", "list", "watch" ]
+
+        # Grafana Alloy CRDs (safe even if CRDs are absent)
+        - apiGroups: [ "monitoring.grafana.com" ]
+          resources: [ "podlogs" ]
+          verbs: [ "get", "list", "watch" ]
+
+        # Prometheus Operator CRDs (optional, same logic)
+        - apiGroups: [ "monitoring.coreos.com" ]
+          resources:
+            - podmonitors
+            - servicemonitors
+            - probes
+            - scrapeconfigs
+            - prometheusrules
+          verbs: [ "get", "list", "watch" ]
+
+        # Allow scraping the node’s /metrics endpoint
+        - nonResourceURLs: [ "/metrics" ]
+          verbs: [ "get" ]
+
+        ## RoleBinding --------------------------------------------------------------
+        - apiVersion: rbac.authorization.k8s.io/v1
+          kind: RoleBinding
+          metadata:
+            name: alloy
+            namespace: team-breaking-build
+          subjects:
+            - kind: ServiceAccount
+              name: alloy
+              namespace: team-breaking-build
+          roleRef:
+            apiGroup: rbac.authorization.k8s.io
+            kind: Role
+            name: alloy
