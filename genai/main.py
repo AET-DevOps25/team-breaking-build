@@ -1,47 +1,56 @@
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from langchain.chat_models import ChatOpenAI
-from langchain.schema import HumanMessage
-from dotenv import load_dotenv
-import os
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from loguru import logger
+import sys
 
-load_dotenv()
+from config import config
+from api.routes import router
 
+# Configure logging
+logger.remove()
+logger.add(
+    sys.stdout,
+    level=config.LOG_LEVEL,
+    format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>"
+)
+
+# Create FastAPI app
 app = FastAPI(
-    title="LangChain + FastAPI • Hello World",
-    version="0.1.0",
-    description="A minimal generative-AI microservice."
+    title="GenAI Recipe Service",
+    description="AI-powered recipe chatbot and creation service",
+    version="1.0.0"
 )
 
-chat = ChatOpenAI(
-    model_name="gpt-3.5-turbo",
-    temperature=0.3,
-    openai_api_key=os.getenv("OPENAI_API_KEY")
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
-class ChatRequest(BaseModel):
-    message: str
+# Include API routes
+app.include_router(router)
 
-class ChatResponse(BaseModel):
-    reply: str
+@app.on_event("startup")
+async def startup_event():
+    """Initialize services on startup"""
+    logger.info("Starting GenAI Recipe Service...")
+    logger.info(f"LLM Base URL: {config.LLM_BASE_URL}")
+    logger.info(f"Recipe Service URL: {config.RECIPE_SERVICE_URL}")
+    logger.info(f"Weaviate URL: {config.WEAVIATE_URL}")
 
-@app.get("/")
-def health_check():
-    return {"status": "ok"}
-
-@app.post("/chat", response_model=ChatResponse)
-async def chat_endpoint(req: ChatRequest):
-    try:
-        llm_reply = chat([HumanMessage(content=req.message)])
-        return {"reply": llm_reply.content}
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Clean up resources on shutdown"""
+    logger.info("Shutting down GenAI Recipe Service...")
 
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
         "main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True
+        host=config.APP_HOST,
+        port=config.APP_PORT,
+        reload=config.DEBUG
     )
