@@ -11,7 +11,6 @@ from models.schemas import (
     RecipeIngredientDTO,
     RecipeStepDTO,
     RecipeTagDTO,
-    RecipeImageDTO,
     InitRecipeRequest
 )
 

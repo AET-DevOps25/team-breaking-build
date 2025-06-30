@@ -2,16 +2,15 @@ import uuid
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 
-# LangChain imports
-from langchain_ollama.chat_models import ChatOllama
-from langchain_ollama import OllamaEmbeddings
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+# Modern LangChain imports
+from langchain_ollama import ChatOllama, OllamaEmbeddings
 from langchain_community.vectorstores import Weaviate
-from langchain.schema import Document
-from langchain.chains import LLMChain
-from langchain.prompts import PromptTemplate
-from langchain.memory import ConversationBufferMemory
-from langchain.schema.messages import HumanMessage, AIMessage
+from langchain_core.documents import Document
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.messages import HumanMessage, AIMessage
+from langchain_core.runnables import RunnablePassthrough
+from langchain_core.chat_history import BaseChatMessageHistory
+from langchain_community.chat_message_histories import ChatMessageHistory
 
 import weaviate
 from loguru import logger
@@ -19,46 +18,44 @@ from loguru import logger
 from config import config
 from models.schemas import (
     RecipeData,
-    ChatMessage,
     ChatRequest,
     ChatResponse,
     RecipeCreationRequest,
     RecipeCreationResponse,
     RecipeMetadataDTO,
-    RecipeDetailsDTO,
-    RecipeIngredientDTO,
-    RecipeStepDTO,
     RecipeTagDTO
 )
 from services.recipe_integration import RecipeServiceIntegration, parse_llm_recipe_response
 
 class GenAIService:
-    """Core GenAI service using LLM for chatbot and recipe creation"""
+    """Core GenAI service using modern LangChain v0.3 for chatbot and recipe creation"""
     
     def __init__(self):
         self.llm = None
         self.embeddings = None
         self.vector_store = None
         self.retriever = None
-        self.conversations = {}
+        self.conversations: Dict[str, BaseChatMessageHistory] = {}
         self.recipe_service = RecipeServiceIntegration()
         self.initialize_services()
     
     def initialize_services(self):
-        """Initialize LLM and vector store services"""
+        """Initialize LLM and vector store services using modern LangChain patterns"""
         try:
             logger.info("Initializing LLM")
             self.llm = ChatOllama(
                 model=config.LLM_CHAT_MODEL,
                 base_url=config.LLM_BASE_URL,
-                temperature=0.7
+                temperature=0.7,
+                client_kwargs={"headers": {"Authorization": f"Bearer {config.LLM_API_KEY}"}},
             )
             
             # Initialize embeddings
             logger.info("Initializing embeddings with LLM")
             self.embeddings = OllamaEmbeddings(
                 model=config.LLM_EMBEDDING_MODEL,
-                base_url=config.LLM_BASE_URL
+                base_url=config.LLM_BASE_URL,
+                client_kwargs={"headers": {"Authorization": f"Bearer {config.LLM_API_KEY}"}},
             )
             
             # Initialize Weaviate vector store using current API
@@ -71,16 +68,16 @@ class GenAIService:
                         cluster_url=config.WEAVIATE_URL,
                         auth_credentials=weaviate.auth.Auth.api_key(config.WEAVIATE_API_KEY),
                         headers={
-                            "X-OpenAI-Api-Key": config.LLM_API_KEY
-                        } if config.LLM_API_KEY else {}
+                            "X-OpenAI-Api-Key": config.WEAVIATE_API_KEY
+                        } if config.WEAVIATE_API_KEY else {}
                     )
                 else:
                     # For local development without API key
                     client = weaviate.connect_to_local(
                         host=config.WEAVIATE_URL.replace("http://", "").replace("https://", ""),
                         headers={
-                            "X-OpenAI-Api-Key": config.LLM_API_KEY
-                        } if config.LLM_API_KEY else {}
+                            "X-OpenAI-Api-Key": config.WEAVIATE_API_KEY
+                        } if config.WEAVIATE_API_KEY else {}
                     )
                 
                 # Create or get collection
@@ -136,16 +133,13 @@ class GenAIService:
             raise
     
     async def chat(self, request: ChatRequest) -> ChatResponse:
-        """Handle chat conversation with recipe search and creation capabilities"""
+        """Handle chat conversation with recipe search and creation capabilities using modern LCEL"""
         try:
             conversation_id = request.conversation_id or str(uuid.uuid4())
             
-            # Get or create conversation memory
+            # Get or create conversation memory using modern approach
             if conversation_id not in self.conversations:
-                self.conversations[conversation_id] = ConversationBufferMemory(
-                    memory_key="chat_history",
-                    return_messages=True
-                )
+                self.conversations[conversation_id] = ChatMessageHistory()
             
             memory = self.conversations[conversation_id]
             
@@ -159,35 +153,41 @@ class GenAIService:
             # Create context from relevant recipes
             context = self._create_context_from_recipes(relevant_recipes)
             
-            # Create chat prompt
-            chat_prompt = PromptTemplate(
-                input_variables=["chat_history", "user_message", "recipe_context"],
-                template="""
-                You are a helpful cooking assistant. You can help users find recipes and create new ones.
+            # Create modern chat prompt using ChatPromptTemplate
+            chat_prompt = ChatPromptTemplate.from_messages([
+                ("system", """You are a helpful cooking assistant. You can help users find recipes and create new ones.
                 
-                Previous conversation:
-                {chat_history}
-                
-                Available recipes context:
-                {recipe_context}
-                
-                User: {user_message}
-                Assistant: """
+Available recipes context:
+{recipe_context}"""),
+                ("human", "{user_message}")
+            ])
+            
+            # Create modern LCEL chain with memory
+            chain = (
+                RunnablePassthrough.assign(
+                    chat_history=lambda x: self._get_chat_history(memory),
+                    recipe_context=lambda x: context
+                )
+                | chat_prompt
+                | self.llm
             )
+            
+            # Add user message to memory
+            memory.add_message(HumanMessage(content=request.message))
             
             # Generate response
-            chain = LLMChain(llm=self.llm, prompt=chat_prompt, memory=memory)
-            response = await chain.arun(
-                user_message=request.message,
-                recipe_context=context
-            )
+            response = await chain.ainvoke({
+                "user_message": request.message
+            })
             
-            # Update conversation memory
-            memory.chat_memory.add_user_message(request.message)
-            memory.chat_memory.add_ai_message(response)
+            # Extract the text from the response
+            response_text = response.content if hasattr(response, 'content') else str(response)
+            
+            # Add AI response to memory
+            memory.add_message(AIMessage(content=response_text))
             
             return ChatResponse(
-                reply=response,
+                reply=response_text,
                 conversation_id=conversation_id,
                 sources=[{"title": recipe.title, "id": recipe.id} for recipe in relevant_recipes[:3]]
             )
@@ -199,17 +199,28 @@ class GenAIService:
                 conversation_id=request.conversation_id or str(uuid.uuid4())
             )
     
+    def _get_chat_history(self, memory: BaseChatMessageHistory) -> str:
+        """Get formatted chat history from memory"""
+        messages = memory.messages
+        if not messages:
+            return ""
+        
+        # Format messages for context
+        formatted_messages = []
+        for msg in messages[-6:]:  # Last 6 messages for context
+            if isinstance(msg, HumanMessage):
+                formatted_messages.append(f"User: {msg.content}")
+            elif isinstance(msg, AIMessage):
+                formatted_messages.append(f"Assistant: {msg.content}")
+        
+        return "\n".join(formatted_messages)
+    
     async def create_recipe(self, request: RecipeCreationRequest) -> RecipeCreationResponse:
-        """Create a new recipe using the LLM"""
+        """Create a new recipe using the LLM with modern patterns"""
         try:
-            prompt_text = f"""Create a complete recipe based on the following requirements:
-
-Description: {request.description}
-Ingredients: {', '.join(request.ingredients)}
-Dietary Restrictions: {', '.join(request.dietary_restrictions) if request.dietary_restrictions else 'None'}
-Cuisine Type: {request.cuisine_type or 'General'}
-Difficulty: {request.difficulty or 'Medium'}
-Serving Size: {request.serving_size or 4}
+            # Create modern prompt template
+            recipe_prompt = ChatPromptTemplate.from_messages([
+                ("system", """You are a recipe creation expert. Create a complete recipe based on the user's requirements.
 
 Please format the recipe as follows:
 
@@ -230,11 +241,32 @@ Instructions:
 - [Step 3 details]
 ...
 
-Make sure the recipe is complete, practical, and follows standard cooking practices."""
+Make sure the recipe is complete, practical, and follows standard cooking practices."""),
+                ("human", """Create a recipe with these requirements:
 
-            # Generate recipe using LLM
-            response = await self.llm.agenerate([[HumanMessage(content=prompt_text)]])
-            recipe_text = response.generations[0][0].text
+Description: {description}
+Ingredients: {ingredients}
+Dietary Restrictions: {dietary_restrictions}
+Cuisine Type: {cuisine_type}
+Difficulty: {difficulty}
+Serving Size: {serving_size}""")
+            ])
+            
+            # Create LCEL chain
+            recipe_chain = recipe_prompt | self.llm
+            
+            # Generate recipe
+            response = await recipe_chain.ainvoke({
+                "description": request.description,
+                "ingredients": ", ".join(request.ingredients),
+                "dietary_restrictions": ", ".join(request.dietary_restrictions) if request.dietary_restrictions else "None",
+                "cuisine_type": request.cuisine_type or "General",
+                "difficulty": request.difficulty or "Medium",
+                "serving_size": request.serving_size or 4
+            })
+            
+            # Extract the text from the response
+            recipe_text = response.content if hasattr(response, 'content') else str(response)
             
             # Parse the LLM response into proper DTOs
             metadata, details = parse_llm_recipe_response(recipe_text)
@@ -300,7 +332,7 @@ Make sure the recipe is complete, practical, and follows standard cooking practi
             Serving Size: {recipe_data.serving_size or 'Not specified'}
             """
             
-            # Create document
+            # Create document using modern Document class
             document = Document(
                 page_content=document_text,
                 metadata={
@@ -362,7 +394,7 @@ Make sure the recipe is complete, practical, and follows standard cooking practi
         return keyword_count >= 2
     
     async def _handle_recipe_creation(self, request: ChatRequest, conversation_id: str) -> ChatResponse:
-        """Handle recipe creation request in chat"""
+        """Handle recipe creation request in chat using modern patterns"""
         try:
             # Extract recipe requirements from the message
             recipe_request = RecipeCreationRequest(
@@ -388,6 +420,12 @@ Make sure the recipe is complete, practical, and follows standard cooking practi
 {chr(10).join([f"{i+1}. {step['details']}" for i, step in enumerate(recipe_response.recipe['steps'])])}
 
 The recipe has been saved to your collection!"""
+            
+            # Add messages to memory
+            if conversation_id in self.conversations:
+                memory = self.conversations[conversation_id]
+                memory.add_message(HumanMessage(content=request.message))
+                memory.add_message(AIMessage(content=response_text))
             
             return ChatResponse(
                 reply=response_text,

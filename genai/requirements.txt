@@ -6,8 +6,9 @@ pydantic==2.11.7
 pydantic-settings==2.10.1
 loguru==0.7.3
 
-# LangChain and school's LLM
+# Modern LangChain v0.3
 langchain==0.3.26
+langchain-core==0.3.26
 langchain-community==0.3.26
 langchain-ollama==0.3.3
 
