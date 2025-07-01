@@ -1,23 +1,12 @@
-# Core dependencies
-fastapi==0.115.14
-uvicorn[standard]==0.35.0
-python-dotenv==1.1.1
-pydantic==2.11.7
-pydantic-settings==2.10.1
-loguru==0.7.3
-
-# Modern LangChain v0.3
-langchain==0.3.26
-langchain-community==0.3.26
-langchain-ollama==0.3.3
-
-# Vector databases
-weaviate-client==4.15.4
-
-# HTTP client for recipe service integration
-httpx==0.28.1
-
-# Testing
-pytest==8.4.1
-pytest-asyncio==1.0.0
-pytest-cov==6.2.1
+fastapi==0.115.6
+pydantic==2.10.2
+uvicorn[standard]==0.27.1
+langchain==0.3.25
+weaviate-client
+python-dotenv
+langchain-openai
+langchain-weaviate
+langchain-community
+langchain-text-splitters
+langchain-huggingface
+sentence-transformers
