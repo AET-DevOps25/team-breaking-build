@@ -1,30 +1,28 @@
+import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from loguru import logger
-import sys
+import logging
 
-from config import config
 from api.routes import router
+from config import settings
 
 # Configure logging
-logger.remove()
-logger.add(
-    sys.stdout,
-    level=config.LOG_LEVEL,
-    format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>"
+logging.basicConfig(
+    level=logging.INFO if not settings.debug else logging.DEBUG,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 
 # Create FastAPI app
 app = FastAPI(
     title="GenAI Recipe Service",
-    description="AI-powered recipe chatbot and creation service",
-    version="1.0.0"
+    version="1.0.0",
+    description="GenAI Recipe Service - Vector operations and LLM interactions for recipes"
 )
 
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # Configure appropriately for production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -33,24 +31,19 @@ app.add_middleware(
 # Include API routes
 app.include_router(router)
 
-@app.on_event("startup")
-async def startup_event():
-    """Initialize services on startup"""
-    logger.info("Starting GenAI Recipe Service...")
-    logger.info(f"LLM Base URL: {config.LLM_BASE_URL}")
-    logger.info(f"Recipe Service URL: {config.RECIPE_SERVICE_URL}")
-    logger.info(f"Weaviate URL: {config.WEAVIATE_URL}")
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Clean up resources on shutdown"""
-    logger.info("Shutting down GenAI Recipe Service...")
+@app.get("/")
+async def root():
+    """Root endpoint"""
+    return {
+        "message": "GenAI Recipe Service",
+        "version": settings.app_version,
+        "status": "running"
+    }
 
 if __name__ == "__main__":
-    import uvicorn
     uvicorn.run(
         "main:app",
-        host=config.APP_HOST,
-        port=config.APP_PORT,
-        reload=config.DEBUG
-    )
+        host=settings.app_host,
+        port=settings.app_port,
+        reload=settings.debug
+    ) 

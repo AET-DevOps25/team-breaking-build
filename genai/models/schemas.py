@@ -2,7 +2,11 @@ from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 
-# Recipe data models matching the recipe microservice
+# Recipe DTOs matching the recipe microservice
+class RecipeImageDTO(BaseModel):
+    """Recipe image DTO matching the recipe service"""
+    url: str
+
 class RecipeIngredientDTO(BaseModel):
     """Recipe ingredient DTO matching the recipe service"""
     name: str
@@ -13,16 +17,12 @@ class RecipeStepDTO(BaseModel):
     """Recipe step DTO matching the recipe service"""
     order: int
     details: str
-    recipeImageDTOS: Optional[List[Dict[str, Any]]] = []
+    recipeImageDTOS: Optional[List[RecipeImageDTO]] = []
 
 class RecipeTagDTO(BaseModel):
     """Recipe tag DTO matching the recipe service"""
     id: Optional[int] = None
     name: str
-
-class RecipeImageDTO(BaseModel):
-    """Recipe image DTO matching the recipe service"""
-    url: str
 
 class RecipeMetadataDTO(BaseModel):
     """Recipe metadata DTO matching the recipe service"""
@@ -51,64 +51,44 @@ class InitRecipeRequest(BaseModel):
 
 # GenAI service specific models
 class RecipeData(BaseModel):
-    """Recipe data for indexing in vector store"""
-    id: int
-    title: str
-    description: Optional[str] = None
-    ingredients: List[RecipeIngredientDTO]
-    steps: List[RecipeStepDTO]
-    tags: List[str] = []
-    serving_size: Optional[int] = None
-    user_id: int
-
-class ChatMessage(BaseModel):
-    """Individual chat message"""
-    role: str  # "user" or "assistant"
-    content: str
-    timestamp: datetime = Field(default_factory=datetime.now)
+    """Complete recipe data for vectorization"""
+    metadata: RecipeMetadataDTO
+    details: RecipeDetailsDTO
 
 class ChatRequest(BaseModel):
     """Chat request from user"""
     message: str
     user_id: str
-    conversation_id: Optional[str] = None
-    context: Optional[str] = None
 
 class ChatResponse(BaseModel):
     """Chat response from AI"""
     reply: str
-    conversation_id: str
     sources: Optional[List[Dict[str, Any]]] = None
-    recipe_created: Optional[Dict[str, Any]] = None
+    recipe_suggestion: Optional[Dict[str, Any]] = None
     timestamp: datetime = Field(default_factory=datetime.now)
 
-class RecipeCreationRequest(BaseModel):
-    """Request to create a new recipe"""
-    description: str
-    ingredients: List[str]
-    dietary_restrictions: Optional[List[str]] = None
-    cuisine_type: Optional[str] = None
-    difficulty: Optional[str] = None
-    serving_size: Optional[int] = None
-    user_id: int
+class RecipeIndexRequest(BaseModel):
+    """Request to index a recipe in vector store"""
+    recipe: RecipeData
 
-class RecipeCreationResponse(BaseModel):
-    """Response with created recipe"""
-    recipe: Dict[str, Any]
-    created_at: datetime = Field(default_factory=datetime.now)
+class RecipeIndexResponse(BaseModel):
+    """Response for recipe indexing"""
+    message: str
+    recipe_id: int
+    indexed_at: datetime = Field(default_factory=datetime.now)
+
+class RecipeDeleteRequest(BaseModel):
+    """Request to delete a recipe from vector store"""
+    recipe_id: int
+
+class RecipeDeleteResponse(BaseModel):
+    """Response for recipe deletion"""
+    message: str
+    recipe_id: int
+    deleted_at: datetime = Field(default_factory=datetime.now)
 
 class HealthResponse(BaseModel):
     """Health check response"""
     status: str
     services: Dict[str, str]
-    timestamp: datetime = Field(default_factory=datetime.now)
-
-class IndexRecipeRequest(BaseModel):
-    """Request to index a recipe"""
-    recipe: RecipeData
-
-class IndexRecipeResponse(BaseModel):
-    """Response for recipe indexing"""
-    message: str
-    recipe_id: int
-    indexed_at: datetime = Field(default_factory=datetime.now) 
+    timestamp: datetime = Field(default_factory=datetime.now) 

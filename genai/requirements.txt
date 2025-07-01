@@ -8,7 +8,6 @@ loguru==0.7.3
 
 # Modern LangChain v0.3
 langchain==0.3.26
-langchain-core==0.3.26
 langchain-community==0.3.26
 langchain-ollama==0.3.3
 

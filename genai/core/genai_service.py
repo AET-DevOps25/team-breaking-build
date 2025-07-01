@@ -1,490 +1,324 @@
-import uuid
-from typing import List, Optional, Dict, Any
-from datetime import datetime
-
-# Modern LangChain imports
-from langchain_ollama import ChatOllama, OllamaEmbeddings
-from langchain_community.vectorstores import Weaviate
-from langchain_core.documents import Document
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.messages import HumanMessage, AIMessage
-from langchain_core.runnables import RunnablePassthrough
-from langchain_core.chat_history import BaseChatMessageHistory
-from langchain_community.chat_message_histories import ChatMessageHistory
-
+import logging
+from typing import List, Dict
 import weaviate
-from loguru import logger
+from weaviate.classes.init import Auth
+from langchain_community.vectorstores import Weaviate
+from langchain_ollama import OllamaEmbeddings, ChatOllama
+from langchain.schema import Document
+from langchain.prompts import ChatPromptTemplate
+from langchain.schema.output_parser import StrOutputParser
 
-from config import config
-from models.schemas import (
-    RecipeData,
-    ChatRequest,
-    ChatResponse,
-    RecipeCreationRequest,
-    RecipeCreationResponse,
-    RecipeMetadataDTO,
-    RecipeTagDTO
-)
-from services.recipe_integration import RecipeServiceIntegration, parse_llm_recipe_response
+from config import settings
+from models.schemas import RecipeData, ChatResponse
+
+logger = logging.getLogger(__name__)
 
 class GenAIService:
-    """Core GenAI service using modern LangChain v0.3 for chatbot and recipe creation"""
+    """Simplified GenAI service for recipe vectorization and LLM interactions"""
     
     def __init__(self):
-        self.llm = None
-        self.embeddings = None
+        self.weaviate_client = None
         self.vector_store = None
-        self.retriever = None
-        self.conversations: Dict[str, BaseChatMessageHistory] = {}
-        self.recipe_service = RecipeServiceIntegration()
-        self.initialize_services()
+        self.embeddings = None
+        self.llm = None
+        self._initialize_services()
     
-    def initialize_services(self):
-        """Initialize LLM and vector store services using modern LangChain patterns"""
+    def _initialize_services(self):
+        """Initialize Weaviate client, vector store, and LLM"""
         try:
-            logger.info("Initializing LLM")
-            self.llm = ChatOllama(
-                model=config.LLM_CHAT_MODEL,
-                base_url=config.LLM_BASE_URL,
-                temperature=0.7,
-                client_kwargs={"headers": {"Authorization": f"Bearer {config.LLM_API_KEY}"}},
+            # Initialize Weaviate client
+            auth_config = Auth.api_key(settings.weaviate_api_key) if settings.weaviate_api_key else None
+            self.weaviate_client = weaviate.connect_to_wcs(
+                cluster_url=settings.weaviate_url,
+                auth_credentials=auth_config
+            ) if settings.weaviate_api_key else weaviate.connect_to_local(
+                host=settings.weaviate_url.replace("http://", "").replace("https://", "")
             )
             
             # Initialize embeddings
-            logger.info("Initializing embeddings with LLM")
             self.embeddings = OllamaEmbeddings(
-                model=config.LLM_EMBEDDING_MODEL,
-                base_url=config.LLM_BASE_URL,
-                client_kwargs={"headers": {"Authorization": f"Bearer {config.LLM_API_KEY}"}},
+                model=settings.llm_model,
+                base_url=settings.llm_base_url
             )
             
-            # Initialize Weaviate vector store using current API
-            logger.info("Initializing Weaviate vector store")
+            # Initialize LLM
+            self.llm = ChatOllama(
+                model=settings.llm_model,
+                base_url=settings.llm_base_url,
+                temperature=settings.llm_temperature
+            )
             
-            try:
-                # Create Weaviate client
-                if config.WEAVIATE_API_KEY:
-                    client = weaviate.connect_to_wcs(
-                        cluster_url=config.WEAVIATE_URL,
-                        auth_credentials=weaviate.auth.Auth.api_key(config.WEAVIATE_API_KEY),
-                        headers={
-                            "X-OpenAI-Api-Key": config.WEAVIATE_API_KEY
-                        } if config.WEAVIATE_API_KEY else {}
-                    )
-                else:
-                    # For local development without API key
-                    client = weaviate.connect_to_local(
-                        host=config.WEAVIATE_URL.replace("http://", "").replace("https://", ""),
-                        headers={
-                            "X-OpenAI-Api-Key": config.WEAVIATE_API_KEY
-                        } if config.WEAVIATE_API_KEY else {}
-                    )
-                
-                # Create or get collection
-                collection_name = config.WEAVIATE_INDEX_NAME
-                if not client.collections.exists(collection_name):
-                    logger.info(f"Creating collection: {collection_name}")
-                    client.collections.create(
-                        name=collection_name,
-                        properties=[
-                            {"name": "title", "dataType": ["text"]},
-                            {"name": "description", "dataType": ["text"]},
-                            {"name": "ingredients", "dataType": ["text[]"]},
-                            {"name": "steps", "dataType": ["text[]"]},
-                            {"name": "tags", "dataType": ["text[]"]},
-                            {"name": "recipe_id", "dataType": ["int"]},
-                            {"name": "user_id", "dataType": ["int"]},
-                            {"name": "serving_size", "dataType": ["int"]},
-                        ],
-                        vectorizer_config=weaviate.config.Configure.Vectorizer.text2vec_openai(),
-                        module_config=weaviate.config.Configure.Module(
-                            name="text2vec-openai",
-                            tag="latest",
-                            repo="weaviate/text2vec-openai"
-                        )
-                    )
-                
-                # Initialize LangChain Weaviate integration
-                self.vector_store = Weaviate(
-                    client=client,
-                    index_name=collection_name,
-                    text_key="content",
-                    embedding=self.embeddings
-                )
-                
-                self.retriever = self.vector_store.as_retriever(
-                    search_type="similarity",
-                    search_kwargs={"k": 5}
-                )
-                
-                logger.info("Weaviate vector store initialized successfully")
-                
-            except Exception as weaviate_error:
-                logger.warning(f"Failed to initialize Weaviate: {weaviate_error}")
-                logger.info("Falling back to in-memory vector store for development")
-                # Fallback to simple in-memory storage for development
-                self.vector_store = None
-                self.retriever = None
+            # Create or get vector store
+            self._setup_vector_store()
             
             logger.info("GenAI service initialized successfully")
             
         except Exception as e:
-            logger.error(f"Error initializing GenAI service: {e}")
+            logger.error(f"Failed to initialize GenAI service: {e}")
             raise
     
-    async def chat(self, request: ChatRequest) -> ChatResponse:
-        """Handle chat conversation with recipe search and creation capabilities using modern LCEL"""
+    def _setup_vector_store(self):
+        """Setup Weaviate vector store with collection"""
         try:
-            conversation_id = request.conversation_id or str(uuid.uuid4())
+            # Check if collection exists, create if not
+            collections = self.weaviate_client.collections.list_all()
+            collection_exists = any(col.name == settings.weaviate_collection_name for col in collections)
             
-            # Get or create conversation memory using modern approach
-            if conversation_id not in self.conversations:
-                self.conversations[conversation_id] = ChatMessageHistory()
-            
-            memory = self.conversations[conversation_id]
-            
-            # Check if user wants to create a recipe
-            if self._is_recipe_creation_request(request.message):
-                return await self._handle_recipe_creation(request, conversation_id)
-            
-            # Search for relevant recipes
-            relevant_recipes = await self._search_recipes(request.message)
-            
-            # Create context from relevant recipes
-            context = self._create_context_from_recipes(relevant_recipes)
-            
-            # Create modern chat prompt using ChatPromptTemplate
-            chat_prompt = ChatPromptTemplate.from_messages([
-                ("system", """You are a helpful cooking assistant. You can help users find recipes and create new ones.
-                
-Available recipes context:
-{recipe_context}"""),
-                ("human", "{user_message}")
-            ])
-            
-            # Create modern LCEL chain with memory
-            chain = (
-                RunnablePassthrough.assign(
-                    chat_history=lambda x: self._get_chat_history(memory),
-                    recipe_context=lambda x: context
+            if not collection_exists:
+                # Create collection with schema
+                self.weaviate_client.collections.create(
+                    name=settings.weaviate_collection_name,
+                    properties=[
+                        {"name": "recipe_id", "dataType": ["int"]},
+                        {"name": "title", "dataType": ["text"]},
+                        {"name": "description", "dataType": ["text"]},
+                        {"name": "ingredients", "dataType": ["text[]"]},
+                        {"name": "steps", "dataType": ["text[]"]},
+                        {"name": "tags", "dataType": ["text[]"]},
+                        {"name": "user_id", "dataType": ["int"]},
+                        {"name": "serving_size", "dataType": ["int"]},
+                        {"name": "content", "dataType": ["text"]}
+                    ],
+                    vectorizer_config=weaviate.classes.config.Configure.Vectorizer.text2vec_transformers()
                 )
-                | chat_prompt
-                | self.llm
-            )
+                logger.info(f"Created Weaviate collection: {settings.weaviate_collection_name}")
             
-            # Add user message to memory
-            memory.add_message(HumanMessage(content=request.message))
-            
-            # Generate response
-            response = await chain.ainvoke({
-                "user_message": request.message
-            })
-            
-            # Extract the text from the response
-            response_text = response.content if hasattr(response, 'content') else str(response)
-            
-            # Add AI response to memory
-            memory.add_message(AIMessage(content=response_text))
-            
-            return ChatResponse(
-                reply=response_text,
-                conversation_id=conversation_id,
-                sources=[{"title": recipe.title, "id": recipe.id} for recipe in relevant_recipes[:3]]
+            # Initialize vector store
+            self.vector_store = Weaviate(
+                client=self.weaviate_client,
+                index_name=settings.weaviate_collection_name,
+                text_key="content",
+                embedding=self.embeddings
             )
             
         except Exception as e:
-            logger.error(f"Error in chat: {e}")
-            return ChatResponse(
-                reply="I'm sorry, I encountered an error. Please try again.",
-                conversation_id=request.conversation_id or str(uuid.uuid4())
-            )
-    
-    def _get_chat_history(self, memory: BaseChatMessageHistory) -> str:
-        """Get formatted chat history from memory"""
-        messages = memory.messages
-        if not messages:
-            return ""
-        
-        # Format messages for context
-        formatted_messages = []
-        for msg in messages[-6:]:  # Last 6 messages for context
-            if isinstance(msg, HumanMessage):
-                formatted_messages.append(f"User: {msg.content}")
-            elif isinstance(msg, AIMessage):
-                formatted_messages.append(f"Assistant: {msg.content}")
-        
-        return "\n".join(formatted_messages)
-    
-    async def create_recipe(self, request: RecipeCreationRequest) -> RecipeCreationResponse:
-        """Create a new recipe using the LLM with modern patterns"""
-        try:
-            # Create modern prompt template
-            recipe_prompt = ChatPromptTemplate.from_messages([
-                ("system", """You are a recipe creation expert. Create a complete recipe based on the user's requirements.
-
-Please format the recipe as follows:
-
-Title: [Recipe Name]
-
-Description: [Brief description of the recipe]
-
-Serving Size: [Number of servings]
-
-Ingredients:
-- [Amount] [Unit] [Ingredient Name]
-- [Amount] [Unit] [Ingredient Name]
-...
-
-Instructions:
-- [Step 1 details]
-- [Step 2 details]
-- [Step 3 details]
-...
-
-Make sure the recipe is complete, practical, and follows standard cooking practices."""),
-                ("human", """Create a recipe with these requirements:
-
-Description: {description}
-Ingredients: {ingredients}
-Dietary Restrictions: {dietary_restrictions}
-Cuisine Type: {cuisine_type}
-Difficulty: {difficulty}
-Serving Size: {serving_size}""")
-            ])
-            
-            # Create LCEL chain
-            recipe_chain = recipe_prompt | self.llm
-            
-            # Generate recipe
-            response = await recipe_chain.ainvoke({
-                "description": request.description,
-                "ingredients": ", ".join(request.ingredients),
-                "dietary_restrictions": ", ".join(request.dietary_restrictions) if request.dietary_restrictions else "None",
-                "cuisine_type": request.cuisine_type or "General",
-                "difficulty": request.difficulty or "Medium",
-                "serving_size": request.serving_size or 4
-            })
-            
-            # Extract the text from the response
-            recipe_text = response.content if hasattr(response, 'content') else str(response)
-            
-            # Parse the LLM response into proper DTOs
-            metadata, details = parse_llm_recipe_response(recipe_text)
-            metadata.userId = request.user_id
-            
-            # Add tags based on cuisine type and dietary restrictions
-            tags = []
-            if request.cuisine_type:
-                tags.append(RecipeTagDTO(name=request.cuisine_type.lower()))
-            if request.dietary_restrictions:
-                for restriction in request.dietary_restrictions:
-                    tags.append(RecipeTagDTO(name=restriction.lower()))
-            metadata.tags = tags
-            
-            # Create recipe in the recipe service
-            created_recipe = await self.recipe_service.create_recipe(metadata, details)
-            
-            if created_recipe:
-                return RecipeCreationResponse(
-                    recipe={
-                        "id": created_recipe.id,
-                        "title": created_recipe.title,
-                        "description": created_recipe.description,
-                        "ingredients": details.recipeIngredients,
-                        "steps": details.recipeSteps,
-                        "tags": [tag.name for tag in created_recipe.tags],
-                        "serving_size": details.servingSize
-                    }
-                )
-            else:
-                raise Exception("Failed to create recipe in recipe service")
-                
-        except Exception as e:
-            logger.error(f"Error creating recipe: {e}")
+            logger.error(f"Failed to setup vector store: {e}")
             raise
     
-    async def index_recipe(self, recipe_data: RecipeData) -> bool:
+    def index_recipe(self, recipe: RecipeData) -> bool:
         """Index a recipe in the vector store"""
         try:
-            if not self.vector_store:
-                logger.warning("Vector store not available, skipping indexing")
-                return False
-                
-            # Create document for indexing
-            ingredients_text = ", ".join([
-                f"{ing.name} {ing.amount or ''} {ing.unit or ''}".strip()
-                for ing in recipe_data.ingredients
-            ])
+            # Prepare content for vectorization
+            content = self._prepare_recipe_content(recipe)
             
-            steps_text = " ".join([
-                f"{step.order}. {step.details}"
-                for step in recipe_data.steps
-            ])
-            
-            tags_text = ", ".join(recipe_data.tags)
-            
-            document_text = f"""
-            Title: {recipe_data.title}
-            Description: {recipe_data.description or ''}
-            Ingredients: {ingredients_text}
-            Steps: {steps_text}
-            Tags: {tags_text}
-            Serving Size: {recipe_data.serving_size or 'Not specified'}
-            """
-            
-            # Create document using modern Document class
-            document = Document(
-                page_content=document_text,
+            # Create document for vector store
+            doc = Document(
+                page_content=content,
                 metadata={
-                    "id": recipe_data.id,
-                    "title": recipe_data.title,
-                    "user_id": recipe_data.user_id,
-                    "tags": recipe_data.tags,
-                    "serving_size": recipe_data.serving_size
+                    "recipe_id": recipe.metadata.id,
+                    "title": recipe.metadata.title,
+                    "description": recipe.metadata.description or "",
+                    "ingredients": [ing.name for ing in recipe.details.recipeIngredients],
+                    "steps": [step.details for step in recipe.details.recipeSteps],
+                    "tags": [tag.name for tag in recipe.metadata.tags],
+                    "user_id": recipe.metadata.userId,
+                    "serving_size": recipe.details.servingSize
                 }
             )
             
             # Add to vector store
-            self.vector_store.add_documents([document])
-            logger.info(f"Indexed recipe {recipe_data.id}: {recipe_data.title}")
+            self.vector_store.add_documents([doc])
+            
+            logger.info(f"Indexed recipe {recipe.metadata.id}: {recipe.metadata.title}")
             return True
             
         except Exception as e:
-            logger.error(f"Error indexing recipe {recipe_data.id}: {e}")
+            logger.error(f"Failed to index recipe {recipe.metadata.id}: {e}")
             return False
     
-    async def sync_recipes_from_service(self) -> int:
-        """Sync all recipes from the recipe service to the vector store"""
+    def delete_recipe(self, recipe_id: int) -> bool:
+        """Delete a recipe from the vector store"""
         try:
-            recipes = await self.recipe_service.sync_all_recipes()
-            indexed_count = 0
+            # Delete by metadata filter
+            self.weaviate_client.collections.get(settings.weaviate_collection_name).data.delete_many(
+                where=weaviate.classes.query.Filter.by_property("recipe_id").equal(recipe_id)
+            )
             
-            for recipe in recipes:
-                # Convert to RecipeData format
-                recipe_data = RecipeData(
-                    id=recipe.id,
-                    title=recipe.title,
-                    description=recipe.description,
-                    ingredients=[],  # We don't have details in metadata
-                    steps=[],        # We don't have details in metadata
-                    tags=[tag.name for tag in recipe.tags],
-                    serving_size=recipe.servingSize,
-                    user_id=recipe.userId
-                )
-                
-                if await self.index_recipe(recipe_data):
-                    indexed_count += 1
-            
-            logger.info(f"Synced {indexed_count} recipes to vector store")
-            return indexed_count
+            logger.info(f"Deleted recipe {recipe_id} from vector store")
+            return True
             
         except Exception as e:
-            logger.error(f"Error syncing recipes: {e}")
-            return 0
+            logger.error(f"Failed to delete recipe {recipe_id}: {e}")
+            return False
     
-    def _is_recipe_creation_request(self, message: str) -> bool:
-        """Check if the user message is requesting recipe creation"""
-        creation_keywords = [
-            "create", "make", "new", "generate", "recipe", "cook", "prepare", "dish"
+    def chat(self, message: str, user_id: str) -> ChatResponse:
+        """Process chat message and return response"""
+        try:
+            # Search for relevant recipes
+            search_results = self.vector_store.similarity_search(
+                message,
+                k=settings.max_search_results
+            )
+            
+            # Prepare context from search results
+            context = self._prepare_search_context(search_results)
+            
+            # Determine if user wants to create a recipe
+            is_creation_request = self._is_recipe_creation_request(message)
+            
+            if is_creation_request:
+                return self._handle_recipe_creation(message, context, user_id)
+            else:
+                return self._handle_recipe_search(message, context, search_results)
+                
+        except Exception as e:
+            logger.error(f"Error in chat: {e}")
+            return ChatResponse(
+                reply="I'm sorry, I encountered an error processing your request. Please try again.",
+                sources=None,
+                recipe_suggestion=None
+            )
+    
+    def _prepare_recipe_content(self, recipe: RecipeData) -> str:
+        """Prepare recipe content for vectorization"""
+        content_parts = [
+            f"Title: {recipe.metadata.title}",
+            f"Description: {recipe.metadata.description or 'No description'}"
         ]
         
-        message_lower = message.lower()
-        # Check if message contains at least 2 creation keywords
-        keyword_count = sum(1 for keyword in creation_keywords if keyword in message_lower)
-        return keyword_count >= 2
+        # Add ingredients
+        ingredients_text = ", ".join([
+            f"{ing.amount} {ing.unit} {ing.name}" if ing.amount and ing.unit 
+            else f"{ing.amount} {ing.name}" if ing.amount 
+            else ing.name
+            for ing in recipe.details.recipeIngredients
+        ])
+        content_parts.append(f"Ingredients: {ingredients_text}")
+        
+        # Add steps
+        steps_text = " ".join([f"{i+1}. {step.details}" for i, step in enumerate(recipe.details.recipeSteps)])
+        content_parts.append(f"Steps: {steps_text}")
+        
+        # Add tags
+        if recipe.metadata.tags:
+            tags_text = ", ".join([tag.name for tag in recipe.metadata.tags])
+            content_parts.append(f"Tags: {tags_text}")
+        
+        return " | ".join(content_parts)
     
-    async def _handle_recipe_creation(self, request: ChatRequest, conversation_id: str) -> ChatResponse:
-        """Handle recipe creation request in chat using modern patterns"""
-        try:
-            # Extract recipe requirements from the message
-            recipe_request = RecipeCreationRequest(
-                description=request.message,
-                ingredients=[],  # Would need more sophisticated parsing
-                user_id=int(request.user_id) if request.user_id.isdigit() else 1
-            )
-            
-            # Create the recipe
-            recipe_response = await self.create_recipe(recipe_request)
-            
-            # Create a friendly response
-            response_text = f"""I've created a recipe for you! Here's what I made:
-
-**{recipe_response.recipe['title']}**
-
-{recipe_response.recipe['description']}
-
-**Ingredients:**
-{chr(10).join([f"• {ing['name']} {ing['amount'] or ''} {ing['unit'] or ''}".strip() for ing in recipe_response.recipe['ingredients']])}
-
-**Instructions:**
-{chr(10).join([f"{i+1}. {step['details']}" for i, step in enumerate(recipe_response.recipe['steps'])])}
-
-The recipe has been saved to your collection!"""
-            
-            # Add messages to memory
-            if conversation_id in self.conversations:
-                memory = self.conversations[conversation_id]
-                memory.add_message(HumanMessage(content=request.message))
-                memory.add_message(AIMessage(content=response_text))
-            
-            return ChatResponse(
-                reply=response_text,
-                conversation_id=conversation_id,
-                recipe_created=recipe_response.recipe
-            )
-            
-        except Exception as e:
-            logger.error(f"Error handling recipe creation: {e}")
-            return ChatResponse(
-                reply="I'm sorry, I couldn't create the recipe. Please try again with more specific details.",
-                conversation_id=conversation_id
-            )
-    
-    async def _search_recipes(self, query: str) -> List[RecipeMetadataDTO]:
-        """Search for relevant recipes"""
-        try:
-            if not self.retriever:
-                logger.warning("Vector store not available, returning empty results")
-                return []
-                
-            # Use vector store to find relevant recipes
-            docs = self.retriever.get_relevant_documents(query)
-            
-            # Extract recipe IDs from documents
-            recipe_ids = []
-            for doc in docs:
-                recipe_id = doc.metadata.get("id")
-                if recipe_id:
-                    recipe_ids.append(recipe_id)
-            
-            # Fetch full recipe data from recipe service
-            recipes = []
-            for recipe_id in recipe_ids[:5]:  # Limit to top 5
-                recipe = await self.recipe_service.get_recipe(recipe_id)
-                if recipe:
-                    recipes.append(recipe)
-            
-            return recipes
-            
-        except Exception as e:
-            logger.error(f"Error searching recipes: {e}")
-            return []
-    
-    def _create_context_from_recipes(self, recipes: List[RecipeMetadataDTO]) -> str:
-        """Create context string from relevant recipes"""
-        if not recipes:
-            return "No relevant recipes found."
+    def _prepare_search_context(self, search_results: List[Document]) -> str:
+        """Prepare context from search results"""
+        if not search_results:
+            return "No recipes found."
         
         context_parts = []
-        for recipe in recipes:
-            tags_text = ", ".join([tag.name for tag in recipe.tags])
-            context_parts.append(f"Recipe: {recipe.title}\nDescription: {recipe.description or 'No description'}\nTags: {tags_text}")
+        for i, doc in enumerate(search_results, 1):
+            metadata = doc.metadata
+            context_parts.append(
+                f"Recipe {i}: {metadata.get('title', 'Unknown')} - "
+                f"Ingredients: {', '.join(metadata.get('ingredients', []))} - "
+                f"Tags: {', '.join(metadata.get('tags', []))}"
+            )
         
-        return "\n\n".join(context_parts)
+        return "\n".join(context_parts)
     
-    async def close(self):
-        """Clean up resources"""
+    def _is_recipe_creation_request(self, message: str) -> bool:
+        """Check if user wants to create a recipe"""
+        creation_keywords = [
+            "create", "make", "new recipe", "recipe for", "how to make",
+            "cook", "prepare", "dish", "meal", "food"
+        ]
+        message_lower = message.lower()
+        return any(keyword in message_lower for keyword in creation_keywords)
+    
+    def _handle_recipe_search(self, message: str, context: str, search_results: List[Document]) -> ChatResponse:
+        """Handle recipe search requests"""
+        prompt = ChatPromptTemplate.from_template("""
+        You are a helpful recipe assistant. Based on the user's query and the available recipes, provide a helpful response.
+        
+        User query: {message}
+        
+        Available recipes:
+        {context}
+        
+        Provide a helpful response about the recipes that match the user's query. If no recipes match, suggest alternatives or ask for clarification.
+        """)
+        
+        chain = prompt | self.llm | StrOutputParser()
+        reply = chain.invoke({"message": message, "context": context})
+        
+        # Prepare sources with recipe IDs
+        sources = []
+        for doc in search_results:
+            sources.append({
+                "title": doc.metadata.get("title", "Unknown"),
+                "recipe_id": doc.metadata.get("recipe_id"),
+                "similarity_score": 0.8  # Placeholder
+            })
+        
+        return ChatResponse(
+            reply=reply,
+            sources=sources if sources else None,
+            recipe_suggestion=None
+        )
+    
+    def _handle_recipe_creation(self, message: str, context: str, user_id: str) -> ChatResponse:
+        """Handle recipe creation requests"""
+        prompt = ChatPromptTemplate.from_template("""
+        You are a recipe creation assistant. Based on the user's request and similar recipes, create a new recipe in JSON format.
+        
+        User request: {message}
+        
+        Similar recipes for reference:
+        {context}
+        
+        IMPORTANT: You must return ONLY valid JSON with the exact structure shown below. Do not include any additional text, explanations, or markdown formatting.
+        
+        STRICT JSON STRUCTURE:
+        {{
+            "metadata": {{
+                "title": "Recipe Title",
+                "description": "Recipe description",
+                "userId": {user_id},
+                "tags": [{{"name": "tag1"}}, {{"name": "tag2"}}]
+            }},
+            "details": {{
+                "servingSize": 4,
+                "recipeIngredients": [
+                    {{"name": "ingredient name", "unit": "unit", "amount": 1.0}}
+                ],
+                "recipeSteps": [
+                    {{"order": 1, "details": "Step description"}}
+                ]
+            }}
+        }}
+        
+        CRITICAL RULES:
+        1. Return ONLY the JSON, no other text
+        2. Use exact field names as shown above
+        3. Ensure all JSON syntax is valid
+        4. Include realistic ingredients and steps
+        5. Make sure all required fields are present
+        """)
+        
+        chain = prompt | self.llm | StrOutputParser()
+        recipe_json = chain.invoke({"message": message, "context": context, "user_id": user_id})
+        
+        return ChatResponse(
+            reply="I have come up with a recipe for you. Would you like to look at it?",
+            sources=None,
+            recipe_suggestion={"recipe_data": recipe_json}
+        )
+    
+    def get_health_status(self) -> Dict[str, str]:
+        """Get health status of all services"""
+        status = {}
+        
+        # Check Weaviate
         try:
-            await self.recipe_service.close()
+            self.weaviate_client.collections.list_all()
+            status["weaviate"] = "healthy"
         except Exception as e:
-            logger.error(f"Error closing GenAI service: {e}") 
+            status["weaviate"] = f"unhealthy: {str(e)}"
+        
+        # Check LLM
+        try:
+            # Simple test call
+            test_prompt = ChatPromptTemplate.from_template("Say 'OK'")
+            chain = test_prompt | self.llm | StrOutputParser()
+            chain.invoke({})
+            status["llm"] = "healthy"
+        except Exception as e:
+            status["llm"] = f"unhealthy: {str(e)}"
+        
+        return status 

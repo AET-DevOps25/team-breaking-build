@@ -11,14 +11,13 @@ from .schemas import (
     
     # GenAI service models
     RecipeData,
-    ChatMessage,
     ChatRequest,
     ChatResponse,
-    RecipeCreationRequest,
-    RecipeCreationResponse,
+    RecipeIndexRequest,
+    RecipeIndexResponse,
+    RecipeDeleteRequest,
+    RecipeDeleteResponse,
     HealthResponse,
-    IndexRecipeRequest,
-    IndexRecipeResponse
 )
 
 __all__ = [
@@ -33,12 +32,11 @@ __all__ = [
     
     # GenAI service models
     'RecipeData',
-    'ChatMessage',
     'ChatRequest',
     'ChatResponse',
-    'RecipeCreationRequest',
-    'RecipeCreationResponse',
+    'RecipeIndexRequest',
+    'RecipeIndexResponse',
+    'RecipeDeleteRequest',
+    'RecipeDeleteResponse',
     'HealthResponse',
-    'IndexRecipeRequest',
-    'IndexRecipeResponse'
 ] 
