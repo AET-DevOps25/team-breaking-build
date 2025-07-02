@@ -5,20 +5,20 @@ from datetime import datetime
 class ChatResponse(BaseModel):
     """Chat response from AI"""
     reply: str
-    sources: Optional[List[Dict[str, Any]]] = None
+    sources: Optional[List[str]] = None
     recipe_suggestion: Optional[Dict[str, Any]] = None
     timestamp: datetime = Field(default_factory=datetime.now)
 
 class RecipeIndexResponse(BaseModel):
     """Response for recipe indexing"""
     message: str
-    recipe_id: int
+    recipe_id: str
     indexed_at: datetime = Field(default_factory=datetime.now)
 
 class RecipeDeleteResponse(BaseModel):
     """Response for recipe deletion"""
     message: str
-    recipe_id: int
+    recipe_id: str
     deleted_at: datetime = Field(default_factory=datetime.now)
 
 class RecipeSuggestionResponse(BaseModel):

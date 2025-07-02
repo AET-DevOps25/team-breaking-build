@@ -29,7 +29,7 @@ class RAGHelper:
             # Initialize Weaviate client
             self._initialize_weaviate_client()
             
-            # Initialize vector store
+            # Initialize vector store with proper schema
             self._setup_vector_store()
             
             logger.info("RAG helper initialized successfully")
@@ -59,44 +59,103 @@ class RAGHelper:
             raise
     
     def _setup_vector_store(self):
-        """Setup Weaviate vector store for recipes"""
+        """Setup Weaviate vector store for recipes with proper schema"""
         try:
-            # Create vector store with a sample recipe document to establish schema
-            sample_recipe_doc = Document(
-                page_content="Sample Recipe: Placeholder recipe for schema initialization",
-                metadata={
-                    "recipe_id": 0,
-                    "title": "Schema Initialization Recipe",
-                    "description": "Placeholder",
-                    "ingredients": ["placeholder"],
-                    "steps": ["placeholder step"],
-                    "tags": ["initialization"],
-                    "user_id": 0,
-                    "serving_size": 1,
-                    "is_placeholder": True
-                }
+            # Check if collection already exists (case insensitive)
+            collections = self.weaviate_client.collections.list_all()
+            logger.info(f"Existing collections: {collections}")
+            
+            # Check for any variation of "recipes" collection name
+            collection_exists = any(
+                col.lower() in ["recipes", "recipe"] for col in collections
             )
             
-            # Initialize vector store using from_documents
-            self.db = WeaviateVectorStore.from_documents(
-                documents=[sample_recipe_doc],
-                embedding=embeddings_model,
-                client=self.weaviate_client,
-                index_name="recipes"
-            )
-            
-            # Remove the placeholder document
-            try:
-                self.weaviate_client.collections.get("recipes").data.delete_many(
-                    where=Filter.by_property("is_placeholder").equal(True)
+            if collection_exists:
+                # Collection exists, just get it
+                self.db = WeaviateVectorStore(
+                    client=self.weaviate_client,
+                    index_name="recipes",
+                    embedding=embeddings_model,
+                    text_key="text"
                 )
-            except Exception as e:
-                logger.warning(f"Could not remove placeholder document: {e}")
-            
-            logger.info("Created and initialized vector store collection: recipes")
+                logger.info("Using existing recipes collection")
+            else:
+                # Create new collection with proper schema for string recipe_id
+                self._create_collection_with_schema()
+                logger.info("Created new recipes collection with string recipe_id schema")
             
         except Exception as e:
             logger.error(f"Failed to setup vector store: {e}")
+            raise
+    
+    def _create_collection_with_schema(self):
+        """Create Weaviate collection with proper schema for string recipe_id"""
+        try:
+            # Create the collection with proper property definitions
+            self.weaviate_client.collections.create(
+                name="recipes",
+                properties=[
+                    weaviate.classes.config.Property(
+                        name="recipe_id",
+                        data_type=weaviate.classes.config.DataType.TEXT,
+                        description="Combined recipe and branch ID"
+                    ),
+                    weaviate.classes.config.Property(
+                        name="title",
+                        data_type=weaviate.classes.config.DataType.TEXT,
+                        description="Recipe title"
+                    ),
+                    weaviate.classes.config.Property(
+                        name="description",
+                        data_type=weaviate.classes.config.DataType.TEXT,
+                        description="Recipe description"
+                    ),
+                    weaviate.classes.config.Property(
+                        name="ingredients",
+                        data_type=weaviate.classes.config.DataType.TEXT_ARRAY,
+                        description="List of ingredients"
+                    ),
+                    weaviate.classes.config.Property(
+                        name="steps",
+                        data_type=weaviate.classes.config.DataType.TEXT_ARRAY,
+                        description="List of cooking steps"
+                    ),
+                    weaviate.classes.config.Property(
+                        name="tags",
+                        data_type=weaviate.classes.config.DataType.TEXT_ARRAY,
+                        description="Recipe tags"
+                    ),
+                    weaviate.classes.config.Property(
+                        name="user_id",
+                        data_type=weaviate.classes.config.DataType.INT,
+                        description="User ID who created the recipe"
+                    ),
+                    weaviate.classes.config.Property(
+                        name="serving_size",
+                        data_type=weaviate.classes.config.DataType.INT,
+                        description="Number of servings"
+                    ),
+                    weaviate.classes.config.Property(
+                        name="is_placeholder",
+                        data_type=weaviate.classes.config.DataType.BOOL,
+                        description="Flag for placeholder documents"
+                    )
+                ],
+                vectorizer_config=weaviate.classes.config.Configure.Vectorizer.none()
+            )
+            
+            # Initialize vector store
+            self.db = WeaviateVectorStore(
+                client=self.weaviate_client,
+                index_name="recipes",
+                embedding=embeddings_model,
+                text_key="text"
+            )
+            
+            logger.info("Created recipes collection with string recipe_id schema")
+            
+        except Exception as e:
+            logger.error(f"Failed to create collection with schema: {e}")
             raise
     
     def add_recipe(self, recipe_content: str, metadata: Dict[str, Any]) -> bool:
@@ -105,7 +164,7 @@ class RAGHelper:
         
         Args:
             recipe_content: The recipe content to vectorize.
-            metadata: Metadata for the recipe.
+            metadata: Metadata for the recipe (includes combined recipe_id).
         
         Returns:
             True if successful, False otherwise.
@@ -147,27 +206,52 @@ class RAGHelper:
             logger.error(f"Failed to retrieve documents: {e}")
             return []
     
-    def delete_recipe(self, recipe_id: int) -> bool:
+    def delete_recipe(self, combined_id: str) -> bool:
         """
-        Delete a recipe from the vector store.
+        Delete a recipe from the vector store by combined ID.
         
         Args:
-            recipe_id: The ID of the recipe to delete.
+            combined_id: The combined recipe+branch ID (format: "recipeID+branchID").
         
         Returns:
             True if successful, False otherwise.
         """
         try:
-            # Delete by recipe_id filter
+            # Delete by exact combined recipe_id
             self.weaviate_client.collections.get("recipes").data.delete_many(
-                where=Filter.by_property("recipe_id").equal(recipe_id)
+                where=Filter.by_property("recipe_id").equal(combined_id)
             )
             
-            logger.info(f"Deleted recipe {recipe_id} from vector store")
+            logger.info(f"Deleted recipe {combined_id} from vector store")
             return True
             
         except Exception as e:
-            logger.error(f"Failed to delete recipe {recipe_id}: {e}")
+            logger.error(f"Failed to delete recipe {combined_id}: {e}")
+            return False
+    
+    def delete_recipe_by_recipe_id(self, recipe_id: str) -> bool:
+        """
+        Delete all recipes from the vector store by recipe ID (matches any branch).
+        
+        Args:
+            recipe_id: The recipe ID to match against.
+        
+        Returns:
+            True if successful, False otherwise.
+        """
+        try:
+            # Delete by recipe_id pattern (matches "recipeID+*" where recipeID matches exactly)
+            # Use like operator to match the part before "+" equals the recipe_id
+            pattern = f"{recipe_id}+*"
+            self.weaviate_client.collections.get("recipes").data.delete_many(
+                where=Filter.by_property("recipe_id").like(pattern)
+            )
+            
+            logger.info(f"Deleted all recipes with recipe_id {recipe_id} from vector store")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to delete recipes with recipe_id {recipe_id}: {e}")
             return False
     
     def get_collection_stats(self) -> Dict[str, Any]:

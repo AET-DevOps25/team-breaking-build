@@ -21,7 +21,7 @@ class RecipeTagDTO(BaseModel):
     name: str
 
 class RecipeMetadataDTO(BaseModel):
-    id: Optional[int] = None
+    id: Optional[str] = None
     userId: int
     forkedFrom: Optional[int] = None
     createdAt: Optional[datetime] = None

@@ -115,7 +115,7 @@ async def index_recipe(request: RecipeIndexRequest):
         raise HTTPException(status_code=500, detail=f"Error indexing recipe: {str(e)}")
 
 @app.delete("/api/v1/recipes/{recipe_id}", response_model=RecipeDeleteResponse)
-async def delete_recipe(recipe_id: int):
+async def delete_recipe(recipe_id: str):
     """Delete a recipe from the vector store"""
     try:
         if not llm_instance:
