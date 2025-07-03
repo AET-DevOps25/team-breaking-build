@@ -1,6 +1,7 @@
 loki:
+  auth_enabled: false
   commonConfig:
-    replication_factor: 3
+    replication_factor: 1
   schemaConfig:
     configs:
       - from: 2025-06-01
@@ -11,30 +12,35 @@ loki:
           prefix: loki_index_
           period: 24h
   ingester:
+    max_chunk_age: 3h
     chunk_encoding: snappy
+  limits_config:
+    ingestion_rate_mb: 8
+    ingestion_burst_size_mb: 32
   tracing:
     enabled: true
   querier:
-    max_concurrent: 2
+    max_concurrent: 4
 
 sidecar:
   rules:
-    enabled: true
-    searchNamespace: team-breaking-build
+    enabled: false
 
 rbac:
-  create: true
   namespaced: true
+
+gateway:
+  enabled: false
 
 deploymentMode: SingleBinary
 singleBinary:
   replicas: 1
   resources:
     limits:
-      cpu: 3
+      cpu: 500m
       memory: 4Gi
     requests:
-      cpu: 2
+      cpu: 250m
       memory: 2Gi
   extraEnv:
     - name: GOMEMLIMIT
@@ -45,6 +51,12 @@ chunksCache:
 
 minio:
   enabled: true
+
+lokiCanary:
+  enabled: false
+
+test:
+  enabled: false
 
 backend:
   replicas: 0
@@ -71,3 +83,27 @@ bloomCompactor:
   replicas: 0
 bloomGateway:
   replicas: 0
+
+extraObjects:
+  - apiVersion: rbac.authorization.k8s.io/v1
+    kind: Role
+    metadata:
+      name: loki-role
+      namespace: team-breaking-build
+    rules:
+      - apiGroups: [""]
+        resources: ["configmaps", "secrets"]
+        verbs: ["get", "list", "watch"]
+  - apiVersion: rbac.authorization.k8s.io/v1
+    kind: RoleBinding
+    metadata:
+      name: loki-role
+      namespace: team-breaking-build
+    subjects:
+      - kind: ServiceAccount
+        name: loki
+        namespace: team-breaking-build
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: Role
+      name: loki-role

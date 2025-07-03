@@ -1,15 +1,7 @@
-alloy:
-  mounts:
-    varlog: true
-  configMap:
-    create: false
-    name: alloy-settings
-    key: config.alloy
+serviceMonitor:
+  enabled: true
 
 rbac:
-  create: false
-
-crds:
   create: false
 
 extraObjects:
@@ -18,54 +10,53 @@ extraObjects:
     metadata:
       name: alloy
       namespace: team-breaking-build
-      rules:
-        # Core Kubernetes objects Alloy might need to discover/scrape
-        - apiGroups: [ "", "discovery.k8s.io", "networking.k8s.io" ]
-          resources:
-            - pods
-            - pods/log
-            - services
-            - endpoints
-            - endpointslices
-            - ingresses
-            - namespaces
-          verbs: [ "get", "list", "watch" ]
+    rules:
+      - apiGroups: [""]
+        resources: ["pods", "services", "endpoints", "namespaces"]
+        verbs: ["get", "list", "watch"]
+      - apiGroups: [""]
+        resources: ["pods/log"]
+        verbs: ["get", "list", "watch"]
+  - apiVersion: rbac.authorization.k8s.io/v1
+    kind: RoleBinding
+    metadata:
+      name: alloy
+      namespace: team-breaking-build
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: Role
+      name: alloy
+    subjects:
+      - kind: ServiceAccount
+        name: alloy
+        namespace: team-breaking-build
 
-        # ConfigMaps, Secrets, Events – hot‑reload + diagnostics
-        - apiGroups: [ "" ]
-          resources: [ "configmaps", "secrets", "events" ]
-          verbs: [ "get", "list", "watch" ]
-
-        # Grafana Alloy CRDs (safe even if CRDs are absent)
-        - apiGroups: [ "monitoring.grafana.com" ]
-          resources: [ "podlogs" ]
-          verbs: [ "get", "list", "watch" ]
-
-        # Prometheus Operator CRDs (optional, same logic)
-        - apiGroups: [ "monitoring.coreos.com" ]
-          resources:
-            - podmonitors
-            - servicemonitors
-            - probes
-            - scrapeconfigs
-            - prometheusrules
-          verbs: [ "get", "list", "watch" ]
-
-        # Allow scraping the node’s /metrics endpoint
-        - nonResourceURLs: [ "/metrics" ]
-          verbs: [ "get" ]
-
-        ## RoleBinding --------------------------------------------------------------
-        - apiVersion: rbac.authorization.k8s.io/v1
-          kind: RoleBinding
-          metadata:
-            name: alloy
-            namespace: team-breaking-build
-          subjects:
-            - kind: ServiceAccount
-              name: alloy
-              namespace: team-breaking-build
-          roleRef:
-            apiGroup: rbac.authorization.k8s.io
-            kind: Role
-            name: alloy
+alloy:
+  mounts:
+    varlog: true
+  configMap:
+    create: true
+    name: alloy-settings
+    content: |
+      logging {
+        level  = "info"
+        format = "logfmt"
+      }
+        
+      discovery.kubernetes "pods_ns" {
+        role       = "pod"
+        namespaces {
+          names = ["team-breaking-build"]
+        }
+      }
+      
+      loki.source.kubernetes "pods" {
+        targets    = discovery.kubernetes.pods_ns.targets
+        forward_to = [loki.write.local.receiver]
+      }
+      
+      loki.write "local" {
+        endpoint {
+          url = "http://loki.team-breaking-build.svc.cluster.local:3100/loki/api/v1/push"
+        }
+      }

@@ -39,7 +39,7 @@ image:
 
 serviceAccount:
   create: true
-  name: ""
+  name: "keycloak"
 
 autoscaling:
   enabled: true

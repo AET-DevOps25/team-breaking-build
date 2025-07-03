@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "grafana.serviceAccountName" . }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "grafana.labels" . | nindent 4 }}
+automountServiceAccountToken: {{ .Values.serviceAccount.automount }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "grafana.roleName" . }}
+  namespace: {{ .Values.namespace }}
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps", "secrets"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "grafana.roleBindingName" . }}
+  namespace: {{ .Values.namespace }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "grafana.serviceAccountName" . }}
+    namespace: {{ .Values.namespace }}
+roleRef:
+  kind: Role
+  name: {{ include "grafana.roleName" . }}
+  apiGroup: rbac.authorization.k8s.io
