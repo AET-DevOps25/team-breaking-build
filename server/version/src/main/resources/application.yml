@@ -16,6 +16,20 @@ spring:
     mongodb:
       uri: mongodb://${VERSION_MONGO_USER}:${VERSION_MONGO_PASSWORD}@${VERSION_MONGO_URL_HOSTS}/${VERSION_MONGO_DB_NAME}?replicaSet=${VERSION_MONGO_REPLICA_SET}
 
+logging:
+  level:
+    root: INFO
+    com.recipefy.version: DEBUG
+    com.recipefy.version.controller: DEBUG
+    com.recipefy.version.service: DEBUG
+    com.recipefy.version.repository: DEBUG
+    org.springframework.web: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.springframework.data.mongodb.core.MongoTemplate: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
 management:
   endpoint:
     health:
