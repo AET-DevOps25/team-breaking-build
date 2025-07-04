@@ -29,7 +29,7 @@ public class GenAIClientImpl implements GenAIClient {
     @Override
     public void indexRecipe(RecipeMetadataDTO metadata, RecipeDetailsDTO details) {
         try {
-            String url = genaiServiceUrl + "/api/v1/recipes/index";
+            String url = genaiServiceUrl + "/api/v1/vector/index";
             
             Map<String, Object> requestBody = new HashMap<>();
             Map<String, Object> recipe = new HashMap<>();
@@ -62,7 +62,7 @@ public class GenAIClientImpl implements GenAIClient {
     @Override
     public void deleteRecipe(String recipeId) {
         try {
-            String url = genaiServiceUrl + "/api/v1/recipes/" + recipeId;
+            String url = genaiServiceUrl + "/api/v1/vector/" + recipeId;
             restTemplate.delete(url);
             log.info("Successfully deleted recipe {} from GenAI service", recipeId);
         } catch (Exception e) {
