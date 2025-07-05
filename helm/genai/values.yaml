@@ -8,9 +8,6 @@ image:
   tag: latest
   pullPolicy: Always
 
-imagePullSecrets: []
-nameOverride: ""
-fullnameOverride: ""
 
 serviceAccount:
   create: true
@@ -23,12 +20,6 @@ podAnnotations:
   cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
   app.kubernetes.io/version: "1.0.0"
   sidecar.istio.io/inject: "true"
-
-podLabels: {}
-
-podSecurityContext: {}
-
-securityContext: {}
 
 service:
   type: ClusterIP
@@ -53,12 +44,6 @@ autoscaling:
   minReplicas: 2
   maxReplicas: 5
   targetCPUUtilizationPercentage: 70
-
-nodeSelector: {}
-
-tolerations: []
-
-affinity: {}
 
 env:
   - name: LLM_MODEL
