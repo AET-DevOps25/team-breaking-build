@@ -23,9 +23,13 @@ class RAGHelper:
     A helper for the retrieval stage of the RAG pipeline for recipe search and generation.
     """
     
-    def __init__(self):
+    def __init__(self, weaviate_host: str = None, weaviate_port: int = None):
         """Initialize RAG helper with Weaviate client and embeddings"""
         try:
+            # Get weaviate configuration from environment or use defaults
+            self.weaviate_host = weaviate_host or os.getenv("WEAVIATE_HOST", "weaviate")
+            self.weaviate_port = weaviate_port or int(os.getenv("WEAVIATE_PORT", "8080"))
+            
             # Initialize Weaviate client
             self._initialize_weaviate_client()
             
@@ -41,18 +45,12 @@ class RAGHelper:
     def _initialize_weaviate_client(self):
         """Initialize Weaviate client connection"""
         try:
-            # Check if we're running in Docker (service name available)
-            if os.path.exists('/.dockerenv'):
-                # Running in Docker - connect to service name
-                self.weaviate_client = weaviate.connect_to_local(
-                    host="weaviate",
-                    port=8082
-                )
-                logger.info("Connected to Weaviate service in Docker: weaviate:8082")
-            else:
-                # Running locally - connect to localhost
-                self.weaviate_client = weaviate.connect_to_local(port=8082)
-                logger.info("Connected to local Weaviate on port 8082")
+            # Connect to weaviate using configured host and port
+            self.weaviate_client = weaviate.connect_to_local(
+                host=self.weaviate_host,
+                port=self.weaviate_port
+            )
+            logger.info(f"Connected to Weaviate service: {self.weaviate_host}:{self.weaviate_port}")
             
         except Exception as e:
             logger.error(f"Failed to connect to Weaviate: {e}")
