@@ -198,6 +198,8 @@ services:
             - LLM_TEMPERATURE=${LLM_TEMPERATURE}
             - OPEN_WEBUI_API_KEY=${OPEN_WEBUI_API_KEY}
             - LLM_BASE_URL=${LLM_BASE_URL}
+            - WEAVIATE_HOST=${WEAVIATE_HOST}
+            - WEAVIATE_PORT=${WEAVIATE_PORT}
             - DEBUG=${DEBUG:-false}
             - LOG_LEVEL=${LOG_LEVEL:-INFO}
         depends_on:

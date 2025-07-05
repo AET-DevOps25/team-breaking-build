@@ -89,7 +89,7 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ github.repository }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=latest,enable=true
             type=sha
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}

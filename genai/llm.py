@@ -28,7 +28,7 @@ class RecipeLLM:
                 base_url=os.getenv("LLM_BASE_URL")
             )
             
-            # Initialize RAG helper
+            # Initialize RAG helper with weaviate configuration
             self.rag_helper = RAGHelper()
             
             logger.info("Recipe LLM service initialized successfully")

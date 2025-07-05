@@ -81,6 +81,16 @@ env:
       configMapKeyRef:
         name: recipefy-genai-config
         key: LLM_BASE_URL
+  - name: WEAVIATE_HOST
+    valueFrom:
+      configMapKeyRef:
+        name: recipefy-genai-config
+        key: WEAVIATE_HOST
+  - name: WEAVIATE_PORT
+    valueFrom:
+      configMapKeyRef:
+        name: recipefy-genai-config
+        key: WEAVIATE_PORT
   - name: DEBUG
     valueFrom:
       configMapKeyRef:
