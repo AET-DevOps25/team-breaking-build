@@ -11,21 +11,26 @@ import reactor.core.publisher.Mono
 
 @Component
 class UserIdHeaderFilter : GlobalFilter {
-
-    override fun filter(exchange: ServerWebExchange, chain: GatewayFilterChain): Mono<Void> {
-
-        return ReactiveSecurityContextHolder.getContext()
+    override fun filter(
+        exchange: ServerWebExchange,
+        chain: GatewayFilterChain
+    ): Mono<Void> =
+        ReactiveSecurityContextHolder
+            .getContext()
             .map { it.authentication as BearerTokenAuthentication }
             .flatMap { auth ->
                 val principal = auth.principal as OAuth2AuthenticatedPrincipal
                 val userId = principal.getAttribute<String>("sub")
-                val mutated = exchange.mutate().request(
-                    exchange.request.mutate()
-                        .header("X-User-Id", userId)
-                        .build()
-                ).build()
+                val mutated =
+                    exchange
+                        .mutate()
+                        .request(
+                            exchange.request
+                                .mutate()
+                                .header("X-User-Id", userId)
+                                .build()
+                        ).build()
 
                 chain.filter(mutated)
             }
-    }
 }
