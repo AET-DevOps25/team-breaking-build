@@ -11,6 +11,7 @@ image:
 service:
   type: ClusterIP
   port: 8080
+  grpcPort: 50051
 
 container:
   name: weaviate
