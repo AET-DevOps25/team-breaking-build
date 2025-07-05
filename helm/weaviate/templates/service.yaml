@@ -15,4 +15,5 @@ spec:
         targetPort: grpc
         protocol: TCP
         name: grpc
-  selector: {{ - include "weaviate.selectorLabels" . | nindent 4 }}
+  selector: 
+    {{ - include "weaviate.selectorLabels" . | nindent 4 }}
