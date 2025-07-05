@@ -11,5 +11,9 @@ spec:
       targetPort: http
       protocol: TCP
       name: http
+    - port: 50051
+      targetPort: grpc
+      protocol: TCP
+      name: grpc
   selector:
     {{- include "weaviate.selectorLabels" . | nindent 4 }}
