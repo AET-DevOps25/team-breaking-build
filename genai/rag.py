@@ -139,7 +139,7 @@ class RAGHelper:
                         description="Flag for placeholder documents"
                     )
                 ],
-                vectorizer_config=weaviate.classes.config.Configure.Vectorizer.none()
+                vectorizer_config=weaviate.classes.config.Configure.Vectorizer.TEXT2VEC_HUGGINGFACE
             )
             
             # Initialize vector store
