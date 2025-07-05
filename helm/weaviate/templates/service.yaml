@@ -16,4 +16,4 @@ spec:
         protocol: TCP
         name: grpc
   selector: 
-    {{ - include "weaviate.selectorLabels" . | nindent 4 }}
+    {{- include "weaviate.selectorLabels" . | nindent 4 }}
