@@ -27,6 +27,7 @@ import org.springframework.http.ResponseEntity;
 
 import com.recipefy.recipe.model.dto.RecipeMetadataDTO;
 import com.recipefy.recipe.model.dto.RecipeTagDTO;
+import com.recipefy.recipe.model.request.CreateRecipeRequest;
 import com.recipefy.recipe.model.request.InitRecipeRequest;
 import com.recipefy.recipe.service.RecipeService;
 
@@ -102,16 +103,17 @@ class RecipeControllerTest {
 
     @Test
     void createRecipe_ShouldCreateAndReturnRecipe() {
-        when(recipeService.createRecipe(any(RecipeMetadataDTO.class), any(InitRecipeRequest.class)))
+        CreateRecipeRequest request = new CreateRecipeRequest(testRecipeDTO, new InitRecipeRequest(1L, null));
+        when(recipeService.createRecipe(any(CreateRecipeRequest.class)))
             .thenReturn(testRecipeDTO);
 
-        ResponseEntity<RecipeMetadataDTO> response = recipeController.createRecipe(testRecipeDTO, new InitRecipeRequest(1L, null));
+        ResponseEntity<RecipeMetadataDTO> response = recipeController.createRecipe(request);
 
         assertNotNull(response);
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals(testRecipeDTO.getId(), response.getBody().getId());
-        verify(recipeService).createRecipe(any(RecipeMetadataDTO.class), any(InitRecipeRequest.class));
+        verify(recipeService).createRecipe(any(CreateRecipeRequest.class));
     }
 
     @Test
@@ -155,19 +157,6 @@ class RecipeControllerTest {
         assertEquals(testRecipeDTO.getId(), response.getBody().getId());
         verify(recipeService).copyRecipe(1L, 2L, 3L);
     }
-
-    /** TODO: OPEN WHEN VCS IMPLEMENTED DELETE
-    @Test
-    void deleteRecipe_ShouldReturnNoContent() {
-        doThrow(new UnsupportedOperationException("Delete not supported")).when(recipeService).deleteRecipe(1L);
-
-        ResponseEntity<Void> response = recipeController.deleteRecipe(1L);
-
-        assertNotNull(response);
-        assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
-        verify(recipeService).deleteRecipe(1L);
-    }
-    */
 
     @Test
     void updateTags_WhenRecipeExists_ShouldUpdateTagsAndReturnRecipe() {

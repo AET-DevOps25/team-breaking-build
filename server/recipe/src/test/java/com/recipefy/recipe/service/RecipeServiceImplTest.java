@@ -27,12 +27,15 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
+import com.recipefy.recipe.client.GenAIClient;
 import com.recipefy.recipe.client.VersionClient;
 import com.recipefy.recipe.mapper.dto.RecipeMetadataDTOMapper;
+import com.recipefy.recipe.model.dto.BranchDTO;
 import com.recipefy.recipe.model.dto.RecipeMetadataDTO;
 import com.recipefy.recipe.model.dto.RecipeTagDTO;
 import com.recipefy.recipe.model.entity.RecipeMetadata;
 import com.recipefy.recipe.model.entity.RecipeTag;
+import com.recipefy.recipe.model.request.CreateRecipeRequest;
 import com.recipefy.recipe.model.request.InitRecipeRequest;
 import com.recipefy.recipe.repository.RecipeRepository;
 import com.recipefy.recipe.repository.TagRepository;
@@ -51,6 +54,9 @@ class RecipeServiceImplTest {
     @Mock
     private VersionClient versionClient;
 
+    @Mock
+    private GenAIClient genAIClient;
+
     @InjectMocks
     private RecipeServiceImpl recipeService;
 
@@ -58,6 +64,7 @@ class RecipeServiceImplTest {
     private RecipeMetadataDTO testRecipeDTO;
     private RecipeTag testTag;
     private RecipeTagDTO testTagDTO;
+    private BranchDTO testBranchDTO;
 
     @BeforeEach
     void setUp() {
@@ -83,6 +90,9 @@ class RecipeServiceImplTest {
         // Setup DTOs
         testRecipeDTO = RecipeMetadataDTOMapper.toDTO(testRecipe);
         testTagDTO = new RecipeTagDTO(1L, "Test Tag");
+        
+        // Setup test branch
+        testBranchDTO = new BranchDTO(1L, "main", 1L, 1L, LocalDateTime.now());
     }
 
     @Test
@@ -130,12 +140,14 @@ class RecipeServiceImplTest {
     @Test
     void createRecipe_ShouldCreateAndReturnRecipe() {
         // Arrange
+        CreateRecipeRequest request = new CreateRecipeRequest(testRecipeDTO, new InitRecipeRequest(1L, null));
         when(recipeRepository.save(any(RecipeMetadata.class))).thenReturn(testRecipe);
         when(tagRepository.findByName(anyString())).thenReturn(Optional.of(testTag));
-        doNothing().when(versionClient).initRecipe(anyLong(), any(InitRecipeRequest.class));
+        when(versionClient.initRecipe(anyLong(), any(InitRecipeRequest.class))).thenReturn(testBranchDTO);
+        doNothing().when(genAIClient).indexRecipe(any(RecipeMetadataDTO.class), any());
 
         // Act
-        RecipeMetadataDTO result = recipeService.createRecipe(testRecipeDTO, new InitRecipeRequest(1L, null));
+        RecipeMetadataDTO result = recipeService.createRecipe(request);
 
         // Assert
         assertNotNull(result);
@@ -143,6 +155,7 @@ class RecipeServiceImplTest {
         assertEquals(testRecipeDTO.getTitle(), result.getTitle());
         verify(recipeRepository).save(any(RecipeMetadata.class));
         verify(versionClient).initRecipe(anyLong(), any(InitRecipeRequest.class));
+        verify(genAIClient).indexRecipe(any(RecipeMetadataDTO.class), any());
     }
 
     @Test
@@ -178,7 +191,8 @@ class RecipeServiceImplTest {
         // Arrange
         when(recipeRepository.findById(1L)).thenReturn(Optional.of(testRecipe));
         when(recipeRepository.save(any(RecipeMetadata.class))).thenReturn(testRecipe);
-        doNothing().when(versionClient).copyRecipe(anyLong(), any());
+        when(versionClient.copyRecipe(anyLong(), any())).thenReturn(testBranchDTO);
+        doNothing().when(genAIClient).indexRecipe(any(RecipeMetadataDTO.class), any());
 
         // Act
         RecipeMetadataDTO result = recipeService.copyRecipe(1L, 2L, 3L);
@@ -190,16 +204,19 @@ class RecipeServiceImplTest {
         verify(recipeRepository).findById(1L);
         verify(recipeRepository).save(any(RecipeMetadata.class));
         verify(versionClient).copyRecipe(anyLong(), any());
+        verify(genAIClient).indexRecipe(any(RecipeMetadataDTO.class), any());
     }
 
     @Test
     void deleteRecipe_ShouldDeleteRecipe() {
         // Arrange
         doNothing().when(recipeRepository).deleteById(1L);
+        doNothing().when(genAIClient).deleteRecipe(anyString());
 
         // Act & Assert
         assertThrows(UnsupportedOperationException.class, () -> recipeService.deleteRecipe(1L));
         verify(recipeRepository).deleteById(1L);
+        verify(genAIClient).deleteRecipe(anyString());
     }
 
     @Test

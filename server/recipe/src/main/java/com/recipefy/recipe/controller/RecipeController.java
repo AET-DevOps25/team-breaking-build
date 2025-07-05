@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.recipefy.recipe.model.dto.RecipeMetadataDTO;
 import com.recipefy.recipe.model.dto.RecipeTagDTO;
-import com.recipefy.recipe.model.request.InitRecipeRequest;
+import com.recipefy.recipe.model.request.CreateRecipeRequest;
 import com.recipefy.recipe.service.RecipeService;
 
 import jakarta.persistence.EntityNotFoundException;
@@ -46,9 +46,8 @@ public class RecipeController {
 
     @PostMapping
     public ResponseEntity<RecipeMetadataDTO> createRecipe(
-            @Valid @RequestBody RecipeMetadataDTO metadataDTO,
-            @Valid @RequestBody InitRecipeRequest request) {
-        return ResponseEntity.ok(recipeService.createRecipe(metadataDTO, request));
+            @Valid @RequestBody CreateRecipeRequest request) {
+        return ResponseEntity.ok(recipeService.createRecipe(request));
     }
 
     @PutMapping("/{recipeId}")

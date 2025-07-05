@@ -15,4 +15,7 @@ spring:
 vcs:
   service:
     url: ${VERSION_SERVICE_HOST}:${VERSION_SERVICE_PORT}
+genai:
+  service:
+    url: ${GENAI_SERVICE_HOST}:${GENAI_SERVICE_PORT}
 
