@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "prometheus.configName" . }}
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+      external_labels:
+        monitor: 'custom-monitor'
+
+    rule_files:
+      - "/opt/bitnami/prometheus/conf/alert.rules.yml"
+
+    alerting:
+      alertmanagers:
+        - static_configs:
+            - targets: ['alertmanager:9093']
+
+    scrape_configs:
+      - job_name: 'recipefy-version-service'
+        metrics_path: '/actuator/prometheus'
+        static_configs:
+          - targets: ['recipefy-version-service.team-breaking-build.svc.cluster.local:8080']
+
+      - job_name: 'recipefy-version-pods'
+        metrics_path: '/actuator/prometheus'
+        scrape_interval: 15s
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names:
+                - team-breaking-build
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
+            regex: version
+            action: keep
+          - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_instance]
+            regex: recipefy-version
+            action: keep
+          - source_labels: [__meta_kubernetes_pod_ip]
+            target_label: __address__
+            replacement: $1:8080
+          - source_labels: [__meta_kubernetes_pod_name]
+            target_label: pod
+          - source_labels: [__meta_kubernetes_pod_container_name]
+            target_label: container
+
+  alert.rules.yml: |
+    groups:
+      - name: recipefy-version-alerts
+        rules:
+          - alert: AllPodsDown
+            expr: absent(up{job="recipefy-version-pods"}) or sum(up{job="recipefy-version-pods"}) == 0
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "All recipefy-version pods are down"
+              description: "No reachable pods found for job 'recipefy-version-pods'."
