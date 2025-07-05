@@ -40,17 +40,6 @@ container:
   portName: http
   protocol: TCP
 
-ingress:
-  enabled: false
-  className: ""
-  annotations: {}
-  hosts:
-    - host: genai.local
-      paths:
-        - path: /
-          pathType: ImplementationSpecific
-  tls: []
-
 resources:
   limits:
     cpu: 1000m

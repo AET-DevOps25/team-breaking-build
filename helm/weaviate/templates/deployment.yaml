@@ -5,7 +5,9 @@ metadata:
   labels:
     {{- include "weaviate.labels" . | nindent 4 }}
 spec:
+  {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       {{- include "weaviate.selectorLabels" . | nindent 6 }}
@@ -21,19 +23,27 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       serviceAccountName: {{ include "weaviate.serviceAccountName" . }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default "latest" }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
-          ports:
-            - name: {{ .Values.container.portName }}
-              containerPort: {{ .Values.container.port }}
-              protocol: {{ .Values.container.protocol }}
-          {{- with .Values.env }}
-          env:
+          {{- with .Values.securityContext }}
+          securityContext:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
           {{- with .Values.livenessProbe }}
           livenessProbe:
             {{- toYaml . | nindent 12 }}
@@ -46,20 +56,13 @@ spec:
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{- if .Values.persistence.enabled }}
+          {{- with .Values.volumeMounts }}
           volumeMounts:
-            - name: weaviate-data
-              mountPath: {{ .Values.weaviate.persistence.dataPath }}
+            {{- toYaml . | nindent 12 }}
           {{- end }}
-      {{- if .Values.persistence.enabled }}
+      {{- with .Values.volumes }}
       volumes:
-        - name: weaviate-data
-          {{- if .Values.persistence.storageClass }}
-          persistentVolumeClaim:
-            claimName: {{ include "weaviate.fullname" . }}-pvc
-          {{- else }}
-          emptyDir: {}
-          {{- end }}
+        {{- toYaml . | nindent 8 }}
       {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
@@ -72,4 +75,4 @@ spec:
       {{- with .Values.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
-      {{- end }} 
+      {{- end }}

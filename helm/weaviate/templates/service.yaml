@@ -1,13 +1,15 @@
 apiVersion: v1
 kind: Service
 metadata:
-    name: { { include "weaviate.fullname" . } }
-    labels: { { - include "weaviate.labels" . | nindent 4 } }
+  name: {{ include "weaviate.fullname" . }}
+  labels:
+    {{- include "weaviate.labels" . | nindent 4 }}
 spec:
-    type: { { .Values.service.type } }
-    ports:
-        - port: { { .Values.service.port } }
-          targetPort: { { .Values.container.portName } }
-          protocol: TCP
-          name: { { .Values.container.portName } }
-    selector: { { - include "weaviate.selectorLabels" . | nindent 4 } }
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "weaviate.selectorLabels" . | nindent 4 }}
