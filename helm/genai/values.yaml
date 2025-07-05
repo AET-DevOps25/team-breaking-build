@@ -16,18 +16,18 @@ serviceAccount:
 podAnnotations:
   prometheus.io/scrape: "true"
   prometheus.io/path: "/health"
-  prometheus.io/port: "8000"
+  prometheus.io/port: "8080"
   cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
   app.kubernetes.io/version: "1.0.0"
   sidecar.istio.io/inject: "true"
 
 service:
   type: ClusterIP
-  port: 8000
+  port: 8080
 
 container:
   name: genai
-  port: 8000
+  port: 8080
   portName: http
   protocol: TCP
 
@@ -90,7 +90,7 @@ env:
 livenessProbe:
   httpGet:
     path: /health
-    port: 8000
+    port: 8080
   initialDelaySeconds: 60
   periodSeconds: 30
   timeoutSeconds: 10
@@ -99,7 +99,7 @@ livenessProbe:
 readinessProbe:
   httpGet:
     path: /health
-    port: 8000
+    port: 8080
   initialDelaySeconds: 30
   periodSeconds: 10
   timeoutSeconds: 5
