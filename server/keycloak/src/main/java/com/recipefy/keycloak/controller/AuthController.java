@@ -19,7 +19,7 @@ public class AuthController {
     private final KeycloakService keycloakService;
 
     @PostMapping("/login")
-    public Mono<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
+    public Mono<TokenResponse> login(@Valid @RequestBody LoginRequest request) {
         return keycloakService.login(request);
     }
 
@@ -35,5 +35,10 @@ public class AuthController {
         }
         String token = authorization.substring(7);
         return keycloakService.userInfo(token);
+    }
+
+    @PostMapping("/refresh")
+    public Mono<TokenResponse> refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
+        return keycloakService.refreshToken(request);
     }
 }

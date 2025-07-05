@@ -10,7 +10,7 @@ public class TokenResponse {
     private String accessToken;
     private String refreshToken;
     private long expiresIn;
-    private Long refreshExpiresIn;
+    private long refreshExpiresIn;
     private String tokenType;
     private String scope;
 }
