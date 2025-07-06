@@ -3,6 +3,7 @@ replicaCount: 1
 image:
   repository: ghcr.io/aet-devops25/team-breaking-build/server/keycloak-service
   tag: latest
+  pullPolicy: Always
 
 serviceAccount:
   create: true
