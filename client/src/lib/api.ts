@@ -60,24 +60,27 @@ export async function apiRequest<T>(endpoint: string, options: RequestInit = {})
       // If refresh fails with 401, it means the refresh token is invalid/expired
       if (refreshResponse.status === 401) {
         console.error('Refresh token is invalid or expired');
+        localStorage.removeItem('tokens');
         window.location.href = '/login';
         throw new Error('Refresh token is invalid or expired');
       }
 
-      // If refresh fails with other status codes, don't redirect to login immediately
+      // If refresh fails with other status codes, logout the user
       if (!refreshResponse.ok) {
         console.error('Token refresh failed with status:', refreshResponse.status);
+        localStorage.removeItem('tokens');
+        window.location.href = '/login';
         throw new Error(`Token refresh failed with status: ${refreshResponse.status}`);
       }
 
       const refreshData = await refreshResponse.json();
       const newToken = refreshData.access_token;
-      
+
       if (!newToken) {
         console.error('No access token received from refresh');
         throw new Error('No access token received from refresh');
       }
-      
+
       // Update tokens in localStorage with the new tokens
       const updatedTokens = {
         accessToken: newToken,

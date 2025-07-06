@@ -1,5 +1,17 @@
-import { Recipe, CreateRecipeRequest } from '@/lib/types/recipe';
+import { Recipe } from '@/lib/types/recipe';
 import { api } from '@/lib/api';
+
+// Define interfaces for the parsed JSON data
+interface ParsedIngredient {
+  name: string;
+  unit: string;
+  amount: number;
+}
+
+interface ParsedStep {
+  order: number;
+  details: string;
+}
 
 export async function getRecipes(page: number = 1, limit: number = 10): Promise<Recipe[]> {
   try {
@@ -28,18 +40,18 @@ export async function createRecipe(data: FormData): Promise<Recipe> {
         title: data.get('title') as string,
         description: data.get('description') as string,
         servingSize: parseInt(data.get('servingSize') as string),
-        tags: (data.getAll('tags') as string[]).map(tag => ({ name: tag })),
+        tags: (data.getAll('tags') as string[]).map((tag) => ({ name: tag })),
         thumbnail: data.get('thumbnail') ? { url: 'placeholder-url' } : undefined,
       },
       initRequest: {
         recipeDetails: {
           servingSize: parseInt(data.get('servingSize') as string),
-          recipeIngredients: JSON.parse(data.get('ingredients') as string).map((ing: any) => ({
+          recipeIngredients: JSON.parse(data.get('ingredients') as string).map((ing: ParsedIngredient) => ({
             name: ing.name,
             unit: ing.unit,
             amount: ing.amount,
           })),
-          recipeSteps: JSON.parse(data.get('steps') as string).map((step: any) => ({
+          recipeSteps: JSON.parse(data.get('steps') as string).map((step: ParsedStep) => ({
             order: step.order,
             details: step.details,
           })),

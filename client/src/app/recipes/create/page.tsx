@@ -42,7 +42,7 @@ export default function CreateRecipePage() {
       if (data.thumbnail) {
         formData.append('thumbnail', data.thumbnail);
       }
-      
+
       // Add ingredients and steps as JSON strings
       formData.append('ingredients', JSON.stringify(data.ingredients));
       formData.append('steps', JSON.stringify(data.steps));

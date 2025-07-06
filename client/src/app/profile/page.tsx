@@ -41,11 +41,11 @@ export default function ProfilePage() {
           const { getUserRecipes } = await import('@/lib/services/recipeService');
           const userRecipes = await getUserRecipes(user.id);
           // Transform the API response to match the local Recipe interface
-          const transformedRecipes = userRecipes.map(recipe => ({
+          const transformedRecipes = userRecipes.map((recipe) => ({
             id: recipe.id,
             title: recipe.title,
             description: recipe.description,
-            imageUrl: recipe.thumbnail,
+            imageUrl: recipe.thumbnail?.url,
             cookingTime: 30, // Default value since API might not have this
             servings: recipe.servingSize,
             likes: 0, // Default value since API might not have this
@@ -59,7 +59,7 @@ export default function ProfilePage() {
           setIsLoadingRecipes(false);
         }
       };
-      
+
       fetchUserRecipes();
     }
   }, [isAuthenticated, isLoading, router, user]);

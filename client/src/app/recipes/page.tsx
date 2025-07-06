@@ -24,10 +24,10 @@ export default function RecipesPage() {
     setLoading(true);
     try {
       const response = await getRecipes(page);
-      
+
       // Ensure response is an array
       const recipesArray = Array.isArray(response) ? response : [];
-      
+
       setRecipes((prev) => [...prev, ...recipesArray]);
       setHasMore(recipesArray.length > 0);
       setPage((prev) => prev + 1);
@@ -93,13 +93,13 @@ export default function RecipesPage() {
       ) : !loading ? (
         <div className='flex flex-col items-center justify-center py-12'>
           <div className='mb-4 text-center'>
-            <h3 className='text-xl font-semibold text-gray-900 mb-2'>No recipes available</h3>
+            <h3 className='mb-2 text-xl font-semibold text-gray-900'>No recipes available</h3>
             <p className='text-gray-600'>Be the first to create a recipe and share it with the community!</p>
           </div>
           {isAuthenticated && (
             <Button
               onClick={() => router.push('/recipes/create')}
-              className='bg-[#FF7C75] hover:bg-rose-600 text-white'
+              className='bg-[#FF7C75] text-white hover:bg-rose-600'
             >
               <Plus className='mr-2 size-4' />
               Create First Recipe

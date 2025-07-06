@@ -121,7 +121,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!refreshToken) {
       throw new Error('No refresh token available');
     }
-    
+
     const response = await fetch(`${AUTH_BASE_URL}/auth/refresh`, {
       method: 'POST',
       headers: {
@@ -131,18 +131,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         token: refreshToken,
       }),
     });
-    
+
     if (!response.ok) {
       console.error('Token refresh failed with status:', response.status);
       throw new Error(`Token refresh failed: ${response.status}`);
     }
 
     const data = await response.json();
-    
+
     if (!data.access_token) {
       throw new Error('No access token received from refresh');
     }
-    
+
     const tokens: AuthTokens = {
       accessToken: data.access_token,
       refreshToken: data.refresh_token || refreshToken, // Keep old refresh token if new one not provided
