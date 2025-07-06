@@ -7,9 +7,11 @@ import { getRecipes } from '@/lib/services/mockRecipeService'; // Change it to o
 import { RecipeCard } from '@/components/recipe/recipe-card';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function RecipesPage() {
   const router = useRouter();
+  const { isAuthenticated } = useAuth();
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -62,13 +64,15 @@ export default function RecipesPage() {
     <div className='container mx-auto px-4 py-8'>
       <div className='mb-8 flex items-center justify-between'>
         <h1 className='text-3xl font-bold'>Recipes</h1>
-        <Button
-          onClick={() => router.push('/recipes/create')}
-          className='bg-[#FF7C75] hover:bg-[#FF7C75]/90'
-        >
-          <Plus className='mr-2 size-4' />
-          Create Recipe
-        </Button>
+        {isAuthenticated && (
+          <Button
+            onClick={() => router.push('/recipes/create')}
+            className='bg-[#FF7C75] hover:bg-[#FF7C75]/90'
+          >
+            <Plus className='mr-2 size-4' />
+            Create Recipe
+          </Button>
+        )}
       </div>
 
       <div className='grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3'>

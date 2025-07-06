@@ -1,8 +1,19 @@
 'use client';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Hero = () => {
+  const router = useRouter();
+  const { isAuthenticated } = useAuth();
+
+  // If user is authenticated, redirect to recipes page
+  if (isAuthenticated) {
+    router.push('/recipes');
+    return null;
+  }
+
   return (
     <div
       id='hero'
@@ -31,10 +42,18 @@ const Hero = () => {
               all in one intuitive app.
             </p>
             <div className='flex flex-row items-center justify-center gap-4 lg:justify-start'>
-              <Button size='lg'>Get Started</Button>
+              <Button
+                size='lg'
+                onClick={() => router.push('/register')}
+                className='bg-[#FF7C75] hover:bg-rose-600'
+              >
+                Get Started
+              </Button>
               <Button
                 variant='outline'
                 size='lg'
+                onClick={() => router.push('/login')}
+                className='border-[#FF7C75] text-[#FF7C75] hover:bg-rose-50'
               >
                 Login
               </Button>
