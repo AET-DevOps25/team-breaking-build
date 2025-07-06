@@ -18,7 +18,7 @@ export function RecipeCard({ recipe, onClick }: RecipeCardProps) {
       <div className='relative h-48'>
         {recipe.thumbnail ? (
           <Image
-            src={recipe.thumbnail}
+            src={recipe.thumbnail.url}
             alt={recipe.title}
             fill
             className='object-cover'
@@ -42,10 +42,10 @@ export function RecipeCard({ recipe, onClick }: RecipeCardProps) {
         <div className='mb-3 flex flex-wrap gap-2'>
           {recipe.tags.map((tag) => (
             <Badge
-              key={tag}
+              key={tag.id || tag.name}
               variant='secondary'
             >
-              {tag}
+              {tag.name}
             </Badge>
           ))}
         </div>
