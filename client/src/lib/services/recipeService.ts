@@ -23,7 +23,6 @@ export async function getRecipes(page: number = 1, limit: number = 10): Promise<
     const response = await api.get<Recipe[]>(`/recipes?page=${page}&limit=${limit}`);
     return response;
   } catch (error) {
-    console.error('Error fetching recipes:', error);
     throw error;
   }
 }
@@ -33,7 +32,6 @@ export async function getRecipe(id: string): Promise<Recipe | null> {
     const response = await api.get<Recipe>(`/recipes/${id}`);
     return response;
   } catch (error) {
-    console.error('Error fetching recipe:', error);
     throw error;
   }
 }
@@ -43,7 +41,6 @@ export async function getTags(): Promise<Tag[]> {
     const response = await api.get<Tag[]>('/recipes/tags');
     return response;
   } catch (error) {
-    console.error('Error fetching tags:', error);
     throw error;
   }
 }
@@ -77,7 +74,6 @@ export async function createRecipe(data: FormData): Promise<Recipe> {
     const response = await api.post<Recipe>('/recipes', createRequest);
     return response;
   } catch (error) {
-    console.error('Error creating recipe:', error);
     throw error;
   }
 }
@@ -87,7 +83,6 @@ export async function updateRecipe(id: string, data: FormData): Promise<Recipe |
     const response = await api.put<Recipe>(`/recipes/${id}`, data);
     return response;
   } catch (error) {
-    console.error('Error updating recipe:', error);
     throw error;
   }
 }
@@ -96,7 +91,6 @@ export async function deleteRecipe(id: string): Promise<void> {
   try {
     await api.delete(`/recipes/${id}`);
   } catch (error) {
-    console.error('Error deleting recipe:', error);
     throw error;
   }
 }
@@ -106,7 +100,6 @@ export async function getUserRecipes(userId: string): Promise<Recipe[]> {
     const response = await api.get<Recipe[]>(`/recipes/user/${userId}`);
     return response;
   } catch (error) {
-    console.error('Error fetching user recipes:', error);
     throw error;
   }
 }
@@ -117,7 +110,6 @@ export async function copyRecipe(id: string, userId: number, branchId: number): 
     const response = await api.post<Recipe>(`/recipes/${id}/copy?userId=${userId}&branchId=${branchId}`, {});
     return response;
   } catch (error) {
-    console.error('Error copying recipe:', error);
     throw error;
   }
 }

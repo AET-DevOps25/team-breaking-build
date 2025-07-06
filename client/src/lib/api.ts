@@ -37,14 +37,12 @@ export async function apiRequest<T>(endpoint: string, options: RequestInit = {})
       // Get refresh token from localStorage and make refresh request
       const tokens = localStorage.getItem('tokens');
       if (!tokens) {
-        console.error('No tokens available for refresh');
         window.location.href = '/login';
         throw new Error('No tokens available');
       }
 
       const { refreshToken } = JSON.parse(tokens);
       if (!refreshToken) {
-        console.error('No refresh token available');
         window.location.href = '/login';
         throw new Error('No refresh token available');
       }
@@ -59,7 +57,6 @@ export async function apiRequest<T>(endpoint: string, options: RequestInit = {})
 
       // If refresh fails with 401, it means the refresh token is invalid/expired
       if (refreshResponse.status === 401) {
-        console.error('Refresh token is invalid or expired');
         localStorage.removeItem('tokens');
         window.location.href = '/login';
         throw new Error('Refresh token is invalid or expired');
@@ -67,7 +64,6 @@ export async function apiRequest<T>(endpoint: string, options: RequestInit = {})
 
       // If refresh fails with other status codes, logout the user
       if (!refreshResponse.ok) {
-        console.error('Token refresh failed with status:', refreshResponse.status);
         localStorage.removeItem('tokens');
         window.location.href = '/login';
         throw new Error(`Token refresh failed with status: ${refreshResponse.status}`);
@@ -77,7 +73,6 @@ export async function apiRequest<T>(endpoint: string, options: RequestInit = {})
       const newToken = refreshData.access_token;
 
       if (!newToken) {
-        console.error('No access token received from refresh');
         throw new Error('No access token received from refresh');
       }
 
@@ -99,7 +94,6 @@ export async function apiRequest<T>(endpoint: string, options: RequestInit = {})
       });
 
       if (!retryResponse.ok) {
-        console.error('Request failed after token refresh with status:', retryResponse.status);
         // Don't redirect to login here, just throw the error
         throw new Error(`Request failed after token refresh: ${retryResponse.status}`);
       }
@@ -109,7 +103,6 @@ export async function apiRequest<T>(endpoint: string, options: RequestInit = {})
       // Only redirect to login if it's a refresh token issue
       const errorMessage = error instanceof Error ? error.message : String(error);
       if (errorMessage.includes('Refresh token is invalid') || errorMessage.includes('No tokens available')) {
-        console.error('Authentication error:', error);
         window.location.href = '/login';
       }
       throw error;
@@ -117,7 +110,7 @@ export async function apiRequest<T>(endpoint: string, options: RequestInit = {})
   }
 
   if (!response.ok) {
-    throw new Error('Request failed');
+    throw new Error(`Request failed with status: ${response.status}`);
   }
 
   return response.json();
@@ -133,49 +126,39 @@ export async function publicApiRequest<T>(endpoint: string, options: RequestInit
   });
 
   if (!response.ok) {
-    throw new Error('Request failed');
+    throw new Error(`Request failed with status: ${response.status}`);
   }
 
   return response.json();
 }
 
+// Convenience methods
 export const api = {
-  get: <T>(endpoint: string, options?: RequestInit) => apiRequest<T>(endpoint, { ...options, method: 'GET' }),
-
-  post: <T>(endpoint: string, data: unknown, options?: RequestInit) =>
+  get: <T>(endpoint: string, options: RequestInit = {}): Promise<T> =>
+    apiRequest<T>(endpoint, { ...options, method: 'GET' }),
+  post: <T>(endpoint: string, data?: unknown, options: RequestInit = {}): Promise<T> =>
     apiRequest<T>(endpoint, {
       ...options,
       method: 'POST',
-      body: JSON.stringify(data),
+      body: data ? JSON.stringify(data) : undefined,
     }),
-
-  put: <T>(endpoint: string, data: unknown, options?: RequestInit) =>
+  put: <T>(endpoint: string, data?: unknown, options: RequestInit = {}): Promise<T> =>
     apiRequest<T>(endpoint, {
       ...options,
       method: 'PUT',
-      body: JSON.stringify(data),
+      body: data ? JSON.stringify(data) : undefined,
     }),
-
-  delete: <T>(endpoint: string, options?: RequestInit) => apiRequest<T>(endpoint, { ...options, method: 'DELETE' }),
+  delete: <T>(endpoint: string, options: RequestInit = {}): Promise<T> =>
+    apiRequest<T>(endpoint, { ...options, method: 'DELETE' }),
 };
 
 export const publicApi = {
-  get: <T>(endpoint: string, options?: RequestInit) => publicApiRequest<T>(endpoint, { ...options, method: 'GET' }),
-
-  post: <T>(endpoint: string, data: unknown, options?: RequestInit) =>
+  get: <T>(endpoint: string, options: RequestInit = {}): Promise<T> =>
+    publicApiRequest<T>(endpoint, { ...options, method: 'GET' }),
+  post: <T>(endpoint: string, data?: unknown, options: RequestInit = {}): Promise<T> =>
     publicApiRequest<T>(endpoint, {
       ...options,
       method: 'POST',
-      body: JSON.stringify(data),
+      body: data ? JSON.stringify(data) : undefined,
     }),
-
-  put: <T>(endpoint: string, data: unknown, options?: RequestInit) =>
-    publicApiRequest<T>(endpoint, {
-      ...options,
-      method: 'PUT',
-      body: JSON.stringify(data),
-    }),
-
-  delete: <T>(endpoint: string, options?: RequestInit) =>
-    publicApiRequest<T>(endpoint, { ...options, method: 'DELETE' }),
 };

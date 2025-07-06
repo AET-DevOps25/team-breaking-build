@@ -36,8 +36,7 @@ export default function CreateRecipePage() {
       try {
         const tags = await getTags();
         setAvailableTags(tags);
-      } catch (error) {
-        console.error('Error fetching tags:', error);
+      } catch {
         toast.error('Failed to load available tags');
       } finally {
         setIsLoadingTags(false);
@@ -68,9 +67,8 @@ export default function CreateRecipePage() {
       await createRecipe(formData);
       toast.success('Recipe created successfully');
       router.push('/recipes');
-    } catch (error) {
+    } catch {
       toast.error('Failed to create recipe');
-      console.error('Error creating recipe:', error);
     } finally {
       setIsSubmitting(false);
     }

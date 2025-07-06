@@ -91,4 +91,4 @@ public class GlobalControllerExceptionHandler {
         log.error("HTTP_STATUS: {} , MissingServletRequestParameterException Exception Occurred. Ex: ", HttpStatus.BAD_REQUEST, exception);
         return ResponseEntity.badRequest().body(errorResponse);
     }
-} 
+}

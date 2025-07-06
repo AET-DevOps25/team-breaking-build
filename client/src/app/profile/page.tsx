@@ -52,8 +52,7 @@ export default function ProfilePage() {
             createdAt: recipe.createdAt,
           }));
           setRecipes(transformedRecipes);
-        } catch (error) {
-          console.error('Error fetching user recipes:', error);
+        } catch {
           setRecipes([]); // Empty array on error
         } finally {
           setIsLoadingRecipes(false);

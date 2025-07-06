@@ -78,7 +78,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       router.push('/');
     } catch (error) {
-      console.error('Login error:', error);
       throw error;
     }
   };
@@ -106,7 +105,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // The login function will handle fetching user info
       await login(email, password);
     } catch (error) {
-      console.error('Registration error:', error);
       throw error;
     }
   };
@@ -133,7 +131,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     if (!response.ok) {
-      console.error('Token refresh failed with status:', response.status);
       throw new Error(`Token refresh failed: ${response.status}`);
     }
 
@@ -177,7 +174,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem('user', JSON.stringify(user));
       setUser(user);
     } catch (error) {
-      console.error('Error fetching user info:', error);
       throw error;
     }
   };
@@ -225,7 +221,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Only logout if it's a refresh token issue
         const errorMessage = refreshError instanceof Error ? refreshError.message : String(refreshError);
         if (errorMessage.includes('No refresh token available') || errorMessage.includes('Token refresh failed')) {
-          console.error('Authentication failed:', refreshError);
           logout();
         }
         throw new Error('Authentication failed');

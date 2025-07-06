@@ -31,8 +31,7 @@ export default function RecipesPage() {
       setRecipes((prev) => [...prev, ...recipesArray]);
       setHasMore(recipesArray.length > 0);
       setPage((prev) => prev + 1);
-    } catch (error) {
-      console.error('Error loading recipes:', error);
+    } catch {
       setHasMore(false); // Stop trying to load more on error
     } finally {
       setLoading(false);
