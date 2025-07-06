@@ -21,7 +21,7 @@ public class KeycloakService {
     private final WebClient keycloakClient;
     private final WebClient keycloakAdminClient;
 
-    public Mono<LoginResponse> login(LoginRequest request) {
+    public Mono<TokenResponse> login(LoginRequest request) {
         MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
         body.add("grant_type", "password");
         body.add("client_id", properties.getCredentials().getRecipefy().getClientId());
@@ -34,7 +34,7 @@ public class KeycloakService {
                 .uri(properties.getKeycloakUri() + "/token")
                 .bodyValue(body)
                 .retrieve()
-                .bodyToMono(LoginResponse.class);
+                .bodyToMono(TokenResponse.class);
     }
 
     public Mono<ResponseEntity<Void>> register(RegisterRequest request) {
@@ -66,6 +66,19 @@ public class KeycloakService {
                 .headers(header-> header.setBearerAuth(token))
                 .retrieve()
                 .bodyToMono(UserInfoResponse.class);
+    }
 
+    public Mono<TokenResponse> refreshToken(RefreshTokenRequest request) {
+        MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+        body.add("grant_type", "refresh_token");
+        body.add("client_id", properties.getCredentials().getRecipefy().getClientId());
+        body.add("client_secret", properties.getCredentials().getRecipefy().getClientSecret());
+        body.add("refresh_token", request.getToken());
+
+        return keycloakClient.post()
+                .uri(properties.getKeycloakUri() + "/token")
+                .bodyValue(body)
+                .retrieve()
+                .bodyToMono(TokenResponse.class);
     }
 }
