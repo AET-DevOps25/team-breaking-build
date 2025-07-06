@@ -3,6 +3,7 @@ import '@/styles/globals.css';
 import { inter } from '@/lib/fonts';
 import NavBar from '@/components/navigation/NavBar';
 import { Toaster } from 'sonner';
+import { AuthProvider } from '@/contexts/AuthContext';
 
 export const metadata: Metadata = {
   title: 'Recipefy',
@@ -17,11 +18,13 @@ export default function RootLayout({
   return (
     <html lang='en'>
       <body className={`${inter.className} bg-[#fafafa] antialiased`}>
-        <NavBar />
-        <main>
-          <div>{children}</div>
-        </main>
-        <Toaster />
+        <AuthProvider>
+          <NavBar />
+          <main>
+            <div>{children}</div>
+          </main>
+          <Toaster />
+        </AuthProvider>
       </body>
     </html>
   );
