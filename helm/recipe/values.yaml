@@ -96,3 +96,13 @@ env:
       configMapKeyRef:
         name: recipefy-config
         key: VERSION_SERVICE_PORT
+  - name: GENAI_SERVICE_HOST
+    valueFrom:
+      configMapKeyRef:
+        name: recipefy-config
+        key: GENAI_SERVICE_HOST
+  - name: GENAI_SERVICE_PORT
+    valueFrom:
+      configMapKeyRef:
+        name: recipefy-config
+        key: GENAI_SERVICE_PORT
