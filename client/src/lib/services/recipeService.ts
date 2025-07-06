@@ -13,6 +13,11 @@ interface ParsedStep {
   details: string;
 }
 
+export interface Tag {
+  id: number;
+  name: string;
+}
+
 export async function getRecipes(page: number = 1, limit: number = 10): Promise<Recipe[]> {
   try {
     const response = await api.get<Recipe[]>(`/recipes?page=${page}&limit=${limit}`);
@@ -29,6 +34,16 @@ export async function getRecipe(id: string): Promise<Recipe | null> {
     return response;
   } catch (error) {
     console.error('Error fetching recipe:', error);
+    throw error;
+  }
+}
+
+export async function getTags(): Promise<Tag[]> {
+  try {
+    const response = await api.get<Tag[]>('/recipes/tags');
+    return response;
+  } catch (error) {
+    console.error('Error fetching tags:', error);
     throw error;
   }
 }

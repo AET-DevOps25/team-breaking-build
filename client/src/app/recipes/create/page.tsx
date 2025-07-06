@@ -2,9 +2,9 @@
 
 import { useRouter } from 'next/navigation';
 import { RecipeForm } from '@/components/recipe/recipe-form';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { createRecipe } from '@/lib/services/recipeService';
+import { createRecipe, getTags, Tag } from '@/lib/services/recipeService';
 
 // Type for the form data
 type RecipeFormData = {
@@ -28,6 +28,24 @@ type RecipeFormData = {
 export default function CreateRecipePage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [availableTags, setAvailableTags] = useState<Tag[]>([]);
+  const [isLoadingTags, setIsLoadingTags] = useState(true);
+
+  useEffect(() => {
+    const fetchTags = async () => {
+      try {
+        const tags = await getTags();
+        setAvailableTags(tags);
+      } catch (error) {
+        console.error('Error fetching tags:', error);
+        toast.error('Failed to load available tags');
+      } finally {
+        setIsLoadingTags(false);
+      }
+    };
+
+    fetchTags();
+  }, []);
 
   const handleSubmit = async (data: RecipeFormData) => {
     setIsSubmitting(true);
@@ -65,6 +83,8 @@ export default function CreateRecipePage() {
         <RecipeForm
           onSubmit={handleSubmit}
           isSubmitting={isSubmitting}
+          availableTags={availableTags}
+          isLoadingTags={isLoadingTags}
         />
       </div>
     </div>

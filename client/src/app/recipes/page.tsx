@@ -6,7 +6,7 @@ import { Recipe } from '@/lib/types/recipe';
 import { getRecipes } from '@/lib/services/recipeService';
 import { RecipeCard } from '@/components/recipe/recipe-card';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, ChefHat } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function RecipesPage() {
@@ -92,19 +92,13 @@ export default function RecipesPage() {
         </div>
       ) : !loading ? (
         <div className='flex flex-col items-center justify-center py-12'>
+          <div className='mb-6 flex size-24 items-center justify-center rounded-full bg-rose-100'>
+            <ChefHat className='size-12 text-[#FF7C75]' />
+          </div>
           <div className='mb-4 text-center'>
             <h3 className='mb-2 text-xl font-semibold text-gray-900'>No recipes available</h3>
             <p className='text-gray-600'>Be the first to create a recipe and share it with the community!</p>
           </div>
-          {isAuthenticated && (
-            <Button
-              onClick={() => router.push('/recipes/create')}
-              className='bg-[#FF7C75] text-white hover:bg-rose-600'
-            >
-              <Plus className='mr-2 size-4' />
-              Create First Recipe
-            </Button>
-          )}
         </div>
       ) : null}
 

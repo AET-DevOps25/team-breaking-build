@@ -174,4 +174,11 @@ public class RecipeServiceImpl implements RecipeService {
         recipe.setTags(tags);
         return RecipeMetadataDTOMapper.toDTO(recipeRepository.save(recipe));
     }
+
+    @Override
+    public List<RecipeTagDTO> getAllTags() {
+        return recipeTagRepository.findAll().stream()
+                .map(tag -> new RecipeTagDTO(tag.getId(), tag.getName()))
+                .collect(Collectors.toList());
+    }
 }

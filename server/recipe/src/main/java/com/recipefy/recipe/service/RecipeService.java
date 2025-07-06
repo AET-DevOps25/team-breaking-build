@@ -18,4 +18,5 @@ public interface RecipeService {
     RecipeMetadataDTO copyRecipe(Long recipeId, UUID userId, Long branchId);
     void deleteRecipe(Long recipeId, UUID userId);
     RecipeMetadataDTO updateTags(Long recipeId, List<RecipeTagDTO> tags, UUID userId);
+    List<RecipeTagDTO> getAllTags();
 }

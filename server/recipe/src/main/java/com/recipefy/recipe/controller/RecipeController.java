@@ -171,4 +171,19 @@ public class RecipeController {
             throw e;
         }
     }
+
+    @GetMapping("/tags")
+    @LogContext(extractUserIdFromHeader = true)
+    public ResponseEntity<List<RecipeTagDTO>> getAllTags() {
+        UUID userId = HeaderUtil.extractRequiredUserIdFromHeader();
+        logger.debug("Fetching all available tags for user: {}", userId);
+        try {
+            List<RecipeTagDTO> tags = recipeService.getAllTags();
+            logger.debug("Found {} available tags", tags.size());
+            return ResponseEntity.ok(tags);
+        } catch (Exception e) {
+            logger.error("Failed to fetch tags", e);
+            throw e;
+        }
+    }
 }
