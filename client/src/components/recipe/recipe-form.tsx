@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { X, Image as ImageIcon, Plus, Trash2 } from 'lucide-react';
-import { Tag, getTags } from '@/lib/services/recipeService';
+import { Tag } from '@/lib/services/recipeService';
 import { Textarea } from '@/components/ui/textarea';
 import Image from 'next/image';
 
