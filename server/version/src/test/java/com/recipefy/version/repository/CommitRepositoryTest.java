@@ -2,6 +2,7 @@ package com.recipefy.version.repository;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -31,19 +32,22 @@ class CommitRepositoryTest {
 
     private Commit sampleCommit;
     private Commit parentCommit;
+    private UUID testUserId;
 
     @BeforeEach
     void setUp() {
+        testUserId = UUID.randomUUID();
+        
         // Create a parent commit
         parentCommit = new Commit();
-        parentCommit.setUserId(1L);
+        parentCommit.setUserId(testUserId);
         parentCommit.setMessage("Parent commit");
         parentCommit.setCreatedAt(LocalDateTime.now().minusHours(1));
         parentCommit = entityManager.persistAndFlush(parentCommit);
 
         // Create a sample commit
         sampleCommit = new Commit();
-        sampleCommit.setUserId(1L);
+        sampleCommit.setUserId(testUserId);
         sampleCommit.setMessage("Sample commit");
         sampleCommit.setParent(parentCommit);
         sampleCommit.setCreatedAt(LocalDateTime.now());
@@ -57,7 +61,7 @@ class CommitRepositoryTest {
         // Then
         assertNotNull(savedCommit);
         assertNotNull(savedCommit.getId());
-        assertEquals(1L, savedCommit.getUserId());
+        assertEquals(testUserId, savedCommit.getUserId());
         assertEquals("Sample commit", savedCommit.getMessage());
         assertEquals(parentCommit, savedCommit.getParent());
     }
@@ -66,7 +70,7 @@ class CommitRepositoryTest {
     void save_ShouldPersistCommitWithoutParent() {
         // Given
         Commit commitWithoutParent = new Commit();
-        commitWithoutParent.setUserId(1L);
+        commitWithoutParent.setUserId(testUserId);
         commitWithoutParent.setMessage("Commit without parent");
         commitWithoutParent.setCreatedAt(LocalDateTime.now());
 
@@ -91,7 +95,7 @@ class CommitRepositoryTest {
         assertTrue(foundCommit.isPresent());
         assertEquals(savedCommit.getId(), foundCommit.get().getId());
         assertEquals("Sample commit", foundCommit.get().getMessage());
-        assertEquals(1L, foundCommit.get().getUserId());
+        assertEquals(testUserId, foundCommit.get().getUserId());
     }
 
     @Test
@@ -244,34 +248,36 @@ class CommitRepositoryTest {
     void save_ShouldHandleLargeUserId() {
         // Given
         Commit commit = createCommit("Test commit", null);
-        commit.setUserId(Long.MAX_VALUE);
+        UUID largeUserId = UUID.randomUUID();
+        commit.setUserId(largeUserId);
 
         // When
         Commit savedCommit = commitRepository.save(commit);
 
         // Then
         assertNotNull(savedCommit);
-        assertEquals(Long.MAX_VALUE, savedCommit.getUserId());
+        assertEquals(largeUserId, savedCommit.getUserId());
     }
 
     @Test
     void save_ShouldHandleNegativeUserId() {
         // Given
         Commit commit = createCommit("Test commit", null);
-        commit.setUserId(-1L);
+        UUID negativeUserId = UUID.randomUUID();
+        commit.setUserId(negativeUserId);
 
         // When
         Commit savedCommit = commitRepository.save(commit);
 
         // Then
         assertNotNull(savedCommit);
-        assertEquals(-1L, savedCommit.getUserId());
+        assertEquals(negativeUserId, savedCommit.getUserId());
     }
 
     // Helper methods
     private Commit createCommit(String message, Commit parent) {
         Commit commit = new Commit();
-        commit.setUserId(1L);
+        commit.setUserId(testUserId);
         commit.setMessage(message);
         commit.setParent(parent);
         commit.setCreatedAt(LocalDateTime.now());

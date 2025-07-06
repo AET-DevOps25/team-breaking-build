@@ -3,13 +3,13 @@ package com.recipefy.recipe.mapper.dto;
 import com.recipefy.recipe.model.dto.RecipeImageDTO;
 import com.recipefy.recipe.model.dto.RecipeMetadataDTO;
 import com.recipefy.recipe.model.entity.RecipeMetadata;
+import java.util.UUID;
 
 public class RecipeMetadataDTOMapper {
     public static RecipeMetadataDTO toDTO(RecipeMetadata recipeMetadata) {
         RecipeMetadataDTO dto = new RecipeMetadataDTO();
 
         dto.setId(recipeMetadata.getId());
-        dto.setUserId(recipeMetadata.getUserId());
         dto.setForkedFrom(recipeMetadata.getForkedFrom());
 
         dto.setCreatedAt(recipeMetadata.getCreatedAt());
@@ -25,11 +25,11 @@ public class RecipeMetadataDTOMapper {
         return dto;
     }
 
-    public  static RecipeMetadata toEntity(RecipeMetadataDTO dto) {
+    public static RecipeMetadata toEntity(RecipeMetadataDTO dto, UUID userId) {
         RecipeMetadata metadata = new RecipeMetadata();
 
         metadata.setId(dto.getId());
-        metadata.setUserId(dto.getUserId());
+        metadata.setUserId(userId);
         metadata.setForkedFrom(dto.getForkedFrom());
 
         metadata.setCreatedAt(dto.getCreatedAt());

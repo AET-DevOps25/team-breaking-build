@@ -3,6 +3,7 @@ package com.recipefy.version.controller;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,11 +46,13 @@ class VersionControllerTest {
 
     private MockMvc mockMvc;
     private ObjectMapper objectMapper;
+    private UUID testUserId;
 
     @BeforeEach
     void setUp() {
         mockMvc = MockMvcBuilders.standaloneSetup(versionController).build();
         objectMapper = new ObjectMapper();
+        testUserId = UUID.randomUUID();
     }
 
     @Test
@@ -63,11 +66,11 @@ class VersionControllerTest {
         mockBranchDTO.setId(1L);
         mockBranchDTO.setRecipeId(1L);
 
-        when(vcsService.initRecipe(recipeId, request, 1L)).thenReturn(mockBranchDTO);
+        when(vcsService.initRecipe(recipeId, request, testUserId)).thenReturn(mockBranchDTO);
 
         // When & Then
         mockMvc.perform(post("/vcs/recipes/{recipeId}/init", recipeId)
-                        .header("X-User-ID", "1")
+                        .header("X-User-ID", testUserId.toString())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -83,7 +86,7 @@ class VersionControllerTest {
 
         // When & Then
         mockMvc.perform(post("/vcs/recipes/{recipeId}/init", recipeId)
-                .header("X-User-ID", "1")
+                .header("X-User-ID", testUserId.toString())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
@@ -117,11 +120,11 @@ class VersionControllerTest {
         CreateBranchRequest request = new CreateBranchRequest("new-branch", 1L);
         BranchDTO branchDTO = createSampleBranchDTO(3L, "new-branch", recipeId);
 
-        when(vcsService.createBranch(recipeId, request, 1L)).thenReturn(branchDTO);
+        when(vcsService.createBranch(recipeId, request, testUserId)).thenReturn(branchDTO);
 
         // When & Then
         mockMvc.perform(post("/vcs/recipes/{recipeId}/branches", recipeId)
-                .header("X-User-ID", "1")
+                .header("X-User-ID", testUserId.toString())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -138,7 +141,7 @@ class VersionControllerTest {
 
         // When & Then
         mockMvc.perform(post("/vcs/recipes/{recipeId}/branches", recipeId)
-                .header("X-User-ID", "1")
+                .header("X-User-ID", testUserId.toString())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
@@ -151,18 +154,18 @@ class VersionControllerTest {
         Long branchId = 1L;
         RecipeDetailsDTO recipeDetails = createSampleRecipeDetails();
         CommitToBranchRequest request = new CommitToBranchRequest("Update recipe", recipeDetails);
-        CommitDTO commitDTO = createSampleCommitDTO(1L, 1L, "Update recipe", null);
+        CommitDTO commitDTO = createSampleCommitDTO(1L, testUserId, "Update recipe", null);
 
-        when(vcsService.commitToBranch(branchId, request, 1L)).thenReturn(commitDTO);
+        when(vcsService.commitToBranch(branchId, request, testUserId)).thenReturn(commitDTO);
 
         // When & Then
         mockMvc.perform(post("/vcs/branches/{branchId}/commit", recipeId, branchId)
-                .header("X-User-ID", "1")
+                .header("X-User-ID", testUserId.toString())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.userId").value(1))
+                .andExpect(jsonPath("$.userId").value(testUserId.toString()))
                 .andExpect(jsonPath("$.message").value("Update recipe"));
     }
 
@@ -175,7 +178,7 @@ class VersionControllerTest {
 
         // When & Then
         mockMvc.perform(post("/vcs/branches/{branchId}/commit", recipeId, branchId)
-                .header("X-User-ID", "1")
+                .header("X-User-ID", testUserId.toString())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
@@ -187,8 +190,8 @@ class VersionControllerTest {
         Long recipeId = 1L;
         Long branchId = 1L;
         List<CommitDTO> commits = Arrays.asList(
-                createSampleCommitDTO(1L, 1L, "Initial commit", null),
-                createSampleCommitDTO(2L, 1L, "Update recipe", 1L)
+                createSampleCommitDTO(1L, testUserId, "Initial commit", null),
+                createSampleCommitDTO(2L, testUserId, "Update recipe", 1L)
         );
 
         when(vcsService.getBranchHistory(branchId)).thenReturn(commits);
@@ -215,7 +218,7 @@ class VersionControllerTest {
 
         // When & Then
         mockMvc.perform(post("/vcs/branches/{branchId}/copy", recipeId, branchId)
-                .header("X-User-ID", "1")
+                .header("X-User-ID", testUserId.toString())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -233,7 +236,7 @@ class VersionControllerTest {
 
         // When & Then
         mockMvc.perform(post("/vcs/branches/{branchId}/copy", recipeId, branchId)
-                .header("X-User-ID", "1")
+                .header("X-User-ID", testUserId.toString())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
@@ -294,12 +297,12 @@ class VersionControllerTest {
         return new BranchDTO(id, name, recipeId, 1L, LocalDateTime.now());
     }
 
-    private CommitDTO createSampleCommitDTO(Long id, Long userId, String message, Long parentId) {
+    private CommitDTO createSampleCommitDTO(Long id, UUID userId, String message, Long parentId) {
         return new CommitDTO(id, userId, message, parentId, LocalDateTime.now());
     }
 
     private CommitDetailsResponse createSampleCommitDetailsResponse() {
-        CommitDTO commit = createSampleCommitDTO(1L, 1L, "Initial commit", null);
+        CommitDTO commit = createSampleCommitDTO(1L, testUserId, "Initial commit", null);
         RecipeDetailsDTO recipeDetails = createSampleRecipeDetails();
         return new CommitDetailsResponse(commit, recipeDetails);
     }

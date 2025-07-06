@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { X, Image as ImageIcon, Plus, Trash2 } from 'lucide-react';
-import { Tag, getTags } from '@/lib/services/mockTagService';
+import { Tag } from '@/lib/services/recipeService';
 import { Textarea } from '@/components/ui/textarea';
 import Image from 'next/image';
 
@@ -43,6 +43,8 @@ type RecipeFormData = z.infer<typeof recipeSchema>;
 interface RecipeFormProps {
   onSubmit: (data: RecipeFormData) => Promise<void>;
   isSubmitting?: boolean;
+  availableTags?: Tag[];
+  isLoadingTags?: boolean;
 }
 
 const ingredientPlaceholders = [
@@ -101,10 +103,8 @@ const stepPlaceholders = [
   'Take a moment to be proud of your creation',
 ] as const;
 
-export function RecipeForm({ onSubmit, isSubmitting }: RecipeFormProps) {
+export function RecipeForm({ onSubmit, isSubmitting, availableTags = [], isLoadingTags = false }: RecipeFormProps) {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [availableTags, setAvailableTags] = useState<Tag[]>([]);
-  const [isLoadingTags, setIsLoadingTags] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showTagDropdown, setShowTagDropdown] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -144,22 +144,6 @@ export function RecipeForm({ onSubmit, isSubmitting }: RecipeFormProps) {
   const getPlaceholder = (placeholders: readonly string[], index: number): string => {
     return placeholders[index % placeholders.length];
   };
-
-  useEffect(() => {
-    const loadTags = async () => {
-      setIsLoadingTags(true);
-      try {
-        const tags = await getTags();
-        setAvailableTags(tags);
-      } catch (error) {
-        console.error('Error loading tags:', error);
-      } finally {
-        setIsLoadingTags(false);
-      }
-    };
-
-    loadTags();
-  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

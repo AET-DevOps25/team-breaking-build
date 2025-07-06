@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -34,12 +35,15 @@ class BranchRepositoryTest {
 
     private Branch sampleBranch;
     private Commit sampleCommit;
+    private UUID testUserId;
 
     @BeforeEach
     void setUp() {
+        testUserId = UUID.randomUUID();
+        
         // Create a sample commit first
         sampleCommit = new Commit();
-        sampleCommit.setUserId(1L);
+        sampleCommit.setUserId(testUserId);
         sampleCommit.setMessage("Initial commit");
         sampleCommit.setCreatedAt(LocalDateTime.now());
         sampleCommit = entityManager.persistAndFlush(sampleCommit);
@@ -237,7 +241,7 @@ class BranchRepositoryTest {
 
     private Commit createCommit(String message) {
         Commit commit = new Commit();
-        commit.setUserId(1L);
+        commit.setUserId(testUserId);
         commit.setMessage(message);
         commit.setCreatedAt(LocalDateTime.now());
         return commit;

@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -37,6 +38,7 @@ import com.recipefy.recipe.model.entity.RecipeMetadata;
 import com.recipefy.recipe.model.entity.RecipeTag;
 import com.recipefy.recipe.model.request.CreateRecipeRequest;
 import com.recipefy.recipe.model.request.InitRecipeRequest;
+import com.recipefy.recipe.exception.UnauthorizedException;
 import com.recipefy.recipe.repository.RecipeRepository;
 import com.recipefy.recipe.repository.TagRepository;
 
@@ -71,7 +73,7 @@ class RecipeServiceImplTest {
         // Setup test recipe
         testRecipe = new RecipeMetadata();
         testRecipe.setId(1L);
-        testRecipe.setUserId(1L);
+        testRecipe.setUserId(UUID.fromString("550e8400-e29b-41d4-a716-446655440000"));
         testRecipe.setTitle("Test Recipe");
         testRecipe.setDescription("Test Description");
         testRecipe.setThumbnail("test.jpg");
@@ -140,21 +142,21 @@ class RecipeServiceImplTest {
     @Test
     void createRecipe_ShouldCreateAndReturnRecipe() {
         // Arrange
-        CreateRecipeRequest request = new CreateRecipeRequest(testRecipeDTO, new InitRecipeRequest(1L, null));
+        CreateRecipeRequest request = new CreateRecipeRequest(testRecipeDTO, new InitRecipeRequest(null));
         when(recipeRepository.save(any(RecipeMetadata.class))).thenReturn(testRecipe);
         when(tagRepository.findByName(anyString())).thenReturn(Optional.of(testTag));
-        when(versionClient.initRecipe(anyLong(), any(InitRecipeRequest.class))).thenReturn(testBranchDTO);
+        when(versionClient.initRecipe(anyLong(), any(InitRecipeRequest.class), any(UUID.class))).thenReturn(testBranchDTO);
         doNothing().when(genAIClient).indexRecipe(any(RecipeMetadataDTO.class), any());
 
         // Act
-        RecipeMetadataDTO result = recipeService.createRecipe(request);
+        RecipeMetadataDTO result = recipeService.createRecipe(request, UUID.fromString("550e8400-e29b-41d4-a716-446655440000"));
 
         // Assert
         assertNotNull(result);
         assertEquals(testRecipeDTO.getId(), result.getId());
         assertEquals(testRecipeDTO.getTitle(), result.getTitle());
         verify(recipeRepository).save(any(RecipeMetadata.class));
-        verify(versionClient).initRecipe(anyLong(), any(InitRecipeRequest.class));
+        verify(versionClient).initRecipe(anyLong(), any(InitRecipeRequest.class), any(UUID.class));
         verify(genAIClient).indexRecipe(any(RecipeMetadataDTO.class), any());
     }
 
@@ -165,7 +167,7 @@ class RecipeServiceImplTest {
         when(recipeRepository.save(any(RecipeMetadata.class))).thenReturn(testRecipe);
 
         // Act
-        RecipeMetadataDTO result = recipeService.updateRecipe(1L, testRecipeDTO);
+        RecipeMetadataDTO result = recipeService.updateRecipe(1L, testRecipeDTO, UUID.fromString("550e8400-e29b-41d4-a716-446655440000"));
 
         // Assert
         assertNotNull(result);
@@ -181,7 +183,7 @@ class RecipeServiceImplTest {
         when(recipeRepository.findById(1L)).thenReturn(Optional.empty());
 
         // Act & Assert
-        assertThrows(EntityNotFoundException.class, () -> recipeService.updateRecipe(1L, testRecipeDTO));
+        assertThrows(EntityNotFoundException.class, () -> recipeService.updateRecipe(1L, testRecipeDTO, UUID.fromString("550e8400-e29b-41d4-a716-446655440000")));
         verify(recipeRepository).findById(1L);
         verify(recipeRepository, never()).save(any(RecipeMetadata.class));
     }
@@ -195,7 +197,7 @@ class RecipeServiceImplTest {
         doNothing().when(genAIClient).indexRecipe(any(RecipeMetadataDTO.class), any());
 
         // Act
-        RecipeMetadataDTO result = recipeService.copyRecipe(1L, 2L, 3L);
+        RecipeMetadataDTO result = recipeService.copyRecipe(1L, UUID.fromString("550e8400-e29b-41d4-a716-446655440001"), 3L);
 
         // Assert
         assertNotNull(result);
@@ -210,11 +212,13 @@ class RecipeServiceImplTest {
     @Test
     void deleteRecipe_ShouldDeleteRecipe() {
         // Arrange
+        when(recipeRepository.findById(1L)).thenReturn(Optional.of(testRecipe));
         doNothing().when(recipeRepository).deleteById(1L);
         doNothing().when(genAIClient).deleteRecipe(anyString());
 
         // Act & Assert
-        assertThrows(UnsupportedOperationException.class, () -> recipeService.deleteRecipe(1L));
+        assertThrows(UnsupportedOperationException.class, () -> recipeService.deleteRecipe(1L, UUID.fromString("550e8400-e29b-41d4-a716-446655440000")));
+        verify(recipeRepository).findById(1L);
         verify(recipeRepository).deleteById(1L);
         verify(genAIClient).deleteRecipe(anyString());
     }
@@ -228,7 +232,7 @@ class RecipeServiceImplTest {
         when(recipeRepository.save(any(RecipeMetadata.class))).thenReturn(testRecipe);
 
         // Act
-        RecipeMetadataDTO result = recipeService.updateTags(1L, newTags);
+        RecipeMetadataDTO result = recipeService.updateTags(1L, newTags, UUID.fromString("550e8400-e29b-41d4-a716-446655440000"));
 
         // Assert
         assertNotNull(result);
@@ -246,7 +250,42 @@ class RecipeServiceImplTest {
         when(recipeRepository.findById(1L)).thenReturn(Optional.empty());
 
         // Act & Assert
-        assertThrows(EntityNotFoundException.class, () -> recipeService.updateTags(1L, newTags));
+        assertThrows(EntityNotFoundException.class, () -> recipeService.updateTags(1L, newTags, UUID.fromString("550e8400-e29b-41d4-a716-446655440000")));
+        verify(recipeRepository).findById(1L);
+        verify(recipeRepository, never()).save(any(RecipeMetadata.class));
+    }
+
+    @Test
+    void updateRecipe_WhenUserNotOwner_ShouldThrowUnauthorizedException() {
+        // Arrange
+        when(recipeRepository.findById(1L)).thenReturn(Optional.of(testRecipe));
+
+        // Act & Assert
+        assertThrows(UnauthorizedException.class, () -> recipeService.updateRecipe(1L, testRecipeDTO, UUID.fromString("550e8400-e29b-41d4-a716-446655440001")));
+        verify(recipeRepository).findById(1L);
+        verify(recipeRepository, never()).save(any(RecipeMetadata.class));
+    }
+
+    @Test
+    void deleteRecipe_WhenUserNotOwner_ShouldThrowUnauthorizedException() {
+        // Arrange
+        when(recipeRepository.findById(1L)).thenReturn(Optional.of(testRecipe));
+
+        // Act & Assert
+        assertThrows(UnauthorizedException.class, () -> recipeService.deleteRecipe(1L, UUID.fromString("550e8400-e29b-41d4-a716-446655440001")));
+        verify(recipeRepository).findById(1L);
+        verify(recipeRepository, never()).deleteById(anyLong());
+        verify(genAIClient, never()).deleteRecipe(anyString());
+    }
+
+    @Test
+    void updateTags_WhenUserNotOwner_ShouldThrowUnauthorizedException() {
+        // Arrange
+        List<RecipeTagDTO> newTags = Collections.singletonList(testTagDTO);
+        when(recipeRepository.findById(1L)).thenReturn(Optional.of(testRecipe));
+
+        // Act & Assert
+        assertThrows(UnauthorizedException.class, () -> recipeService.updateTags(1L, newTags, UUID.fromString("550e8400-e29b-41d4-a716-446655440001")));
         verify(recipeRepository).findById(1L);
         verify(recipeRepository, never()).save(any(RecipeMetadata.class));
     }

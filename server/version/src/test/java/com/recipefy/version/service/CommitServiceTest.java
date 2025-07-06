@@ -2,6 +2,7 @@ package com.recipefy.version.service;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -35,9 +36,11 @@ class CommitServiceTest {
 
     private Commit sampleCommit;
     private Commit parentCommit;
+    private UUID testUserId;
 
     @BeforeEach
     void setUp() {
+        testUserId = UUID.randomUUID();
         sampleCommit = createSampleCommit();
         parentCommit = createParentCommit();
     }
@@ -45,11 +48,10 @@ class CommitServiceTest {
     @Test
     void createInitialCommit_ShouldCreateInitialCommitSuccessfully() {
         // Given
-        Long userId = 1L;
         when(commitRepository.save(any(Commit.class))).thenReturn(sampleCommit);
 
         // When
-        Commit result = commitService.createInitialCommit(userId);
+        Commit result = commitService.createInitialCommit(testUserId);
 
         // Then
         assertNotNull(result);
@@ -60,7 +62,6 @@ class CommitServiceTest {
     @Test
     void createInitialCommit_ShouldSetCorrectInitialMessage() {
         // Given
-        Long userId = 1L;
         when(commitRepository.save(any(Commit.class))).thenAnswer(invocation -> {
             Commit commit = invocation.getArgument(0);
             commit.setId(1L);
@@ -68,12 +69,12 @@ class CommitServiceTest {
         });
 
         // When
-        Commit result = commitService.createInitialCommit(userId);
+        Commit result = commitService.createInitialCommit(testUserId);
 
         // Then
         assertNotNull(result);
         assertEquals(INITIAL_COMMIT_MESSAGE, result.getMessage());
-        assertEquals(userId, result.getUserId());
+        assertEquals(testUserId, result.getUserId());
         assertNull(result.getParent());
         verify(commitRepository).save(any(Commit.class));
     }
@@ -81,12 +82,11 @@ class CommitServiceTest {
     @Test
     void createCommit_ShouldCreateCommitSuccessfully_WhenValidParameters() {
         // Given
-        Long userId = 1L;
         String message = "Update recipe";
         when(commitRepository.save(any(Commit.class))).thenReturn(sampleCommit);
 
         // When
-        Commit result = commitService.createCommit(userId, message, parentCommit);
+        Commit result = commitService.createCommit(testUserId, message, parentCommit);
 
         // Then
         assertNotNull(result);
@@ -97,7 +97,6 @@ class CommitServiceTest {
     @Test
     void createCommit_ShouldCreateCommitWithParent_WhenParentProvided() {
         // Given
-        Long userId = 1L;
         String message = "Update recipe";
         when(commitRepository.save(any(Commit.class))).thenAnswer(invocation -> {
             Commit commit = invocation.getArgument(0);
@@ -106,11 +105,11 @@ class CommitServiceTest {
         });
 
         // When
-        Commit result = commitService.createCommit(userId, message, parentCommit);
+        Commit result = commitService.createCommit(testUserId, message, parentCommit);
 
         // Then
         assertNotNull(result);
-        assertEquals(userId, result.getUserId());
+        assertEquals(testUserId, result.getUserId());
         assertEquals(message, result.getMessage());
         assertEquals(parentCommit, result.getParent());
         verify(commitRepository).save(any(Commit.class));
@@ -119,7 +118,6 @@ class CommitServiceTest {
     @Test
     void createCommit_ShouldCreateCommitWithoutParent_WhenParentIsNull() {
         // Given
-        Long userId = 1L;
         String message = "Update recipe";
         when(commitRepository.save(any(Commit.class))).thenAnswer(invocation -> {
             Commit commit = invocation.getArgument(0);
@@ -128,11 +126,11 @@ class CommitServiceTest {
         });
 
         // When
-        Commit result = commitService.createCommit(userId, message, null);
+        Commit result = commitService.createCommit(testUserId, message, null);
 
         // Then
         assertNotNull(result);
-        assertEquals(userId, result.getUserId());
+        assertEquals(testUserId, result.getUserId());
         assertEquals(message, result.getMessage());
         assertNull(result.getParent());
         verify(commitRepository).save(any(Commit.class));
@@ -181,7 +179,7 @@ class CommitServiceTest {
     @Test
     void createInitialCommit_ShouldSetCorrectUserId() {
         // Given
-        Long userId = 123L;
+        UUID userId = UUID.randomUUID();
         when(commitRepository.save(any(Commit.class))).thenAnswer(invocation -> {
             Commit commit = invocation.getArgument(0);
             commit.setId(1L);
@@ -200,7 +198,6 @@ class CommitServiceTest {
     @Test
     void createCommit_ShouldHandleEmptyMessage() {
         // Given
-        Long userId = 1L;
         String message = "";
         when(commitRepository.save(any(Commit.class))).thenAnswer(invocation -> {
             Commit commit = invocation.getArgument(0);
@@ -209,7 +206,7 @@ class CommitServiceTest {
         });
 
         // When
-        Commit result = commitService.createCommit(userId, message, parentCommit);
+        Commit result = commitService.createCommit(testUserId, message, parentCommit);
 
         // Then
         assertNotNull(result);
@@ -220,7 +217,6 @@ class CommitServiceTest {
     @Test
     void createCommit_ShouldHandleNullMessage() {
         // Given
-        Long userId = 1L;
         String message = null;
         when(commitRepository.save(any(Commit.class))).thenAnswer(invocation -> {
             Commit commit = invocation.getArgument(0);
@@ -229,7 +225,7 @@ class CommitServiceTest {
         });
 
         // When
-        Commit result = commitService.createCommit(userId, message, parentCommit);
+        Commit result = commitService.createCommit(testUserId, message, parentCommit);
 
         // Then
         assertNotNull(result);
@@ -241,7 +237,7 @@ class CommitServiceTest {
     private Commit createSampleCommit() {
         Commit commit = new Commit();
         commit.setId(1L);
-        commit.setUserId(1L);
+        commit.setUserId(testUserId);
         commit.setMessage("Initial commit");
         commit.setCreatedAt(LocalDateTime.now());
         return commit;
@@ -250,7 +246,7 @@ class CommitServiceTest {
     private Commit createParentCommit() {
         Commit commit = new Commit();
         commit.setId(1L);
-        commit.setUserId(1L);
+        commit.setUserId(testUserId);
         commit.setMessage("Parent commit");
         commit.setCreatedAt(LocalDateTime.now().minusHours(1));
         return commit;

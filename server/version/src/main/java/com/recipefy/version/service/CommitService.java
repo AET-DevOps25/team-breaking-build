@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import java.util.UUID;
 
 import static com.recipefy.version.constants.ApplicationConstants.INITIAL_COMMIT_MESSAGE;
 import static com.recipefy.version.constants.LogMessages.COMMIT_NOT_FOUND_PRE_MESSAGE;
@@ -20,7 +21,7 @@ public class CommitService {
     
     private final CommitRepository commitRepository;
 
-    public Commit createInitialCommit(Long userId) {
+    public Commit createInitialCommit(UUID userId) {
         logger.debug("Creating initial commit");
         try {
             Commit commit = createCommit(userId, INITIAL_COMMIT_MESSAGE, null);
@@ -32,7 +33,7 @@ public class CommitService {
         }
     }
 
-    public Commit createCommit(Long userId, String message, Commit parent) {
+    public Commit createCommit(UUID userId, String message, Commit parent) {
         logger.debug("Creating commit with message: {}, parentCommitId: {}", 
                     message, parent != null ? parent.getId() : "null");
         try {

@@ -2,6 +2,7 @@ package com.recipefy.recipe.model.entity;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -22,7 +23,7 @@ import lombok.ToString;
 @Entity
 public class RecipeMetadata extends BaseEntity {
     @Column(updatable = false, nullable = false)
-    private Long userId;
+    private UUID userId;
 
     @Column(updatable = false)
     private Long forkedFrom;

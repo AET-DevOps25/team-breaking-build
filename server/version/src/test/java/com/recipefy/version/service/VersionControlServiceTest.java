@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -64,10 +65,12 @@ class VersionControlServiceTest {
     private Commit sampleCommit;
     private RecipeSnapshot sampleRecipeSnapshot;
     private LocalDateTime createdAt;
+    private UUID testUserId;
 
     @BeforeEach
     void setUp() {
         createdAt = LocalDateTime.now();
+        testUserId = UUID.randomUUID();
         sampleRecipeDetails = createSampleRecipeDetails();
         sampleBranch = createSampleBranch();
         sampleCommit = createSampleCommit();
@@ -78,20 +81,19 @@ class VersionControlServiceTest {
     void initRecipe_ShouldInitializeRecipeSuccessfully_WhenValidRequest() {
         // Given
         Long recipeId = 1L;
-        Long userId = 1L;
         InitRecipeRequest request = new InitRecipeRequest(sampleRecipeDetails);
 
         doNothing().when(branchService).checkIfBranchCreated(recipeId);
-        when(commitService.createInitialCommit(userId)).thenReturn(sampleCommit);
+        when(commitService.createInitialCommit(testUserId)).thenReturn(sampleCommit);
         when(branchService.createMainBranch(recipeId, sampleCommit)).thenReturn(sampleBranch);
         when(recipeSnapshotService.createRecipeSnapshot(any(RecipeSnapshot.class))).thenReturn(sampleRecipeSnapshot);
 
         // When
-        versionControlService.initRecipe(recipeId, request, 1L);
+        versionControlService.initRecipe(recipeId, request, testUserId);
 
         // Then
         verify(branchService).checkIfBranchCreated(recipeId);
-        verify(commitService).createInitialCommit(userId);
+        verify(commitService).createInitialCommit(testUserId);
         verify(branchService).createMainBranch(recipeId, sampleCommit);
         verify(recipeSnapshotService).createRecipeSnapshot(any(RecipeSnapshot.class));
     }
@@ -100,7 +102,6 @@ class VersionControlServiceTest {
     void initRecipe_ShouldThrowException_WhenBranchAlreadyExists() {
         // Given
         Long recipeId = 1L;
-        Long userId = 1L;
         InitRecipeRequest request = new InitRecipeRequest(sampleRecipeDetails);
 
         doThrow(new BusinessException("Branch already exists", HttpStatus.BAD_REQUEST))
@@ -108,7 +109,7 @@ class VersionControlServiceTest {
 
         // When & Then
         BusinessException exception = assertThrows(BusinessException.class,
-                () -> versionControlService.initRecipe(recipeId, request, 1L));
+                () -> versionControlService.initRecipe(recipeId, request, testUserId));
         assertEquals(HttpStatus.BAD_REQUEST, exception.getHttpStatus());
     }
 
@@ -145,7 +146,7 @@ class VersionControlServiceTest {
         doNothing().when(branchService).checkUniqueBranchName(recipeId, branchName);
         when(branchService.saveBranch(any(Branch.class))).thenReturn(sampleBranch);
         // When
-        BranchDTO result = versionControlService.createBranch(recipeId, request, 1L);
+        BranchDTO result = versionControlService.createBranch(recipeId, request, testUserId);
 
         // Then
         assertNotNull(result);
@@ -167,7 +168,7 @@ class VersionControlServiceTest {
 
         // When & Then
         BusinessException exception = assertThrows(BusinessException.class,
-                () -> versionControlService.createBranch(recipeId, request, 1L));
+                () -> versionControlService.createBranch(recipeId, request, testUserId));
         assertEquals(HttpStatus.NOT_FOUND, exception.getHttpStatus());
     }
 
@@ -185,7 +186,7 @@ class VersionControlServiceTest {
 
         // When & Then
         BusinessException exception = assertThrows(BusinessException.class,
-                () -> versionControlService.createBranch(recipeId, request, 1L));
+                () -> versionControlService.createBranch(recipeId, request, testUserId));
         assertEquals(HttpStatus.BAD_REQUEST, exception.getHttpStatus());
     }
 
@@ -193,24 +194,23 @@ class VersionControlServiceTest {
     void commitToBranch_ShouldCreateCommitSuccessfully_WhenValidRequest() {
         // Given
         Long branchId = 1L;
-        Long userId = 1L;
         String message = "Update recipe";
         CommitToBranchRequest request = new CommitToBranchRequest(message, sampleRecipeDetails);
         CommitDTO expectedCommitDTO = createSampleCommitDTO();
 
         when(branchService.getBranchById(branchId)).thenReturn(sampleBranch);
-        when(commitService.createCommit(userId, message, sampleBranch.getHeadCommit())).thenReturn(sampleCommit);
+        when(commitService.createCommit(testUserId, message, sampleBranch.getHeadCommit())).thenReturn(sampleCommit);
         when(branchService.addCommit(sampleBranch, sampleCommit)).thenReturn(sampleBranch);
         when(recipeSnapshotService.createRecipeSnapshot(any(RecipeSnapshot.class))).thenReturn(sampleRecipeSnapshot);
 
         // When
-        CommitDTO result = versionControlService.commitToBranch(branchId, request, 1L);
+        CommitDTO result = versionControlService.commitToBranch(branchId, request, testUserId);
 
         // Then
         assertNotNull(result);
         assertEquals(expectedCommitDTO, result);
         verify(branchService).getBranchById(branchId);
-        verify(commitService).createCommit(userId, message, sampleBranch.getHeadCommit());
+        verify(commitService).createCommit(testUserId, message, sampleBranch.getHeadCommit());
         verify(branchService).addCommit(sampleBranch, sampleCommit);
         verify(recipeSnapshotService).createRecipeSnapshot(any(RecipeSnapshot.class));
     }
@@ -219,7 +219,6 @@ class VersionControlServiceTest {
     void commitToBranch_ShouldThrowException_WhenBranchNotFound() {
         // Given
         Long branchId = 999L;
-        Long userId = 1L;
         String message = "Update recipe";
         CommitToBranchRequest request = new CommitToBranchRequest(message, sampleRecipeDetails);
 
@@ -228,7 +227,7 @@ class VersionControlServiceTest {
 
         // When & Then
         BusinessException exception = assertThrows(BusinessException.class,
-                () -> versionControlService.commitToBranch(branchId, request, 1L));
+                () -> versionControlService.commitToBranch(branchId, request, testUserId));
         assertEquals(HttpStatus.NOT_FOUND, exception.getHttpStatus());
     }
 
@@ -369,7 +368,7 @@ class VersionControlServiceTest {
     private Commit createSampleCommit() {
         Commit commit = new Commit();
         commit.setId(1L);
-        commit.setUserId(1L);
+        commit.setUserId(testUserId);
         commit.setMessage("Initial commit");
         commit.setCreatedAt(createdAt);
         return commit;
@@ -398,7 +397,7 @@ class VersionControlServiceTest {
     }
 
     private CommitDTO createSampleCommitDTO() {
-        return new CommitDTO(1L, 1L, "Initial commit", null, createdAt);
+        return new CommitDTO(1L, testUserId, "Initial commit", null, createdAt);
     }
 
     private CommitDetailsResponse createSampleCommitDetailsResponse() {

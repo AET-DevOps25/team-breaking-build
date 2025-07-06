@@ -1,4 +1,5 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+const AUTH_BASE_URL = process.env.NEXT_PUBLIC_KEYCLOAK_BASE_URL || 'http://localhost:8089';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8090';
 
 async function getAuthHeader(): Promise<Record<string, string>> {
   const tokens = localStorage.getItem('tokens');
@@ -41,7 +42,12 @@ export async function apiRequest<T>(endpoint: string, options: RequestInit = {})
       }
 
       const { refreshToken } = JSON.parse(tokens);
-      const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh`, {
+      if (!refreshToken) {
+        window.location.href = '/login';
+        throw new Error('No refresh token available');
+      }
+
+      const refreshResponse = await fetch(`${AUTH_BASE_URL}/auth/refresh`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -49,13 +55,33 @@ export async function apiRequest<T>(endpoint: string, options: RequestInit = {})
         body: JSON.stringify({ token: refreshToken }),
       });
 
-      if (!refreshResponse.ok) {
+      // If refresh fails with 401, it means the refresh token is invalid/expired
+      if (refreshResponse.status === 401) {
+        localStorage.removeItem('tokens');
         window.location.href = '/login';
-        throw new Error('Token refresh failed');
+        throw new Error('Refresh token is invalid or expired');
+      }
+
+      // If refresh fails with other status codes, logout the user
+      if (!refreshResponse.ok) {
+        localStorage.removeItem('tokens');
+        window.location.href = '/login';
+        throw new Error(`Token refresh failed with status: ${refreshResponse.status}`);
       }
 
       const refreshData = await refreshResponse.json();
       const newToken = refreshData.access_token;
+
+      if (!newToken) {
+        throw new Error('No access token received from refresh');
+      }
+
+      // Update tokens in localStorage with the new tokens
+      const updatedTokens = {
+        accessToken: newToken,
+        refreshToken: refreshData.refresh_token || refreshToken, // Keep old refresh token if new one not provided
+      };
+      localStorage.setItem('tokens', JSON.stringify(updatedTokens));
 
       // Retry the request with the new token
       const retryResponse = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -68,19 +94,23 @@ export async function apiRequest<T>(endpoint: string, options: RequestInit = {})
       });
 
       if (!retryResponse.ok) {
-        throw new Error('Request failed after token refresh');
+        // Don't redirect to login here, just throw the error
+        throw new Error(`Request failed after token refresh: ${retryResponse.status}`);
       }
 
       return retryResponse.json();
     } catch (error) {
-      // If refresh fails, redirect to login
-      window.location.href = '/login';
+      // Only redirect to login if it's a refresh token issue
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes('Refresh token is invalid') || errorMessage.includes('No tokens available')) {
+        window.location.href = '/login';
+      }
       throw error;
     }
   }
 
   if (!response.ok) {
-    throw new Error('Request failed');
+    throw new Error(`Request failed with status: ${response.status}`);
   }
 
   return response.json();
@@ -96,49 +126,39 @@ export async function publicApiRequest<T>(endpoint: string, options: RequestInit
   });
 
   if (!response.ok) {
-    throw new Error('Request failed');
+    throw new Error(`Request failed with status: ${response.status}`);
   }
 
   return response.json();
 }
 
+// Convenience methods
 export const api = {
-  get: <T>(endpoint: string, options?: RequestInit) => apiRequest<T>(endpoint, { ...options, method: 'GET' }),
-
-  post: <T>(endpoint: string, data: unknown, options?: RequestInit) =>
+  get: <T>(endpoint: string, options: RequestInit = {}): Promise<T> =>
+    apiRequest<T>(endpoint, { ...options, method: 'GET' }),
+  post: <T>(endpoint: string, data?: unknown, options: RequestInit = {}): Promise<T> =>
     apiRequest<T>(endpoint, {
       ...options,
       method: 'POST',
-      body: JSON.stringify(data),
+      body: data ? JSON.stringify(data) : undefined,
     }),
-
-  put: <T>(endpoint: string, data: unknown, options?: RequestInit) =>
+  put: <T>(endpoint: string, data?: unknown, options: RequestInit = {}): Promise<T> =>
     apiRequest<T>(endpoint, {
       ...options,
       method: 'PUT',
-      body: JSON.stringify(data),
+      body: data ? JSON.stringify(data) : undefined,
     }),
-
-  delete: <T>(endpoint: string, options?: RequestInit) => apiRequest<T>(endpoint, { ...options, method: 'DELETE' }),
+  delete: <T>(endpoint: string, options: RequestInit = {}): Promise<T> =>
+    apiRequest<T>(endpoint, { ...options, method: 'DELETE' }),
 };
 
 export const publicApi = {
-  get: <T>(endpoint: string, options?: RequestInit) => publicApiRequest<T>(endpoint, { ...options, method: 'GET' }),
-
-  post: <T>(endpoint: string, data: unknown, options?: RequestInit) =>
+  get: <T>(endpoint: string, options: RequestInit = {}): Promise<T> =>
+    publicApiRequest<T>(endpoint, { ...options, method: 'GET' }),
+  post: <T>(endpoint: string, data?: unknown, options: RequestInit = {}): Promise<T> =>
     publicApiRequest<T>(endpoint, {
       ...options,
       method: 'POST',
-      body: JSON.stringify(data),
+      body: data ? JSON.stringify(data) : undefined,
     }),
-
-  put: <T>(endpoint: string, data: unknown, options?: RequestInit) =>
-    publicApiRequest<T>(endpoint, {
-      ...options,
-      method: 'PUT',
-      body: JSON.stringify(data),
-    }),
-
-  delete: <T>(endpoint: string, options?: RequestInit) =>
-    publicApiRequest<T>(endpoint, { ...options, method: 'DELETE' }),
 };

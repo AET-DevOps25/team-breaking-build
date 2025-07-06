@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
+import java.util.UUID;
 
 public class RecipeMetadataDTOMapperTests {
 
@@ -24,7 +25,7 @@ public class RecipeMetadataDTOMapperTests {
 
         RecipeMetadata recipe = new RecipeMetadata();
         recipe.setId(100L);
-        recipe.setUserId(200L);
+        recipe.setUserId(UUID.fromString("550e8400-e29b-41d4-a716-446655440000"));
         recipe.setForkedFrom(300L);
         recipe.setTitle("Test Recipe");
         recipe.setDescription("Test Desc");
@@ -36,7 +37,6 @@ public class RecipeMetadataDTOMapperTests {
         RecipeMetadataDTO dto = RecipeMetadataDTOMapper.toDTO(recipe);
 
         assertThat(dto.getId()).isEqualTo(recipe.getId());
-        assertThat(dto.getUserId()).isEqualTo(recipe.getUserId());
         assertThat(dto.getForkedFrom()).isEqualTo(recipe.getForkedFrom());
         assertThat(dto.getTitle()).isEqualTo(recipe.getTitle());
         assertThat(dto.getDescription()).isEqualTo(recipe.getDescription());

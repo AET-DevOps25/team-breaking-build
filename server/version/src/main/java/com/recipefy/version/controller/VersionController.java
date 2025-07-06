@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/vcs")
@@ -40,7 +41,7 @@ public class VersionController {
             @PathVariable Long recipeId,
             @RequestBody @Valid InitRecipeRequest initRecipeRequest) {
         
-        Long userId = HeaderUtil.extractRequiredUserIdFromHeader();
+        UUID userId = HeaderUtil.extractRequiredUserIdFromHeader();
         logger.info("Initializing recipe");
         try {
             BranchDTO branch = vcsService.initRecipe(recipeId, initRecipeRequest, userId);
@@ -72,7 +73,7 @@ public class VersionController {
             @PathVariable Long recipeId,
             @RequestBody @Valid CreateBranchRequest createBranchRequest) {
         
-        Long userId = HeaderUtil.extractRequiredUserIdFromHeader();
+        UUID userId = HeaderUtil.extractRequiredUserIdFromHeader();
         logger.info("Creating branch with name: {}, sourceBranchId: {}", 
                    createBranchRequest.getBranchName(), createBranchRequest.getSourceBranchId());
         try {
@@ -91,7 +92,7 @@ public class VersionController {
             @PathVariable Long branchId,
             @RequestBody @Valid CommitToBranchRequest commitToBranchRequest) {
         
-        Long userId = HeaderUtil.extractRequiredUserIdFromHeader();
+        UUID userId = HeaderUtil.extractRequiredUserIdFromHeader();
         logger.info("Creating commit with message: {}", commitToBranchRequest.getMessage());
         try {
             CommitDTO commit = vcsService.commitToBranch(branchId, commitToBranchRequest, userId);

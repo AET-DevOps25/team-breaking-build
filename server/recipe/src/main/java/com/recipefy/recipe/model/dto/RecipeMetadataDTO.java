@@ -12,7 +12,6 @@ import java.util.List;
 @AllArgsConstructor
 public class RecipeMetadataDTO {
     private Long id;
-    private Long userId;
     private Long forkedFrom;
 
     private LocalDateTime createdAt;
