@@ -1,4 +1,5 @@
 'use client';
+import { useEffect } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
@@ -8,9 +9,15 @@ const Hero = () => {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
 
-  // If user is authenticated, redirect to recipes page
+  // Redirect authenticated users to recipes page
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push('/recipes');
+    }
+  }, [isAuthenticated, router]);
+
+  // Don't render anything if user is authenticated (will redirect)
   if (isAuthenticated) {
-    router.push('/recipes');
     return null;
   }
 

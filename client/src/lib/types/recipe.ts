@@ -1,13 +1,53 @@
 export interface RecipeImage {
-  id: number;
   url: string;
 }
 
 export interface RecipeTag {
-  id: number;
+  id?: number;
   name: string;
 }
 
+export interface RecipeIngredient {
+  name: string;
+  unit: string;
+  amount: number;
+}
+
+export interface RecipeStep {
+  order: number;
+  details: string;
+  recipeImageDTOS?: RecipeImage[];
+}
+
+export interface RecipeDetails {
+  servingSize: number;
+  images?: RecipeImage[];
+  recipeIngredients: RecipeIngredient[];
+  recipeSteps: RecipeStep[];
+}
+
+export interface RecipeMetadata {
+  id?: number;
+  userId?: number;
+  forkedFrom?: number;
+  createdAt?: string;
+  updatedAt?: string;
+  title: string;
+  description: string;
+  thumbnail?: RecipeImage;
+  servingSize: number;
+  tags: RecipeTag[];
+}
+
+export interface CreateRecipeRequest {
+  metadata: RecipeMetadata;
+  initRequest: {
+    userId?: number; // Will be handled by gateway
+    recipeDetails: RecipeDetails;
+  };
+}
+
+// For API responses and display
 export interface Recipe {
   id: string;
   userId: number;
@@ -16,33 +56,12 @@ export interface Recipe {
   updatedAt: string;
   title: string;
   description: string;
-  thumbnail?: string;
+  thumbnail?: RecipeImage;
   servingSize: number;
-  tags: string[];
-  ingredients: Ingredient[];
-  steps: Step[];
-}
-
-export interface Ingredient {
-  name: string;
-  amount: number;
-  unit: string;
-}
-
-export interface Step {
-  order: number;
-  details: string;
-  image?: File;
-}
-
-export interface RecipeFormData {
-  title: string;
-  description: string;
-  servingSize: number;
-  tags: string[];
-  thumbnail?: File;
-  ingredients: Ingredient[];
-  steps: Step[];
+  tags: RecipeTag[];
+  // These might come from a separate API call to get recipe details
+  ingredients?: RecipeIngredient[];
+  steps?: RecipeStep[];
 }
 
 export interface RecipeResponse {

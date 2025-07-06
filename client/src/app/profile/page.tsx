@@ -34,15 +34,35 @@ export default function ProfilePage() {
       return;
     }
 
-    if (isAuthenticated) {
-      // TODO: Replace with actual API call to fetch user's recipes
-      // For now, using mock data
-      setTimeout(() => {
-        setRecipes([]); // Empty array for no recipes scenario
-        setIsLoadingRecipes(false);
-      }, 1000);
+    if (isAuthenticated && user) {
+      const fetchUserRecipes = async () => {
+        try {
+          // Import the recipe service dynamically to avoid circular dependencies
+          const { getUserRecipes } = await import('@/lib/services/recipeService');
+          const userRecipes = await getUserRecipes(user.id);
+          // Transform the API response to match the local Recipe interface
+          const transformedRecipes = userRecipes.map(recipe => ({
+            id: recipe.id,
+            title: recipe.title,
+            description: recipe.description,
+            imageUrl: recipe.thumbnail,
+            cookingTime: 30, // Default value since API might not have this
+            servings: recipe.servingSize,
+            likes: 0, // Default value since API might not have this
+            createdAt: recipe.createdAt,
+          }));
+          setRecipes(transformedRecipes);
+        } catch (error) {
+          console.error('Error fetching user recipes:', error);
+          setRecipes([]); // Empty array on error
+        } finally {
+          setIsLoadingRecipes(false);
+        }
+      };
+      
+      fetchUserRecipes();
     }
-  }, [isAuthenticated, isLoading, router]);
+  }, [isAuthenticated, isLoading, router, user]);
 
   if (isLoading) {
     return (

@@ -29,7 +29,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const API_BASE_URL = process.env.KEYCLOAK_BASE_URL;
+const AUTH_BASE_URL = process.env.NEXT_PUBLIC_KEYCLOAK_BASE_URL || 'http://localhost:8089';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -49,7 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      const response = await fetch(`${AUTH_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -85,7 +85,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const register = async (email: string, password: string, firstName: string, lastName: string) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/register`, {
+      const response = await fetch(`${AUTH_BASE_URL}/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -118,7 +118,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     const { refreshToken } = JSON.parse(storedTokens);
-    const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+    if (!refreshToken) {
+      throw new Error('No refresh token available');
+    }
+    
+    const response = await fetch(`${AUTH_BASE_URL}/auth/refresh`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -127,15 +131,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         token: refreshToken,
       }),
     });
-
+    
     if (!response.ok) {
-      throw new Error('Token refresh failed');
+      console.error('Token refresh failed with status:', response.status);
+      throw new Error(`Token refresh failed: ${response.status}`);
     }
 
     const data = await response.json();
+    
+    if (!data.access_token) {
+      throw new Error('No access token received from refresh');
+    }
+    
     const tokens: AuthTokens = {
       accessToken: data.access_token,
-      refreshToken: data.refresh_token,
+      refreshToken: data.refresh_token || refreshToken, // Keep old refresh token if new one not provided
     };
 
     localStorage.setItem('tokens', JSON.stringify(tokens));
@@ -144,7 +154,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchUserInfo = async (accessToken: string) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/userinfo`, {
+      const response = await fetch(`${AUTH_BASE_URL}/auth/userinfo`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -212,9 +222,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           headers: newHeaders,
         });
       } catch (refreshError) {
-        // If refresh fails, logout the user
-        console.error('Token refresh failed:', refreshError);
-        logout();
+        // Only logout if it's a refresh token issue
+        const errorMessage = refreshError instanceof Error ? refreshError.message : String(refreshError);
+        if (errorMessage.includes('No refresh token available') || errorMessage.includes('Token refresh failed')) {
+          console.error('Authentication failed:', refreshError);
+          logout();
+        }
         throw new Error('Authentication failed');
       }
     }

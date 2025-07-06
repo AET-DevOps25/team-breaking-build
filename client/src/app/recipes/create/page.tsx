@@ -5,7 +5,25 @@ import { RecipeForm } from '@/components/recipe/recipe-form';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { createRecipe } from '@/lib/services/recipeService';
-import { RecipeFormData } from '@/lib/types/recipe';
+
+// Type for the form data
+type RecipeFormData = {
+  title: string;
+  description: string;
+  servingSize: number;
+  tags: string[];
+  thumbnail?: File;
+  ingredients: Array<{
+    name: string;
+    amount: number;
+    unit: string;
+  }>;
+  steps: Array<{
+    order: number;
+    details: string;
+    image?: File;
+  }>;
+};
 
 export default function CreateRecipePage() {
   const router = useRouter();
@@ -24,6 +42,10 @@ export default function CreateRecipePage() {
       if (data.thumbnail) {
         formData.append('thumbnail', data.thumbnail);
       }
+      
+      // Add ingredients and steps as JSON strings
+      formData.append('ingredients', JSON.stringify(data.ingredients));
+      formData.append('steps', JSON.stringify(data.steps));
 
       await createRecipe(formData);
       toast.success('Recipe created successfully');

@@ -11,9 +11,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class InitRecipeRequest {
-    @NotNull(message = "User id is required")
-    private Long userId;
-
     @Valid
     @NotNull(message = "Recipe details are required")
     private RecipeDetailsDTO recipeDetails;

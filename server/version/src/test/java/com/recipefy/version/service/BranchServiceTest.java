@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -40,9 +41,11 @@ class BranchServiceTest {
 
     private Branch sampleBranch;
     private Commit sampleCommit;
+    private UUID testUserId;
 
     @BeforeEach
     void setUp() {
+        testUserId = UUID.randomUUID();
         sampleCommit = createSampleCommit();
         sampleBranch = createSampleBranch();
     }
@@ -321,7 +324,7 @@ class BranchServiceTest {
     private Commit createSampleCommit() {
         Commit commit = new Commit();
         commit.setId(1L);
-        commit.setUserId(1L);
+        commit.setUserId(testUserId);
         commit.setMessage("Initial commit");
         commit.setCreatedAt(LocalDateTime.now());
         return commit;

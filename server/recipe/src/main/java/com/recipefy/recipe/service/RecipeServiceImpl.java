@@ -23,9 +23,11 @@ import com.recipefy.recipe.model.request.CreateRecipeRequest;
 import com.recipefy.recipe.repository.RecipeRepository;
 import com.recipefy.recipe.repository.TagRepository;
 
+import com.recipefy.recipe.exception.UnauthorizedException;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -50,10 +52,8 @@ public class RecipeServiceImpl implements RecipeService {
     }
 
     @Override
-    public RecipeMetadataDTO createRecipe(CreateRecipeRequest request) {
-        RecipeMetadata recipe = RecipeMetadataDTOMapper.toEntity(request.getMetadata());
-        recipe.setCreatedAt(LocalDateTime.now());
-        recipe.setUpdatedAt(LocalDateTime.now());
+    public RecipeMetadataDTO createRecipe(CreateRecipeRequest request, UUID userId) {
+        RecipeMetadata recipe = RecipeMetadataDTOMapper.toEntity(request.getMetadata(), userId);
 
         // Ensure tags exist or are created
         Set<RecipeTag> tags = request.getMetadata().getTags().stream()
@@ -66,7 +66,7 @@ public class RecipeServiceImpl implements RecipeService {
         RecipeMetadata saved = recipeRepository.save(recipe);
         
         // Initialize version control and get branch info
-        BranchDTO branch = versionClient.initRecipe(saved.getId(), request.getInitRequest());
+        BranchDTO branch = versionClient.initRecipe(saved.getId(), request.getInitRequest(), userId);
         log.info("Initialized recipe {} with branch ID: {}", saved.getId(), branch.getId());
         
         // Trigger GenAI indexing
@@ -80,16 +80,29 @@ public class RecipeServiceImpl implements RecipeService {
         return RecipeMetadataDTOMapper.toDTO(saved);
     }
 
-    @Override
-    public RecipeMetadataDTO updateRecipe(Long recipeId, RecipeMetadataDTO metadataDTO) {
-        RecipeMetadata existing = recipeRepository.findById(recipeId)
+    /**
+     * Validates that the user owns the recipe
+     */
+    private RecipeMetadata validateRecipeOwnership(Long recipeId, UUID userId) {
+        RecipeMetadata recipe = recipeRepository.findById(recipeId)
                 .orElseThrow(() -> new EntityNotFoundException("Recipe not found with ID: " + recipeId));
+        
+        if (!recipe.getUserId().equals(userId)) {
+            log.warn("User {} attempted to access recipe {} which they don't own", userId, recipeId);
+            throw new UnauthorizedException("You don't have permission to access this recipe");
+        }
+        
+        return recipe;
+    }
+
+    @Override
+    public RecipeMetadataDTO updateRecipe(Long recipeId, RecipeMetadataDTO metadataDTO, UUID userId) {
+        RecipeMetadata existing = validateRecipeOwnership(recipeId, userId);
 
         existing.setTitle(metadataDTO.getTitle());
         existing.setDescription(metadataDTO.getDescription());
         existing.setThumbnail(metadataDTO.getThumbnail().getUrl());
         existing.setServingSize(metadataDTO.getServingSize());
-        existing.setUpdatedAt(LocalDateTime.now());
 
         // Tags are not updated here, use updateTags method instead
         RecipeMetadata updated = recipeRepository.save(existing);
@@ -97,7 +110,7 @@ public class RecipeServiceImpl implements RecipeService {
     }
 
     @Override
-    public RecipeMetadataDTO copyRecipe(Long recipeId, Long userId, Long branchId) {
+    public RecipeMetadataDTO copyRecipe(Long recipeId, UUID userId, Long branchId) {
         RecipeMetadata original = recipeRepository.findById(recipeId)
                 .orElseThrow(() -> new EntityNotFoundException("Original recipe not found"));
 
@@ -108,8 +121,6 @@ public class RecipeServiceImpl implements RecipeService {
         copy.setDescription(original.getDescription());
         copy.setThumbnail(original.getThumbnail());
         copy.setServingSize(original.getServingSize());
-        copy.setCreatedAt(LocalDateTime.now());
-        copy.setUpdatedAt(LocalDateTime.now());
         copy.setTags(original.getTags()); // safe since Set<RecipeTag> is reused
 
         // Save copy first to get the ID
@@ -134,7 +145,10 @@ public class RecipeServiceImpl implements RecipeService {
     }
 
     @Override
-    public void deleteRecipe(Long recipeId) {
+    public void deleteRecipe(Long recipeId, UUID userId) {
+        // Validate ownership before deletion
+        validateRecipeOwnership(recipeId, userId);
+        
         // Trigger GenAI deletion before deleting from database
         try {
             genAIClient.deleteRecipe(recipeId.toString());
@@ -144,13 +158,13 @@ public class RecipeServiceImpl implements RecipeService {
         }
         
         recipeRepository.deleteById(recipeId);
+        log.info("Successfully deleted recipe {} by user {}", recipeId, userId);
         throw new UnsupportedOperationException("VCS delete functionality is not implemented yet.");
     }
 
     @Override
-    public RecipeMetadataDTO updateTags(Long recipeId, List<RecipeTagDTO> tagDTOs) {
-        RecipeMetadata recipe = recipeRepository.findById(recipeId)
-                .orElseThrow(() -> new EntityNotFoundException("Recipe not found"));
+    public RecipeMetadataDTO updateTags(Long recipeId, List<RecipeTagDTO> tagDTOs, UUID userId) {
+        RecipeMetadata recipe = validateRecipeOwnership(recipeId, userId);
 
         Set<RecipeTag> tags = tagDTOs.stream()
                 .map(dto -> recipeTagRepository.findByName(dto.getName())

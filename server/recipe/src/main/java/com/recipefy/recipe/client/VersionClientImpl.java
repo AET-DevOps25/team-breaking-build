@@ -1,6 +1,10 @@
 package com.recipefy.recipe.client;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -9,6 +13,7 @@ import com.recipefy.recipe.model.request.CopyBranchRequest;
 import com.recipefy.recipe.model.request.InitRecipeRequest;
 
 import lombok.RequiredArgsConstructor;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -19,9 +24,18 @@ public class VersionClientImpl implements VersionClient {
     private String vcsServiceUrl;
 
     @Override
-    public BranchDTO initRecipe(Long recipeId, InitRecipeRequest request) {
+    public BranchDTO initRecipe(Long recipeId, InitRecipeRequest request, UUID userId) {
         String url = vcsServiceUrl + "/vcs/recipes/" + recipeId + "/init";
-        return restTemplate.postForEntity(url, request, BranchDTO.class).getBody();
+        
+        // Create headers with userId
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-User-Id", userId.toString());
+        
+        // Create HTTP entity with request body and headers
+        HttpEntity<InitRecipeRequest> entity = new HttpEntity<>(request, headers);
+        
+        ResponseEntity<BranchDTO> response = restTemplate.exchange(url, HttpMethod.POST, entity, BranchDTO.class);
+        return response.getBody();
     }
 
     @Override

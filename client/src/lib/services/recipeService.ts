@@ -1,59 +1,96 @@
-import { Recipe, RecipeResponse } from '@/lib/types/recipe';
+import { Recipe, CreateRecipeRequest } from '@/lib/types/recipe';
+import { api } from '@/lib/api';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-
-export async function getRecipes(page: number = 1, pageSize: number = 6): Promise<RecipeResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/recipes?page=${page - 1}&size=${pageSize}`);
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch recipes');
+export async function getRecipes(page: number = 1, limit: number = 10): Promise<Recipe[]> {
+  try {
+    const response = await api.get<Recipe[]>(`/recipes?page=${page}&limit=${limit}`);
+    return response;
+  } catch (error) {
+    console.error('Error fetching recipes:', error);
+    throw error;
   }
+}
 
-  return response.json();
+export async function getRecipe(id: string): Promise<Recipe | null> {
+  try {
+    const response = await api.get<Recipe>(`/recipes/${id}`);
+    return response;
+  } catch (error) {
+    console.error('Error fetching recipe:', error);
+    throw error;
+  }
 }
 
 export async function createRecipe(data: FormData): Promise<Recipe> {
-  const response = await fetch(`${API_BASE_URL}/api/recipes`, {
-    method: 'POST',
-    body: data,
-  });
+  try {
+    const createRequest = {
+      metadata: {
+        title: data.get('title') as string,
+        description: data.get('description') as string,
+        servingSize: parseInt(data.get('servingSize') as string),
+        tags: (data.getAll('tags') as string[]).map(tag => ({ name: tag })),
+        thumbnail: data.get('thumbnail') ? { url: 'placeholder-url' } : undefined,
+      },
+      initRequest: {
+        recipeDetails: {
+          servingSize: parseInt(data.get('servingSize') as string),
+          recipeIngredients: JSON.parse(data.get('ingredients') as string).map((ing: any) => ({
+            name: ing.name,
+            unit: ing.unit,
+            amount: ing.amount,
+          })),
+          recipeSteps: JSON.parse(data.get('steps') as string).map((step: any) => ({
+            order: step.order,
+            details: step.details,
+          })),
+        },
+      },
+    };
 
-  if (!response.ok) {
-    throw new Error('Failed to create recipe');
-  }
-
-  return response.json();
-}
-
-export async function updateRecipe(id: number, data: FormData): Promise<Recipe> {
-  const response = await fetch(`${API_BASE_URL}/api/recipes/${id}`, {
-    method: 'PUT',
-    body: data,
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to update recipe');
-  }
-
-  return response.json();
-}
-
-export async function deleteRecipe(id: number): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/api/recipes/${id}`, {
-    method: 'DELETE',
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to delete recipe');
+    const response = await api.post<Recipe>('/recipes', createRequest);
+    return response;
+  } catch (error) {
+    console.error('Error creating recipe:', error);
+    throw error;
   }
 }
 
-export async function getRecipe(id: number): Promise<Recipe> {
-  const response = await fetch(`${API_BASE_URL}/api/recipes/${id}`);
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch recipe');
+export async function updateRecipe(id: string, data: FormData): Promise<Recipe | null> {
+  try {
+    const response = await api.put<Recipe>(`/recipes/${id}`, data);
+    return response;
+  } catch (error) {
+    console.error('Error updating recipe:', error);
+    throw error;
   }
+}
 
-  return response.json();
+export async function deleteRecipe(id: string): Promise<void> {
+  try {
+    await api.delete(`/recipes/${id}`);
+  } catch (error) {
+    console.error('Error deleting recipe:', error);
+    throw error;
+  }
+}
+
+export async function getUserRecipes(userId: string): Promise<Recipe[]> {
+  try {
+    const response = await api.get<Recipe[]>(`/recipes/user/${userId}`);
+    return response;
+  } catch (error) {
+    console.error('Error fetching user recipes:', error);
+    throw error;
+  }
+}
+
+export async function copyRecipe(id: string, userId: number, branchId: number): Promise<Recipe | null> {
+  try {
+    // The server expects userId and branchId as query parameters
+    const response = await api.post<Recipe>(`/recipes/${id}/copy?userId=${userId}&branchId=${branchId}`, {});
+    return response;
+  } catch (error) {
+    console.error('Error copying recipe:', error);
+    throw error;
+  }
 }

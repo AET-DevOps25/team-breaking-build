@@ -27,6 +27,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -39,7 +40,7 @@ public class VersionControlService {
     private final RecipeSnapshotService recipeSnapshotService;
 
     @Transactional
-    public BranchDTO initRecipe(Long recipeId, InitRecipeRequest initRecipeRequest, Long userId) {
+    public BranchDTO initRecipe(Long recipeId, InitRecipeRequest initRecipeRequest, UUID userId) {
         logger.debug("Starting recipe initialization");
         try {
             branchService.checkIfBranchCreated(recipeId);
@@ -79,7 +80,7 @@ public class VersionControlService {
     }
 
     @Transactional
-    public BranchDTO createBranch(Long recipeId, CreateBranchRequest createBranchRequest, Long userId) {
+    public BranchDTO createBranch(Long recipeId, CreateBranchRequest createBranchRequest, UUID userId) {
         String branchName = createBranchRequest.getBranchName();
         Long sourceBranchId = createBranchRequest.getSourceBranchId();
         
@@ -104,7 +105,7 @@ public class VersionControlService {
     }
 
     @Transactional
-    public CommitDTO commitToBranch(Long branchId, CommitToBranchRequest commitToBranchRequest, Long userId) {
+    public CommitDTO commitToBranch(Long branchId, CommitToBranchRequest commitToBranchRequest, UUID userId) {
         String message = commitToBranchRequest.getMessage();
         
         logger.debug("Creating commit with message: {}", message);

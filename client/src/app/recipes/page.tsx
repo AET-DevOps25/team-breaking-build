@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Recipe } from '@/lib/types/recipe';
-import { getRecipes } from '@/lib/services/mockRecipeService'; // Change it to original service when available
+import { getRecipes } from '@/lib/services/recipeService';
 import { RecipeCard } from '@/components/recipe/recipe-card';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
@@ -24,11 +24,16 @@ export default function RecipesPage() {
     setLoading(true);
     try {
       const response = await getRecipes(page);
-      setRecipes((prev) => [...prev, ...response]);
-      setHasMore(response.length > 0);
+      
+      // Ensure response is an array
+      const recipesArray = Array.isArray(response) ? response : [];
+      
+      setRecipes((prev) => [...prev, ...recipesArray]);
+      setHasMore(recipesArray.length > 0);
       setPage((prev) => prev + 1);
     } catch (error) {
       console.error('Error loading recipes:', error);
+      setHasMore(false); // Stop trying to load more on error
     } finally {
       setLoading(false);
     }
@@ -75,15 +80,33 @@ export default function RecipesPage() {
         )}
       </div>
 
-      <div className='grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3'>
-        {recipes.map((recipe) => (
-          <RecipeCard
-            key={recipe.id}
-            recipe={recipe}
-            onClick={() => router.push(`/recipes/${recipe.id}`)}
-          />
-        ))}
-      </div>
+      {recipes.length > 0 ? (
+        <div className='grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3'>
+          {recipes.map((recipe) => (
+            <RecipeCard
+              key={recipe.id}
+              recipe={recipe}
+              onClick={() => router.push(`/recipes/${recipe.id}`)}
+            />
+          ))}
+        </div>
+      ) : !loading ? (
+        <div className='flex flex-col items-center justify-center py-12'>
+          <div className='mb-4 text-center'>
+            <h3 className='text-xl font-semibold text-gray-900 mb-2'>No recipes available</h3>
+            <p className='text-gray-600'>Be the first to create a recipe and share it with the community!</p>
+          </div>
+          {isAuthenticated && (
+            <Button
+              onClick={() => router.push('/recipes/create')}
+              className='bg-[#FF7C75] hover:bg-rose-600 text-white'
+            >
+              <Plus className='mr-2 size-4' />
+              Create First Recipe
+            </Button>
+          )}
+        </div>
+      ) : null}
 
       {/* Loading indicator and intersection observer target */}
       <div

@@ -1,9 +1,9 @@
-package com.recipefy.version.aspect;
+package com.recipefy.recipe.aspect;
 
-import com.recipefy.version.annotation.LogContext;
-import com.recipefy.version.exception.ValidationException;
-import com.recipefy.version.util.HeaderUtil;
-import com.recipefy.version.util.LoggingUtil;
+import com.recipefy.recipe.annotation.LogContext;
+import com.recipefy.recipe.exception.ValidationException;
+import com.recipefy.recipe.util.HeaderUtil;
+import com.recipefy.recipe.util.LoggingUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.AfterReturning;
@@ -26,16 +26,7 @@ import java.util.UUID;
 @Slf4j
 public class LoggingContextAspect {
 
-    // Common header names for user ID
-    private static final String[] USER_ID_HEADERS = {
-        "X-User-ID",
-        "X-User-Id", 
-        "User-ID",
-        "User-Id",
-        "Authorization" // Could contain user info in JWT
-    };
-
-    @Before("@annotation(com.recipefy.version.annotation.LogContext)")
+    @Before("@annotation(com.recipefy.recipe.annotation.LogContext)")
     public void setLoggingContext(JoinPoint joinPoint) {
         try {
             MethodSignature signature = (MethodSignature) joinPoint.getSignature();
@@ -67,12 +58,6 @@ public class LoggingContextAspect {
                 if (!logContext.userId().isEmpty() && logContext.userId().equals(paramName)) {
                     contextValues.put("userId", arg);
                 }
-                if (!logContext.branchId().isEmpty() && logContext.branchId().equals(paramName)) {
-                    contextValues.put("branchId", arg);
-                }
-                if (!logContext.commitId().isEmpty() && logContext.commitId().equals(paramName)) {
-                    contextValues.put("commitId", arg);
-                }
             }
             
             // Extract user ID from headers if enabled
@@ -96,20 +81,6 @@ public class LoggingContextAspect {
                 }
             }
             
-            if (logContext.extractBranchIdFromPath()) {
-                Object branchId = extractPathVariable(args, parameters, "branchId");
-                if (branchId != null) {
-                    contextValues.put("branchId", branchId);
-                }
-            }
-            
-            if (logContext.extractCommitIdFromPath()) {
-                Object commitId = extractPathVariable(args, parameters, "commitId");
-                if (commitId != null) {
-                    contextValues.put("commitId", commitId);
-                }
-            }
-            
             // Set the context
             setContextFromValues(contextValues);
             
@@ -121,7 +92,7 @@ public class LoggingContextAspect {
         }
     }
 
-    @AfterReturning("@annotation(com.recipefy.version.annotation.LogContext)")
+    @AfterReturning("@annotation(com.recipefy.recipe.annotation.LogContext)")
     public void clearLoggingContext() {
         // Note: We don't clear MDC here as it's handled by RequestLoggingInterceptor
         // This is just for any additional cleanup if needed
@@ -149,8 +120,6 @@ public class LoggingContextAspect {
     private void setContextFromValues(Map<String, Object> contextValues) {
         Long recipeId = (Long) contextValues.get("recipeId");
         Object userId = contextValues.get("userId");
-        Long branchId = (Long) contextValues.get("branchId");
-        Long commitId = (Long) contextValues.get("commitId");
         
         // Convert userId to UUID if it's a String
         UUID userIdUUID = null;
@@ -166,13 +135,7 @@ public class LoggingContextAspect {
         
         // Set context based on available values
         if (recipeId != null && userIdUUID != null) {
-            if (branchId != null && commitId != null) {
-                LoggingUtil.setCommitContext(commitId, branchId, recipeId, userIdUUID);
-            } else if (branchId != null) {
-                LoggingUtil.setBranchContext(branchId, recipeId, userIdUUID);
-            } else {
-                LoggingUtil.setRecipeContext(recipeId, userIdUUID);
-            }
+            LoggingUtil.setRecipeContext(recipeId, userIdUUID);
         } else {
             // Set individual values if we don't have complete context
             if (recipeId != null) {
@@ -181,12 +144,6 @@ public class LoggingContextAspect {
             if (userIdUUID != null) {
                 LoggingUtil.setUserId(userIdUUID);
             }
-            if (branchId != null) {
-                LoggingUtil.setBranchId(branchId);
-            }
-            if (commitId != null) {
-                LoggingUtil.setCommitId(commitId);
-            }
         }
     }
-}
+} 

@@ -1,4 +1,4 @@
-package com.recipefy.version.util;
+package com.recipefy.recipe.util;
 
 import org.slf4j.MDC;
 
@@ -13,8 +13,6 @@ public class LoggingUtil {
     public static final String REQUEST_ID = "requestId";
     public static final String USER_ID = "userId";
     public static final String RECIPE_ID = "recipeId";
-    public static final String BRANCH_ID = "branchId";
-    public static final String COMMIT_ID = "commitId";
 
     /**
      * Generate a fallback request ID when none is provided in headers
@@ -51,24 +49,6 @@ public class LoggingUtil {
     }
 
     /**
-     * Set branch ID in MDC
-     */
-    public static void setBranchId(Long branchId) {
-        if (branchId != null) {
-            MDC.put(BRANCH_ID, branchId.toString());
-        }
-    }
-
-    /**
-     * Set commit ID in MDC
-     */
-    public static void setCommitId(Long commitId) {
-        if (commitId != null) {
-            MDC.put(COMMIT_ID, commitId.toString());
-        }
-    }
-
-    /**
      * Clear all MDC values
      * This is typically called by RequestLoggingInterceptor after request completion
      */
@@ -83,21 +63,4 @@ public class LoggingUtil {
         setRecipeId(recipeId);
         setUserId(userId);
     }
-
-    /**
-     * Set common context for branch operations
-     */
-    public static void setBranchContext(Long branchId, Long recipeId, UUID userId) {
-        setBranchId(branchId);
-        setRecipeId(recipeId);
-        setUserId(userId);
-    }
-
-    /**
-     * Set common context for commit operations
-     */
-    public static void setCommitContext(Long commitId, Long branchId, Long recipeId, UUID userId) {
-        setCommitId(commitId);
-        setBranchContext(branchId, recipeId, userId);
-    }
-}
+} 

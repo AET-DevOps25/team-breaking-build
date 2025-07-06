@@ -1,6 +1,6 @@
-package com.recipefy.version.util;
+package com.recipefy.recipe.util;
 
-import com.recipefy.version.exception.ValidationException;
+import com.recipefy.recipe.exception.ValidationException;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
@@ -65,4 +65,14 @@ public class HeaderUtil {
         }
         return userId;
     }
-}
+
+    /**
+     * Extract user ID from HTTP headers with fallback
+     * @param fallbackUserId Fallback user ID if not found in headers
+     * @return User ID from headers or fallback value
+     */
+    public static UUID extractUserIdFromHeader(UUID fallbackUserId) {
+        UUID userId = extractUserIdFromHeader();
+        return userId != null ? userId : fallbackUserId;
+    }
+} 
