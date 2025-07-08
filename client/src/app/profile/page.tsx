@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -30,7 +30,7 @@ export default function ProfilePage() {
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
   // Create a fetch function for user recipes that transforms the data
-  const fetchUserRecipes = async (page: number) => {
+  const fetchUserRecipes = useCallback(async (page: number) => {
     if (!user?.id) return [];
 
     const userRecipes = await getUserRecipes(user.id, page, 10);
@@ -44,7 +44,7 @@ export default function ProfilePage() {
       likes: 0, // Default value since API might not have this
       createdAt: recipe.createdAt,
     }));
-  };
+  }, [user?.id]);
 
   const {
     data: recipes,
@@ -52,11 +52,19 @@ export default function ProfilePage() {
     hasMore,
     error,
     loadMore,
+    reset,
   } = useInfiniteScroll<Recipe>({
     fetchData: fetchUserRecipes,
     pageSize: 10,
     initialPage: 0,
   });
+
+  // Reset infinite scroll when user changes
+  useEffect(() => {
+    if (user?.id) {
+      reset();
+    }
+  }, [user?.id, reset]);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -74,6 +82,15 @@ export default function ProfilePage() {
 
   if (!isAuthenticated) {
     return null;
+  }
+
+  // Don't render infinite scroll until user is loaded
+  if (!user?.id) {
+    return (
+      <div className='flex min-h-screen items-center justify-center'>
+        <div className='size-32 animate-spin rounded-full border-b-2 border-[#FF7C75]'></div>
+      </div>
+    );
   }
 
   return (
