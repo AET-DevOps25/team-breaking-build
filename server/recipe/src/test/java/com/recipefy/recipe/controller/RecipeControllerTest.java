@@ -61,6 +61,7 @@ class RecipeControllerTest {
         testRecipeDTO.setUpdatedAt(now);
         testRecipeDTO.setTitle("Test Recipe");
         testRecipeDTO.setDescription("Test Description");
+        testRecipeDTO.setThumbnail("test.jpg".getBytes());
         testRecipeDTO.setServingSize(4);
         testRecipeDTO.setTags(Collections.emptyList());
         

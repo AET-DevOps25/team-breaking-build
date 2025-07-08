@@ -19,7 +19,7 @@ public class RecipeMetadataDTO {
 
     private String title;
     private String description;
-    private RecipeImageDTO thumbnail; // nullable, can be null if no image is provided
+    private byte[] thumbnail; // nullable, can be null if no image is provided
     private Integer servingSize;
 
     private List<RecipeTagDTO> tags;

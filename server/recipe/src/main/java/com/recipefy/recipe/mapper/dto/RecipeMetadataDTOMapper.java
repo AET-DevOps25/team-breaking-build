@@ -7,6 +7,10 @@ import java.util.UUID;
 
 public class RecipeMetadataDTOMapper {
     public static RecipeMetadataDTO toDTO(RecipeMetadata recipeMetadata) {
+        if (recipeMetadata == null) {
+            return null;
+        }
+        
         RecipeMetadataDTO dto = new RecipeMetadataDTO();
 
         dto.setId(recipeMetadata.getId());
@@ -17,15 +21,20 @@ public class RecipeMetadataDTOMapper {
 
         dto.setTitle(recipeMetadata.getTitle());
         dto.setDescription(recipeMetadata.getDescription());
-        dto.setThumbnail(recipeMetadata.getThumbnail() != null ? new RecipeImageDTO(recipeMetadata.getThumbnail()) : null);
+        dto.setThumbnail(recipeMetadata.getThumbnail());
         dto.setServingSize(recipeMetadata.getServingSize());
 
+        // Safe conversion of tags with defensive programming in RecipeTagDTOMapper
         dto.setTags(RecipeTagDTOMapper.toDTO(recipeMetadata.getTags()));
 
         return dto;
     }
 
     public static RecipeMetadata toEntity(RecipeMetadataDTO dto, UUID userId) {
+        if (dto == null) {
+            return null;
+        }
+        
         RecipeMetadata metadata = new RecipeMetadata();
 
         metadata.setId(dto.getId());
@@ -37,9 +46,10 @@ public class RecipeMetadataDTOMapper {
 
         metadata.setTitle(dto.getTitle());
         metadata.setDescription(dto.getDescription());
-        metadata.setThumbnail(dto.getThumbnail() != null ? dto.getThumbnail().getBase64String() : null);
+        metadata.setThumbnail(dto.getThumbnail());
         metadata.setServingSize(dto.getServingSize());
 
+        // Safe conversion of tags with defensive programming in RecipeTagDTOMapper
         metadata.setTags(RecipeTagDTOMapper.toEntity(dto.getTags()));
 
         return metadata;

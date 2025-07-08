@@ -4,12 +4,9 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinTable;
-import jakarta.persistence.ManyToMany;
+import jakarta.persistence.*;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -31,7 +28,7 @@ public class RecipeMetadata extends BaseEntity {
 
     private String title;
     private String description;
-    private String thumbnail;
+    private byte[] thumbnail;
     private Integer servingSize;
 
     @ManyToMany(fetch = FetchType.EAGER)

@@ -104,7 +104,7 @@ public class RecipeServiceImpl implements RecipeService {
 
         existing.setTitle(metadataDTO.getTitle());
         existing.setDescription(metadataDTO.getDescription());
-        existing.setThumbnail(metadataDTO.getThumbnail() != null ? metadataDTO.getThumbnail().getBase64String() : null);
+        existing.setThumbnail(metadataDTO.getThumbnail());
         existing.setServingSize(metadataDTO.getServingSize());
 
         // Update tags here
