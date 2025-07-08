@@ -1,7 +1,5 @@
 package com.recipefy.recipe.service;
 
-import java.time.LocalDateTime;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -28,7 +26,6 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import java.util.UUID;
-
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -39,9 +36,15 @@ public class RecipeServiceImpl implements RecipeService {
     private final GenAIClient genAIClient;
 
     @Override
+    public Page<RecipeMetadataDTO> getAllRecipes(UUID userId, Pageable pageable) {
+        return recipeRepository.findAllByUserId(userId, pageable)
+                .map(RecipeMetadataDTOMapper::toDTO);
+    }
+
+    @Override
     public Page<RecipeMetadataDTO> getAllRecipes(Pageable pageable) {
         return recipeRepository.findAll(pageable)
-                .map(RecipeMetadataDTOMapper::toDTO);
+            .map(RecipeMetadataDTOMapper::toDTO);
     }
 
     @Override
@@ -55,11 +58,11 @@ public class RecipeServiceImpl implements RecipeService {
     public RecipeMetadataDTO createRecipe(CreateRecipeRequest request, UUID userId) {
         RecipeMetadata recipe = RecipeMetadataDTOMapper.toEntity(request.getMetadata(), userId);
 
-        // Ensure tags exist or are created
+        // Only use tag IDs from the client
         Set<RecipeTag> tags = request.getMetadata().getTags().stream()
-                .map(dto -> recipeTagRepository.findByName(dto.getName())
-                        .orElseGet(() -> recipeTagRepository.save(new RecipeTag(dto.getName(), new HashSet<>())))
-                ).collect(Collectors.toSet());
+            .map(dto -> recipeTagRepository.findById(dto.getId())
+                .orElseThrow(() -> new EntityNotFoundException("Tag not found with ID: " + dto.getId())))
+            .collect(Collectors.toSet());
         recipe.setTags(tags);
 
         // Save recipe first to get the ID
@@ -104,7 +107,15 @@ public class RecipeServiceImpl implements RecipeService {
         existing.setThumbnail(metadataDTO.getThumbnail().getUrl());
         existing.setServingSize(metadataDTO.getServingSize());
 
-        // Tags are not updated here, use updateTags method instead
+        // Update tags here
+        if (metadataDTO.getTags() != null) {
+            Set<RecipeTag> tags = metadataDTO.getTags().stream()
+                .map(dto -> recipeTagRepository.findById(dto.getId())
+                    .orElseThrow(() -> new EntityNotFoundException("Tag not found with ID: " + dto.getId())))
+                .collect(Collectors.toSet());
+            existing.setTags(tags);
+        }
+
         RecipeMetadata updated = recipeRepository.save(existing);
         return RecipeMetadataDTOMapper.toDTO(updated);
     }
@@ -163,22 +174,9 @@ public class RecipeServiceImpl implements RecipeService {
     }
 
     @Override
-    public RecipeMetadataDTO updateTags(Long recipeId, List<RecipeTagDTO> tagDTOs, UUID userId) {
-        RecipeMetadata recipe = validateRecipeOwnership(recipeId, userId);
-
-        Set<RecipeTag> tags = tagDTOs.stream()
-                .map(dto -> recipeTagRepository.findByName(dto.getName())
-                        .orElseGet(() -> recipeTagRepository.save(new RecipeTag(dto.getName(), new HashSet<>())))
-                ).collect(Collectors.toSet());
-
-        recipe.setTags(tags);
-        return RecipeMetadataDTOMapper.toDTO(recipeRepository.save(recipe));
-    }
-
-    @Override
     public List<RecipeTagDTO> getAllTags() {
         return recipeTagRepository.findAll().stream()
-                .map(tag -> new RecipeTagDTO(tag.getId(), tag.getName()))
-                .collect(Collectors.toList());
+            .map(tag -> new RecipeTagDTO(tag.getId(), tag.getName()))
+            .collect(Collectors.toList());
     }
 }

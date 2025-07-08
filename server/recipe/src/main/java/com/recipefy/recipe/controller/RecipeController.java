@@ -42,8 +42,7 @@ public class RecipeController {
     @GetMapping
     @LogContext(extractUserIdFromHeader = true)
     public ResponseEntity<Page<RecipeMetadataDTO>> getAllRecipes(Pageable pageable) {
-        UUID userId = HeaderUtil.extractRequiredUserIdFromHeader();
-        logger.debug("Fetching all recipes for user: {}", userId);
+        logger.debug("Fetching all recipes");
         try {
             Page<RecipeMetadataDTO> recipes = recipeService.getAllRecipes(pageable);
             logger.debug("Found {} recipes", recipes.getTotalElements());
@@ -145,29 +144,6 @@ public class RecipeController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         } catch (Exception e) {
             logger.error("Failed to delete recipe: {} for user: {}", recipeId, userId, e);
-            throw e;
-        }
-    }
-
-    @PutMapping("/{recipeId}/tags")
-    @LogContext(extractRecipeIdFromPath = true, extractUserIdFromHeader = true)
-    public ResponseEntity<RecipeMetadataDTO> updateTags(
-            @PathVariable Long recipeId,
-            @Valid @RequestBody List<RecipeTagDTO> tags) {
-        UUID userId = HeaderUtil.extractRequiredUserIdFromHeader();
-        logger.info("Updating tags for recipe: {} with {} tags for user: {}", recipeId, tags.size(), userId);
-        try {
-            RecipeMetadataDTO recipe = recipeService.updateTags(recipeId, tags, userId);
-            logger.info("Successfully updated tags for recipe: {} for user: {}", recipeId, userId);
-            return ResponseEntity.ok(recipe);
-        } catch (EntityNotFoundException e) {
-            logger.warn("Recipe not found for tag update: {} for user: {}", recipeId, userId);
-            return ResponseEntity.notFound().build();
-        } catch (UnauthorizedException e) {
-            logger.warn("Unauthorized access attempt to update tags for recipe: {} by user: {}", recipeId, userId);
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        } catch (Exception e) {
-            logger.error("Failed to update tags for recipe: {} for user: {}", recipeId, userId, e);
             throw e;
         }
     }

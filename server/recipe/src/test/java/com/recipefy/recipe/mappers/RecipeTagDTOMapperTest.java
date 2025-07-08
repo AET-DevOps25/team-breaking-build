@@ -3,7 +3,6 @@ package com.recipefy.recipe.mappers;
 import com.recipefy.recipe.mapper.dto.RecipeTagDTOMapper;
 import com.recipefy.recipe.model.dto.RecipeTagDTO;
 import com.recipefy.recipe.model.entity.RecipeTag;
-import com.recipefy.recipe.model.enums.Tag;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -18,8 +17,8 @@ public class RecipeTagDTOMapperTest {
     void toDTO_shouldMapSetToListCorrectly() {
         Long tag1Id = 1L;
         Long tag2Id = 1L;
-        String tag1Name = Tag.VEGAN.name().toLowerCase(Locale.ROOT);
-        String tag2Name = Tag.HIGH_PROTEIN.name().toLowerCase(Locale.ROOT);
+        String tag1Name = "vegan";
+        String tag2Name = "high_protein";
         RecipeTag tag1 = new RecipeTag(tag1Name, new HashSet<>());
         tag1.setId(tag1Id);
         RecipeTag tag2 = new RecipeTag(tag2Name, new HashSet<>());
@@ -35,7 +34,7 @@ public class RecipeTagDTOMapperTest {
     @Test
     void toDTO_shouldMapCorrectly() {
         Long tagId = 1L;
-        String tagName = Tag.LOW_CARB.name().toLowerCase(Locale.ROOT);
+        String tagName = "low_carb";
         RecipeTag tag = new RecipeTag(tagName, new HashSet<>());
         tag.setId(tagId);
 

@@ -101,6 +101,24 @@ class RecipeServiceImplTest {
     void getAllRecipes_ShouldReturnPageOfRecipes() {
         // Arrange
         Pageable pageable = PageRequest.of(0, 10);
+        UUID userId = testRecipe.getUserId();
+        Page<RecipeMetadata> recipePage = new PageImpl<>(Collections.singletonList(testRecipe));
+        when(recipeRepository.findAllByUserId(userId, pageable)).thenReturn(recipePage);
+
+        // Act
+        Page<RecipeMetadataDTO> result = recipeService.getAllRecipes(userId, pageable);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.getTotalElements());
+        assertEquals(testRecipeDTO.getId(), result.getContent().get(0).getId());
+        verify(recipeRepository).findAllByUserId(userId, pageable);
+    }
+
+    @Test
+    void getAllRecipes_AllRecipes_NoUserId() {
+        // Arrange
+        Pageable pageable = PageRequest.of(0, 10);
         Page<RecipeMetadata> recipePage = new PageImpl<>(Collections.singletonList(testRecipe));
         when(recipeRepository.findAll(pageable)).thenReturn(recipePage);
 
@@ -144,7 +162,7 @@ class RecipeServiceImplTest {
         // Arrange
         CreateRecipeRequest request = new CreateRecipeRequest(testRecipeDTO, new InitRecipeRequest(null));
         when(recipeRepository.save(any(RecipeMetadata.class))).thenReturn(testRecipe);
-        when(tagRepository.findByName(anyString())).thenReturn(Optional.of(testTag));
+        when(tagRepository.findById(anyLong())).thenReturn(Optional.of(testTag));
         when(versionClient.initRecipe(anyLong(), any(InitRecipeRequest.class), any(UUID.class))).thenReturn(testBranchDTO);
         doNothing().when(genAIClient).indexRecipe(any(RecipeMetadataDTO.class), any());
 
@@ -165,6 +183,7 @@ class RecipeServiceImplTest {
         // Arrange
         when(recipeRepository.findById(1L)).thenReturn(Optional.of(testRecipe));
         when(recipeRepository.save(any(RecipeMetadata.class))).thenReturn(testRecipe);
+        when(tagRepository.findById(anyLong())).thenReturn(Optional.of(testTag));
 
         // Act
         RecipeMetadataDTO result = recipeService.updateRecipe(1L, testRecipeDTO, UUID.fromString("550e8400-e29b-41d4-a716-446655440000"));
@@ -224,38 +243,6 @@ class RecipeServiceImplTest {
     }
 
     @Test
-    void updateTags_WhenRecipeExists_ShouldUpdateTagsAndReturnRecipe() {
-        // Arrange
-        List<RecipeTagDTO> newTags = Collections.singletonList(testTagDTO);
-        when(recipeRepository.findById(1L)).thenReturn(Optional.of(testRecipe));
-        when(tagRepository.findByName(anyString())).thenReturn(Optional.of(testTag));
-        when(recipeRepository.save(any(RecipeMetadata.class))).thenReturn(testRecipe);
-
-        // Act
-        RecipeMetadataDTO result = recipeService.updateTags(1L, newTags, UUID.fromString("550e8400-e29b-41d4-a716-446655440000"));
-
-        // Assert
-        assertNotNull(result);
-        assertEquals(testRecipeDTO.getId(), result.getId());
-        assertEquals(1, result.getTags().size());
-        verify(recipeRepository).findById(1L);
-        verify(tagRepository).findByName(anyString());
-        verify(recipeRepository).save(any(RecipeMetadata.class));
-    }
-
-    @Test
-    void updateTags_WhenRecipeDoesNotExist_ShouldThrowException() {
-        // Arrange
-        List<RecipeTagDTO> newTags = Collections.singletonList(testTagDTO);
-        when(recipeRepository.findById(1L)).thenReturn(Optional.empty());
-
-        // Act & Assert
-        assertThrows(EntityNotFoundException.class, () -> recipeService.updateTags(1L, newTags, UUID.fromString("550e8400-e29b-41d4-a716-446655440000")));
-        verify(recipeRepository).findById(1L);
-        verify(recipeRepository, never()).save(any(RecipeMetadata.class));
-    }
-
-    @Test
     void updateRecipe_WhenUserNotOwner_ShouldThrowUnauthorizedException() {
         // Arrange
         when(recipeRepository.findById(1L)).thenReturn(Optional.of(testRecipe));
@@ -276,17 +263,5 @@ class RecipeServiceImplTest {
         verify(recipeRepository).findById(1L);
         verify(recipeRepository, never()).deleteById(anyLong());
         verify(genAIClient, never()).deleteRecipe(anyString());
-    }
-
-    @Test
-    void updateTags_WhenUserNotOwner_ShouldThrowUnauthorizedException() {
-        // Arrange
-        List<RecipeTagDTO> newTags = Collections.singletonList(testTagDTO);
-        when(recipeRepository.findById(1L)).thenReturn(Optional.of(testRecipe));
-
-        // Act & Assert
-        assertThrows(UnauthorizedException.class, () -> recipeService.updateTags(1L, newTags, UUID.fromString("550e8400-e29b-41d4-a716-446655440001")));
-        verify(recipeRepository).findById(1L);
-        verify(recipeRepository, never()).save(any(RecipeMetadata.class));
     }
 } 

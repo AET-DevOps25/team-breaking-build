@@ -73,17 +73,13 @@ class RecipeControllerTest {
         Page<RecipeMetadataDTO> recipePage = new PageImpl<>(Collections.singletonList(testRecipeDTO));
         when(recipeService.getAllRecipes(pageable)).thenReturn(recipePage);
 
-        try (var headerUtilMock = mockStatic(HeaderUtil.class)) {
-            headerUtilMock.when(HeaderUtil::extractRequiredUserIdFromHeader).thenReturn(UUID.fromString("550e8400-e29b-41d4-a716-446655440000"));
+        ResponseEntity<Page<RecipeMetadataDTO>> response = recipeController.getAllRecipes(pageable);
 
-            ResponseEntity<Page<RecipeMetadataDTO>> response = recipeController.getAllRecipes(pageable);
-
-            assertNotNull(response);
-            assertEquals(HttpStatus.OK, response.getStatusCode());
-            assertNotNull(response.getBody());
-            assertEquals(1, response.getBody().getTotalElements());
-            verify(recipeService).getAllRecipes(pageable);
-        }
+        assertNotNull(response);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(1, response.getBody().getTotalElements());
+        verify(recipeService).getAllRecipes(pageable);
     }
 
     @Test
@@ -193,50 +189,6 @@ class RecipeControllerTest {
     }
 
     @Test
-    void updateTags_WhenRecipeExists_ShouldUpdateTagsAndReturnRecipe() {
-        when(recipeService.updateTags(anyLong(), anyList(), any(UUID.class))).thenReturn(testRecipeDTO);
-
-        try (var headerUtilMock = mockStatic(HeaderUtil.class)) {
-            headerUtilMock.when(HeaderUtil::extractRequiredUserIdFromHeader).thenReturn(UUID.fromString("550e8400-e29b-41d4-a716-446655440000"));
-
-            ResponseEntity<RecipeMetadataDTO> response = recipeController.updateTags(1L, testTags);
-
-            assertNotNull(response);
-            assertEquals(HttpStatus.OK, response.getStatusCode());
-            assertNotNull(response.getBody());
-            assertEquals(testRecipeDTO.getId(), response.getBody().getId());
-            verify(recipeService).updateTags(1L, testTags, UUID.fromString("550e8400-e29b-41d4-a716-446655440000"));
-        }
-    }
-
-    @Test
-    void updateTags_WhenRecipeDoesNotExist_ShouldReturnNotFound() {
-        when(recipeService.updateTags(anyLong(), anyList(), any(UUID.class)))
-            .thenThrow(new EntityNotFoundException("Recipe not found"));
-
-        try (var headerUtilMock = mockStatic(HeaderUtil.class)) {
-            headerUtilMock.when(HeaderUtil::extractRequiredUserIdFromHeader).thenReturn(UUID.fromString("550e8400-e29b-41d4-a716-446655440000"));
-
-            ResponseEntity<RecipeMetadataDTO> response = recipeController.updateTags(1L, testTags);
-
-            assertNotNull(response);
-            assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
-            assertNull(response.getBody());
-            verify(recipeService).updateTags(1L, testTags, UUID.fromString("550e8400-e29b-41d4-a716-446655440000"));
-        }
-    }
-
-    @Test
-    void getAllRecipes_WhenUserIdHeaderMissing_ShouldThrowValidationException() {
-        try (var headerUtilMock = mockStatic(HeaderUtil.class)) {
-            headerUtilMock.when(HeaderUtil::extractRequiredUserIdFromHeader)
-                .thenThrow(new ValidationException("User ID is required but not found in request headers"));
-
-            assertThrows(ValidationException.class, () -> recipeController.getAllRecipes(PageRequest.of(0, 10)));
-        }
-    }
-
-    @Test
     void deleteRecipe_ShouldDeleteRecipe() {
         try (var headerUtilMock = mockStatic(HeaderUtil.class)) {
             headerUtilMock.when(HeaderUtil::extractRequiredUserIdFromHeader).thenReturn(UUID.fromString("550e8400-e29b-41d4-a716-446655440000"));
@@ -280,23 +232,6 @@ class RecipeControllerTest {
             assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
             assertNull(response.getBody());
             verify(recipeService).deleteRecipe(1L, UUID.fromString("550e8400-e29b-41d4-a716-446655440001"));
-        }
-    }
-
-    @Test
-    void updateTags_WhenUserNotOwner_ShouldReturnForbidden() {
-        when(recipeService.updateTags(anyLong(), anyList(), any(UUID.class)))
-            .thenThrow(new UnauthorizedException("You don't have permission to access this recipe"));
-
-        try (var headerUtilMock = mockStatic(HeaderUtil.class)) {
-            headerUtilMock.when(HeaderUtil::extractRequiredUserIdFromHeader).thenReturn(UUID.fromString("550e8400-e29b-41d4-a716-446655440001"));
-
-            ResponseEntity<RecipeMetadataDTO> response = recipeController.updateTags(1L, testTags);
-
-            assertNotNull(response);
-            assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
-            assertNull(response.getBody());
-            verify(recipeService).updateTags(1L, testTags, UUID.fromString("550e8400-e29b-41d4-a716-446655440001"));
         }
     }
 } 

@@ -4,7 +4,6 @@ import com.recipefy.recipe.mapper.dto.RecipeMetadataDTOMapper;
 import com.recipefy.recipe.model.dto.RecipeMetadataDTO;
 import com.recipefy.recipe.model.entity.RecipeMetadata;
 import com.recipefy.recipe.model.entity.RecipeTag;
-import com.recipefy.recipe.model.enums.Tag;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -18,8 +17,8 @@ public class RecipeMetadataDTOMapperTests {
 
     @Test
     void toDTO_shouldMapCorrectly() {
-        String tag1Name = Tag.VEGAN.name().toLowerCase(Locale.ROOT);
-        String tag2Name = Tag.GLUTEN_FREE.name().toLowerCase(Locale.ROOT);
+        String tag1Name = "vegan";
+        String tag2Name = "gluten_free";
         RecipeTag tag1 = new RecipeTag(tag1Name, new HashSet<>());
         RecipeTag tag2 = new RecipeTag(tag2Name, new HashSet<>());
 
