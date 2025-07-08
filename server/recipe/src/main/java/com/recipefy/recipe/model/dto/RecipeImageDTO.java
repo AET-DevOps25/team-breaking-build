@@ -8,5 +8,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class RecipeImageDTO {
-    private String url;
+    private String base64String; // nullable, can be null if no image is provided
 }

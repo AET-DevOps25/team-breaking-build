@@ -21,7 +21,7 @@ public class RecipeDetailsDTO {
     @Min(value = 1, message = "Serving size must be at least 1")
     private int servingSize;
 
-    private List<@Valid RecipeImageDTO> images;
+    private List<@Valid RecipeImageDTO> images; // nullable, can be null or empty
 
     @NotNull(message = "Recipe ingredients are required")
     @Size(min = 1, message = "Recipe must contain at least 1 ingredient")

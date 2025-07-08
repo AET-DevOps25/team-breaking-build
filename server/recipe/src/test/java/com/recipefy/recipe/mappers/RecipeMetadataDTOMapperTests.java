@@ -39,7 +39,7 @@ public class RecipeMetadataDTOMapperTests {
         assertThat(dto.getForkedFrom()).isEqualTo(recipe.getForkedFrom());
         assertThat(dto.getTitle()).isEqualTo(recipe.getTitle());
         assertThat(dto.getDescription()).isEqualTo(recipe.getDescription());
-        assertThat(dto.getThumbnail().getUrl()).isEqualTo(recipe.getThumbnail());
+        assertThat(dto.getThumbnail().getBase64String()).isEqualTo(recipe.getThumbnail());
         assertThat(dto.getTags()).hasSize(2);
         assertThat(dto.getTags()).extracting("name").containsExactlyInAnyOrder(tag1Name, tag2Name);
     }
