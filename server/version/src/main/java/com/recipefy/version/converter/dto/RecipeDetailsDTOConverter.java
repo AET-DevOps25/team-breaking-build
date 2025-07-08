@@ -38,7 +38,7 @@ public class RecipeDetailsDTOConverter {
 
     private static RecipeImageDTO mapRecipeImage(RecipeImage recipeImage) {
         RecipeImageDTO image = new RecipeImageDTO();
-        image.setUrl(recipeImage.getUrl());
+        image.setBase64Image(recipeImage.getBase64Image());
         return image;
     }
 

@@ -76,7 +76,7 @@ class RecipeServiceImplTest {
         testRecipe.setUserId(UUID.fromString("550e8400-e29b-41d4-a716-446655440000"));
         testRecipe.setTitle("Test Recipe");
         testRecipe.setDescription("Test Description");
-        testRecipe.setThumbnail("test.jpg");
+        testRecipe.setThumbnail("test.jpg".getBytes());
         testRecipe.setServingSize(4);
         testRecipe.setCreatedAt(LocalDateTime.now());
         testRecipe.setUpdatedAt(LocalDateTime.now());
@@ -89,7 +89,7 @@ class RecipeServiceImplTest {
 
         testRecipe.setTags(new HashSet<>(Collections.singletonList(testTag)));
 
-        // Setup DTOs
+        // Setup DTOs - use mapper to convert properly
         testRecipeDTO = RecipeMetadataDTOMapper.toDTO(testRecipe);
         testTagDTO = new RecipeTagDTO(1L, "Test Tag");
         

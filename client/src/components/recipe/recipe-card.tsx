@@ -16,9 +16,9 @@ export function RecipeCard({ recipe, onClick }: RecipeCardProps) {
       onClick={onClick}
     >
       <div className='relative h-48'>
-        {recipe.thumbnail ? (
+        {recipe.thumbnail?.base64String ? (
           <Image
-            src={recipe.thumbnail.url}
+            src={`data:image/jpeg;base64,${recipe.thumbnail.base64String}`}
             alt={recipe.title}
             fill
             className='object-cover'

@@ -33,6 +33,7 @@ import com.recipefy.recipe.exception.UnauthorizedException;
 import com.recipefy.recipe.exception.ValidationException;
 import com.recipefy.recipe.model.dto.RecipeMetadataDTO;
 import com.recipefy.recipe.model.dto.RecipeTagDTO;
+import com.recipefy.recipe.model.dto.RecipeImageDTO;
 import com.recipefy.recipe.model.request.CreateRecipeRequest;
 import com.recipefy.recipe.model.request.InitRecipeRequest;
 import com.recipefy.recipe.service.RecipeService;
@@ -61,6 +62,12 @@ class RecipeControllerTest {
         testRecipeDTO.setUpdatedAt(now);
         testRecipeDTO.setTitle("Test Recipe");
         testRecipeDTO.setDescription("Test Description");
+        
+        // Create RecipeImageDTO for thumbnail
+        RecipeImageDTO thumbnailDTO = new RecipeImageDTO();
+        thumbnailDTO.setBase64String("test.jpg".getBytes());
+        testRecipeDTO.setThumbnail(thumbnailDTO);
+        
         testRecipeDTO.setServingSize(4);
         testRecipeDTO.setTags(Collections.emptyList());
         

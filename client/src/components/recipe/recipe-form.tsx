@@ -45,6 +45,8 @@ interface RecipeFormProps {
   isSubmitting?: boolean;
   availableTags?: Tag[];
   isLoadingTags?: boolean;
+  selectedTags: Tag[];
+  setSelectedTags: (tags: Tag[]) => void;
 }
 
 const ingredientPlaceholders = [
@@ -103,8 +105,14 @@ const stepPlaceholders = [
   'Take a moment to be proud of your creation',
 ] as const;
 
-export function RecipeForm({ onSubmit, isSubmitting, availableTags = [], isLoadingTags = false }: RecipeFormProps) {
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+export function RecipeForm({
+  onSubmit,
+  isSubmitting,
+  availableTags = [],
+  isLoadingTags = false,
+  selectedTags,
+  setSelectedTags,
+}: RecipeFormProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [showTagDropdown, setShowTagDropdown] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -159,19 +167,25 @@ export function RecipeForm({ onSubmit, isSubmitting, availableTags = [], isLoadi
   const filteredTags = availableTags.filter((tag) => tag.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
   const handleTagSelect = (tag: Tag) => {
-    if (!selectedTags.includes(tag.name)) {
-      const newTags = [...selectedTags, tag.name];
+    if (!selectedTags.some((t) => t.id === tag.id)) {
+      const newTags = [...selectedTags, tag];
       setSelectedTags(newTags);
-      setValue('tags', newTags);
+      setValue(
+        'tags',
+        newTags.map((t) => t.name),
+      );
     }
     setSearchQuery('');
     setShowTagDropdown(false);
   };
 
   const handleTagRemove = (tagToRemove: string) => {
-    const newTags = selectedTags.filter((tag) => tag !== tagToRemove);
+    const newTags = selectedTags.filter((tag) => tag.name !== tagToRemove);
     setSelectedTags(newTags);
-    setValue('tags', newTags);
+    setValue(
+      'tags',
+      newTags.map((t) => t.name),
+    );
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -375,13 +389,13 @@ export function RecipeForm({ onSubmit, isSubmitting, availableTags = [], isLoadi
           <div className='mt-2 flex flex-wrap gap-2'>
             {selectedTags.map((tag) => (
               <div
-                key={tag}
+                key={tag.id}
                 className='flex items-center gap-1 rounded-full bg-[#FF7C75] px-3 py-1 text-sm text-white'
               >
-                {tag}
+                {tag.name}
                 <button
                   type='button'
-                  onClick={() => handleTagRemove(tag)}
+                  onClick={() => handleTagRemove(tag.name)}
                   className='hover:text-gray-200'
                 >
                   <X className='size-4' />
