@@ -104,7 +104,14 @@ public class RecipeServiceImpl implements RecipeService {
 
         existing.setTitle(metadataDTO.getTitle());
         existing.setDescription(metadataDTO.getDescription());
-        existing.setThumbnail(metadataDTO.getThumbnail());
+        
+        // Convert RecipeImageDTO to byte[] for thumbnail
+        if (metadataDTO.getThumbnail() != null) {
+            existing.setThumbnail(metadataDTO.getThumbnail().getBase64String());
+        } else {
+            existing.setThumbnail(null);
+        }
+        
         existing.setServingSize(metadataDTO.getServingSize());
 
         // Update tags here
@@ -130,7 +137,7 @@ public class RecipeServiceImpl implements RecipeService {
         copy.setForkedFrom(original.getId());
         copy.setTitle(original.getTitle());
         copy.setDescription(original.getDescription());
-        copy.setThumbnail(original.getThumbnail());
+        copy.setThumbnail(original.getThumbnail()); // byte[] to byte[] - no conversion needed
         copy.setServingSize(original.getServingSize());
         copy.setTags(original.getTags()); // safe since Set<RecipeTag> is reused
 

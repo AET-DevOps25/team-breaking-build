@@ -21,7 +21,16 @@ public class RecipeMetadataDTOMapper {
 
         dto.setTitle(recipeMetadata.getTitle());
         dto.setDescription(recipeMetadata.getDescription());
-        dto.setThumbnail(recipeMetadata.getThumbnail());
+        
+        // Convert byte[] to RecipeImageDTO
+        if (recipeMetadata.getThumbnail() != null) {
+            RecipeImageDTO thumbnailDTO = new RecipeImageDTO();
+            thumbnailDTO.setBase64String(recipeMetadata.getThumbnail());
+            dto.setThumbnail(thumbnailDTO);
+        } else {
+            dto.setThumbnail(null);
+        }
+        
         dto.setServingSize(recipeMetadata.getServingSize());
 
         // Safe conversion of tags with defensive programming in RecipeTagDTOMapper
@@ -46,7 +55,14 @@ public class RecipeMetadataDTOMapper {
 
         metadata.setTitle(dto.getTitle());
         metadata.setDescription(dto.getDescription());
-        metadata.setThumbnail(dto.getThumbnail());
+        
+        // Convert RecipeImageDTO to byte[]
+        if (dto.getThumbnail() != null) {
+            metadata.setThumbnail(dto.getThumbnail().getBase64String());
+        } else {
+            metadata.setThumbnail(null);
+        }
+        
         metadata.setServingSize(dto.getServingSize());
 
         // Safe conversion of tags with defensive programming in RecipeTagDTOMapper

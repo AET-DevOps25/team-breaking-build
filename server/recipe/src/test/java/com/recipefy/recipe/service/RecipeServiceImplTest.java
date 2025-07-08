@@ -89,7 +89,7 @@ class RecipeServiceImplTest {
 
         testRecipe.setTags(new HashSet<>(Collections.singletonList(testTag)));
 
-        // Setup DTOs
+        // Setup DTOs - use mapper to convert properly
         testRecipeDTO = RecipeMetadataDTOMapper.toDTO(testRecipe);
         testTagDTO = new RecipeTagDTO(1L, "Test Tag");
         

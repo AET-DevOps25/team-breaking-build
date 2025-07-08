@@ -43,7 +43,7 @@ public class RecipeSnapshotConverter {
 
     private static RecipeImage mapRecipeImage(RecipeImageDTO recipeImageDTO) {
         RecipeImage image = new RecipeImage();
-        image.setUrl(recipeImageDTO.getUrl());
+        image.setBase64Image(recipeImageDTO.getBase64Image());
         return image;
     }
 

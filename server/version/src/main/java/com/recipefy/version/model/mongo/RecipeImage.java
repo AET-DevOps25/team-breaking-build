@@ -9,5 +9,5 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class RecipeImage {
 
-    private String url;
+    private byte[] base64Image;
 }

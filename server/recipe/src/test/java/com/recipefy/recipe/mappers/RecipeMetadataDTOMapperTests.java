@@ -1,6 +1,7 @@
 package com.recipefy.recipe.mappers;
 
 import com.recipefy.recipe.mapper.dto.RecipeMetadataDTOMapper;
+import com.recipefy.recipe.model.dto.RecipeImageDTO;
 import com.recipefy.recipe.model.dto.RecipeMetadataDTO;
 import com.recipefy.recipe.model.entity.RecipeMetadata;
 import com.recipefy.recipe.model.entity.RecipeTag;
@@ -40,7 +41,8 @@ public class RecipeMetadataDTOMapperTests {
         assertThat(dto.getForkedFrom()).isEqualTo(recipe.getForkedFrom());
         assertThat(dto.getTitle()).isEqualTo(recipe.getTitle());
         assertThat(dto.getDescription()).isEqualTo(recipe.getDescription());
-        assertThat(dto.getThumbnail()).isEqualTo(thumbnailBytes);
+        assertThat(dto.getThumbnail()).isNotNull();
+        assertThat(dto.getThumbnail().getBase64String()).isEqualTo(thumbnailBytes);
         assertThat(dto.getTags()).hasSize(2);
         assertThat(dto.getTags()).extracting("name").containsExactlyInAnyOrder(tag1Name, tag2Name);
     }
