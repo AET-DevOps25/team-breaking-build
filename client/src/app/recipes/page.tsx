@@ -1,68 +1,30 @@
 'use client';
 
-import { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Recipe } from '@/lib/types/recipe';
 import { getRecipes } from '@/lib/services/recipeService';
 import { RecipeCard } from '@/components/recipe/recipe-card';
 import { Button } from '@/components/ui/button';
+import { InfiniteScroll } from '@/components/ui/infinite-scroll';
+import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 import { Plus, ChefHat } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function RecipesPage() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
-  const observerTarget = useRef<HTMLDivElement>(null);
 
-  const loadRecipes = useCallback(async () => {
-    if (loading || !hasMore) return;
-
-    setLoading(true);
-    try {
-      const response = await getRecipes(page);
-
-      // Ensure response is an array
-      const recipesArray = Array.isArray(response) ? response : [];
-
-      setRecipes((prev) => [...prev, ...recipesArray]);
-      setHasMore(recipesArray.length > 0);
-      setPage((prev) => prev + 1);
-    } catch {
-      setHasMore(false); // Stop trying to load more on error
-    } finally {
-      setLoading(false);
-    }
-  }, [loading, hasMore, page]);
-
-  useEffect(() => {
-    loadRecipes();
-  }, [loadRecipes]);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loading) {
-          loadRecipes();
-        }
-      },
-      { threshold: 0.1 },
-    );
-
-    const currentTarget = observerTarget.current;
-    if (currentTarget) {
-      observer.observe(currentTarget);
-    }
-
-    return () => {
-      if (currentTarget) {
-        observer.unobserve(currentTarget);
-      }
-    };
-  }, [loadRecipes, hasMore, loading]);
+  const {
+    data: recipes,
+    loading,
+    hasMore,
+    error,
+    loadMore,
+  } = useInfiniteScroll<Recipe>({
+    fetchData: getRecipes,
+    pageSize: 10,
+    initialPage: 0,
+  });
 
   return (
     <div className='container mx-auto px-4 py-8'>
@@ -79,16 +41,28 @@ export default function RecipesPage() {
         )}
       </div>
 
-      {recipes.length > 0 ? (
-        <div className='grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3'>
-          {recipes.map((recipe) => (
-            <RecipeCard
-              key={recipe.id}
-              recipe={recipe}
-              onClick={() => router.push(`/recipes/${recipe.id}`)}
-            />
-          ))}
+      {error && (
+        <div className='mb-6 rounded-lg bg-red-50 p-4 text-red-700'>
+          <p>Error loading recipes: {error}</p>
         </div>
+      )}
+
+      {recipes.length > 0 ? (
+        <InfiniteScroll
+          onLoadMore={loadMore}
+          hasMore={hasMore}
+          loading={loading}
+        >
+          <div className='grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3'>
+            {recipes.map((recipe) => (
+              <RecipeCard
+                key={recipe.id}
+                recipe={recipe}
+                onClick={() => router.push(`/recipes/${recipe.id}`)}
+              />
+            ))}
+          </div>
+        </InfiniteScroll>
       ) : !loading ? (
         <div className='flex flex-col items-center justify-center py-12'>
           <div className='mb-6 flex size-24 items-center justify-center rounded-full bg-rose-100'>
@@ -100,14 +74,6 @@ export default function RecipesPage() {
           </div>
         </div>
       ) : null}
-
-      {/* Loading indicator and intersection observer target */}
-      <div
-        ref={observerTarget}
-        className='flex h-10 items-center justify-center'
-      >
-        {loading && <div className='size-8 animate-spin rounded-full border-b-2 border-[#FF7C75]'></div>}
-      </div>
     </div>
   );
 }

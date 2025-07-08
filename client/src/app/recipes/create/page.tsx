@@ -5,6 +5,7 @@ import { RecipeForm } from '@/components/recipe/recipe-form';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { createRecipe, getTags, Tag } from '@/lib/services/recipeService';
+import { fileToBase64 } from '@/lib/utils';
 
 // Type for the form data
 type RecipeFormData = {
@@ -30,6 +31,7 @@ export default function CreateRecipePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [availableTags, setAvailableTags] = useState<Tag[]>([]);
   const [isLoadingTags, setIsLoadingTags] = useState(true);
+  const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
 
   useEffect(() => {
     const fetchTags = async () => {
@@ -49,22 +51,48 @@ export default function CreateRecipePage() {
   const handleSubmit = async (data: RecipeFormData) => {
     setIsSubmitting(true);
     try {
-      const formData = new FormData();
-      formData.append('title', data.title);
-      formData.append('description', data.description);
-      formData.append('servingSize', data.servingSize.toString());
-      data.tags.forEach((tag: string) => {
-        formData.append('tags', tag);
-      });
+      // Convert thumbnail file to RecipeImage format if present
+      let thumbnail: { base64String: string } | undefined = undefined;
       if (data.thumbnail) {
-        formData.append('thumbnail', data.thumbnail);
+        const base64String = await fileToBase64(data.thumbnail);
+        thumbnail = { base64String };
       }
 
-      // Add ingredients and steps as JSON strings
-      formData.append('ingredients', JSON.stringify(data.ingredients));
-      formData.append('steps', JSON.stringify(data.steps));
+      // Prepare recipeSteps with async base64 conversion for step images
+      const recipeSteps = await Promise.all(
+        data.steps.map(async (step) => ({
+          order: step.order,
+          details: step.details,
+          ...(step.image ? { recipeImageDTOS: [{ base64String: await fileToBase64(step.image) }] } : {}),
+        })),
+      );
 
-      await createRecipe(formData);
+      // Map RecipeFormData to CreateRecipeRequest DTO
+      const createRequest = {
+        metadata: {
+          title: data.title,
+          description: data.description,
+          servingSize: data.servingSize,
+          ...(selectedTags.length > 0
+            ? { tags: selectedTags.map((tag: Tag) => ({ id: tag.id, name: tag.name })) }
+            : {}),
+          ...(thumbnail ? { thumbnail } : {}),
+        },
+        initRequest: {
+          recipeDetails: {
+            servingSize: data.servingSize,
+            images: [], // Optional, can be omitted or empty
+            recipeIngredients: data.ingredients.map((ing) => ({
+              name: ing.name,
+              unit: ing.unit,
+              amount: ing.amount,
+            })),
+            recipeSteps,
+          },
+        },
+      };
+
+      await createRecipe(createRequest);
       toast.success('Recipe created successfully');
       router.push('/recipes');
     } catch {
@@ -83,6 +111,8 @@ export default function CreateRecipePage() {
           isSubmitting={isSubmitting}
           availableTags={availableTags}
           isLoadingTags={isLoadingTags}
+          selectedTags={selectedTags}
+          setSelectedTags={setSelectedTags}
         />
       </div>
     </div>

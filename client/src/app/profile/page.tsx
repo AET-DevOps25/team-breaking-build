@@ -5,6 +5,9 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { InfiniteScroll } from '@/components/ui/infinite-scroll';
+import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
+import { getUserRecipes } from '@/lib/services/recipeService';
 
 import { User, ChefHat, Plus, Heart, Clock, Users, LogOut } from 'lucide-react';
 import Link from 'next/link';
@@ -14,7 +17,7 @@ interface Recipe {
   id: string;
   title: string;
   description: string;
-  imageUrl?: string;
+  base64String?: string;
   cookingTime: number;
   servings: number;
   likes: number;
@@ -24,44 +27,42 @@ interface Recipe {
 export default function ProfilePage() {
   const { user, isAuthenticated, isLoading, logout } = useAuth();
   const router = useRouter();
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [isLoadingRecipes, setIsLoadingRecipes] = useState(true);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+
+  // Create a fetch function for user recipes that transforms the data
+  const fetchUserRecipes = async (page: number) => {
+    if (!user?.id) return [];
+
+    const userRecipes = await getUserRecipes(user.id, page, 10);
+    return userRecipes.map((recipe) => ({
+      id: String(recipe.id),
+      title: recipe.title,
+      description: recipe.description,
+      base64String: recipe.thumbnail?.base64String || '',
+      cookingTime: 30, // Default value since API might not have this
+      servings: recipe.servingSize,
+      likes: 0, // Default value since API might not have this
+      createdAt: recipe.createdAt,
+    }));
+  };
+
+  const {
+    data: recipes,
+    loading: isLoadingRecipes,
+    hasMore,
+    error,
+    loadMore,
+  } = useInfiniteScroll<Recipe>({
+    fetchData: fetchUserRecipes,
+    pageSize: 10,
+    initialPage: 0,
+  });
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       router.push('/login');
-      return;
     }
-
-    if (isAuthenticated && user) {
-      const fetchUserRecipes = async () => {
-        try {
-          // Import the recipe service dynamically to avoid circular dependencies
-          const { getUserRecipes } = await import('@/lib/services/recipeService');
-          const userRecipes = await getUserRecipes(user.id);
-          // Transform the API response to match the local Recipe interface
-          const transformedRecipes = userRecipes.map((recipe) => ({
-            id: recipe.id,
-            title: recipe.title,
-            description: recipe.description,
-            imageUrl: recipe.thumbnail?.url,
-            cookingTime: 30, // Default value since API might not have this
-            servings: recipe.servingSize,
-            likes: 0, // Default value since API might not have this
-            createdAt: recipe.createdAt,
-          }));
-          setRecipes(transformedRecipes);
-        } catch {
-          setRecipes([]); // Empty array on error
-        } finally {
-          setIsLoadingRecipes(false);
-        }
-      };
-
-      fetchUserRecipes();
-    }
-  }, [isAuthenticated, isLoading, router, user]);
+  }, [isAuthenticated, isLoading, router]);
 
   if (isLoading) {
     return (
@@ -125,7 +126,13 @@ export default function ProfilePage() {
           </h2>
         </div>
 
-        {isLoadingRecipes ? (
+        {error && (
+          <div className='mb-6 rounded-lg bg-red-50 p-4 text-red-700'>
+            <p>Error loading recipes: {error}</p>
+          </div>
+        )}
+
+        {isLoadingRecipes && recipes.length === 0 ? (
           <div className='grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3'>
             {[...Array(6)].map((_, i) => (
               <Card
@@ -141,48 +148,54 @@ export default function ProfilePage() {
             ))}
           </div>
         ) : recipes.length > 0 ? (
-          <div className='grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3'>
-            {recipes.map((recipe) => (
-              <Card
-                key={recipe.id}
-                className='overflow-hidden shadow-lg transition-shadow duration-300 hover:shadow-xl'
-              >
-                <div className='flex h-48 items-center justify-center bg-gradient-to-br from-rose-100 to-rose-200'>
-                  {recipe.imageUrl ? (
-                    <Image
-                      src={recipe.imageUrl}
-                      alt={recipe.title}
-                      width={400}
-                      height={200}
-                      className='size-full object-cover'
-                    />
-                  ) : (
-                    <ChefHat className='size-16 text-[#FF7C75]' />
-                  )}
-                </div>
-                <CardContent className='p-4'>
-                  <h3 className='mb-2 text-lg font-semibold text-gray-900'>{recipe.title}</h3>
-                  <p className='mb-3 line-clamp-2 text-sm text-gray-600'>{recipe.description}</p>
-                  <div className='flex items-center justify-between text-sm text-gray-500'>
-                    <div className='flex items-center space-x-4'>
-                      <div className='flex items-center'>
-                        <Clock className='mr-1 size-4' />
-                        {recipe.cookingTime}min
-                      </div>
-                      <div className='flex items-center'>
-                        <Users className='mr-1 size-4' />
-                        {recipe.servings}
-                      </div>
-                    </div>
-                    <div className='flex items-center'>
-                      <Heart className='mr-1 size-4 text-[#FF7C75]' />
-                      {recipe.likes}
-                    </div>
+          <InfiniteScroll
+            onLoadMore={loadMore}
+            hasMore={hasMore}
+            loading={isLoadingRecipes}
+          >
+            <div className='grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3'>
+              {recipes.map((recipe) => (
+                <Card
+                  key={recipe.id}
+                  className='overflow-hidden shadow-lg transition-shadow duration-300 hover:shadow-xl'
+                >
+                  <div className='flex h-48 items-center justify-center bg-gradient-to-br from-rose-100 to-rose-200'>
+                    {recipe.base64String ? (
+                      <Image
+                        src={`data:image/jpeg;base64,${recipe.base64String}`}
+                        alt={recipe.title}
+                        width={400}
+                        height={200}
+                        className='size-full object-cover'
+                      />
+                    ) : (
+                      <ChefHat className='size-16 text-[#FF7C75]' />
+                    )}
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  <CardContent className='p-4'>
+                    <h3 className='mb-2 text-lg font-semibold text-gray-900'>{recipe.title}</h3>
+                    <p className='mb-3 line-clamp-2 text-sm text-gray-600'>{recipe.description}</p>
+                    <div className='flex items-center justify-between text-sm text-gray-500'>
+                      <div className='flex items-center space-x-4'>
+                        <div className='flex items-center'>
+                          <Clock className='mr-1 size-4' />
+                          {recipe.cookingTime}min
+                        </div>
+                        <div className='flex items-center'>
+                          <Users className='mr-1 size-4' />
+                          {recipe.servings}
+                        </div>
+                      </div>
+                      <div className='flex items-center'>
+                        <Heart className='mr-1 size-4 text-[#FF7C75]' />
+                        {recipe.likes}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </InfiniteScroll>
         ) : (
           /* Empty State - Call to Action */
           <Card className='border-0 py-12 text-center shadow-lg'>
