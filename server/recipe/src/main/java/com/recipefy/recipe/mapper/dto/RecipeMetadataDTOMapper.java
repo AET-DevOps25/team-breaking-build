@@ -17,7 +17,7 @@ public class RecipeMetadataDTOMapper {
 
         dto.setTitle(recipeMetadata.getTitle());
         dto.setDescription(recipeMetadata.getDescription());
-        dto.setThumbnail(new RecipeImageDTO(recipeMetadata.getThumbnail()));
+        dto.setThumbnail(recipeMetadata.getThumbnail() != null ? new RecipeImageDTO(recipeMetadata.getThumbnail()) : null);
         dto.setServingSize(recipeMetadata.getServingSize());
 
         dto.setTags(RecipeTagDTOMapper.toDTO(recipeMetadata.getTags()));
@@ -37,7 +37,7 @@ public class RecipeMetadataDTOMapper {
 
         metadata.setTitle(dto.getTitle());
         metadata.setDescription(dto.getDescription());
-        metadata.setThumbnail(dto.getThumbnail().getUrl());
+        metadata.setThumbnail(dto.getThumbnail() != null ? dto.getThumbnail().getBase64String() : null);
         metadata.setServingSize(dto.getServingSize());
 
         metadata.setTags(RecipeTagDTOMapper.toEntity(dto.getTags()));

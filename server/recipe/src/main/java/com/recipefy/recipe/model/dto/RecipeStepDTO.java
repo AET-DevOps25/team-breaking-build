@@ -15,5 +15,5 @@ import java.util.List;
 public class RecipeStepDTO {
     private Integer order;
     private String details;
-    private List<RecipeImageDTO> recipeImageDTOS;
+    private List<RecipeImageDTO> recipeImageDTOS; // nullable, can be null or empty
 }

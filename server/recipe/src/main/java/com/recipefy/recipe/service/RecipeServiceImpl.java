@@ -104,11 +104,11 @@ public class RecipeServiceImpl implements RecipeService {
 
         existing.setTitle(metadataDTO.getTitle());
         existing.setDescription(metadataDTO.getDescription());
-        existing.setThumbnail(metadataDTO.getThumbnail().getUrl());
+        existing.setThumbnail(metadataDTO.getThumbnail() != null ? metadataDTO.getThumbnail().getBase64String() : null);
         existing.setServingSize(metadataDTO.getServingSize());
 
         // Update tags here
-        if (metadataDTO.getTags() != null) {
+        if (metadataDTO.getTags() != null && !metadataDTO.getTags().isEmpty()) {
             Set<RecipeTag> tags = metadataDTO.getTags().stream()
                 .map(dto -> recipeTagRepository.findById(dto.getId())
                     .orElseThrow(() -> new EntityNotFoundException("Tag not found with ID: " + dto.getId())))
