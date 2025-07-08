@@ -13,7 +13,7 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString(exclude = "recipes")
-@EqualsAndHashCode(callSuper = true)
+@EqualsAndHashCode(callSuper = true, exclude = "recipes")
 @Entity
 public class RecipeTag extends BaseEntity {
     @Column(unique = true, nullable = false)
