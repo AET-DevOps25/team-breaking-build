@@ -236,7 +236,6 @@ class RecipeServiceImplTest {
         doNothing().when(genAIClient).deleteRecipe(anyString());
 
         // Act & Assert
-        assertThrows(UnsupportedOperationException.class, () -> recipeService.deleteRecipe(1L, UUID.fromString("550e8400-e29b-41d4-a716-446655440000")));
         verify(recipeRepository).findById(1L);
         verify(recipeRepository).deleteById(1L);
         verify(genAIClient).deleteRecipe(anyString());

@@ -180,7 +180,6 @@ public class RecipeServiceImpl implements RecipeService {
         
         recipeRepository.deleteById(recipeId);
         log.info("Successfully deleted recipe {} by user {}", recipeId, userId);
-        throw new UnsupportedOperationException("VCS delete functionality is not implemented yet.");
     }
 
     @Override
