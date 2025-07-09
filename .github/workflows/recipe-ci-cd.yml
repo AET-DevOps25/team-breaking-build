@@ -84,9 +84,11 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-      - name: Export Docker image tag
+      - name: Extract image tag from metadata
         id: export_tag
-        run: echo "image_tag=${{ steps.meta.outputs.version }}" >> $GITHUB_OUTPUT
+        run: |
+          TAG=$(echo "${{ steps.meta.outputs.tags }}" | grep -o 'sha-[a-zA-Z0-9]\+')
+          echo "image_tag=$TAG" >> $GITHUB_OUTPUT
 
   deploy:
     name: Deploy to Rancher with Helm
