@@ -21,6 +21,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -142,7 +143,7 @@ public class RecipeServiceImpl implements RecipeService {
         copy.setDescription(original.getDescription());
         copy.setThumbnail(original.getThumbnail()); // byte[] to byte[] - no conversion needed
         copy.setServingSize(original.getServingSize());
-        copy.setTags(original.getTags()); // safe since Set<RecipeTag> is reused
+        copy.setTags(new HashSet<>(original.getTags())); // safe since Set<RecipeTag> is reused
 
         // Save copy first to get the ID
         RecipeMetadata saved = recipeRepository.save(copy);
