@@ -14,6 +14,7 @@ public class RecipeMetadataDTOMapper {
         RecipeMetadataDTO dto = new RecipeMetadataDTO();
 
         dto.setId(recipeMetadata.getId());
+        dto.setUserId(recipeMetadata.getUserId());
         dto.setForkedFrom(recipeMetadata.getForkedFrom());
 
         dto.setCreatedAt(recipeMetadata.getCreatedAt());
@@ -47,7 +48,7 @@ public class RecipeMetadataDTOMapper {
         RecipeMetadata metadata = new RecipeMetadata();
 
         metadata.setId(dto.getId());
-        metadata.setUserId(userId);
+        metadata.setUserId(dto.getUserId() != null ? dto.getUserId() : userId);
         metadata.setForkedFrom(dto.getForkedFrom());
 
         metadata.setCreatedAt(dto.getCreatedAt());

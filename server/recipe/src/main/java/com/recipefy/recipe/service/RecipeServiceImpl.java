@@ -1,15 +1,8 @@
 package com.recipefy.recipe.service;
 
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
-
 import com.recipefy.recipe.client.GenAIClient;
 import com.recipefy.recipe.client.VersionClient;
+import com.recipefy.recipe.exception.UnauthorizedException;
 import com.recipefy.recipe.mapper.dto.RecipeMetadataDTOMapper;
 import com.recipefy.recipe.model.dto.BranchDTO;
 import com.recipefy.recipe.model.dto.RecipeMetadataDTO;
@@ -20,12 +13,19 @@ import com.recipefy.recipe.model.request.CopyBranchRequest;
 import com.recipefy.recipe.model.request.CreateRecipeRequest;
 import com.recipefy.recipe.repository.RecipeRepository;
 import com.recipefy.recipe.repository.TagRepository;
-
-import com.recipefy.recipe.exception.UnauthorizedException;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -55,6 +55,7 @@ public class RecipeServiceImpl implements RecipeService {
     }
 
     @Override
+    @Transactional
     public RecipeMetadataDTO createRecipe(CreateRecipeRequest request, UUID userId) {
         RecipeMetadata recipe = RecipeMetadataDTOMapper.toEntity(request.getMetadata(), userId);
 
@@ -99,6 +100,7 @@ public class RecipeServiceImpl implements RecipeService {
     }
 
     @Override
+    @Transactional
     public RecipeMetadataDTO updateRecipe(Long recipeId, RecipeMetadataDTO metadataDTO, UUID userId) {
         RecipeMetadata existing = validateRecipeOwnership(recipeId, userId);
 
@@ -128,6 +130,7 @@ public class RecipeServiceImpl implements RecipeService {
     }
 
     @Override
+    @Transactional
     public RecipeMetadataDTO copyRecipe(Long recipeId, UUID userId, Long branchId) {
         RecipeMetadata original = recipeRepository.findById(recipeId)
                 .orElseThrow(() -> new EntityNotFoundException("Original recipe not found"));
