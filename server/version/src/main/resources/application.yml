@@ -14,7 +14,7 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
   data:
     mongodb:
-      uri: mongodb://${VERSION_MONGO_USER}:${VERSION_MONGO_PASSWORD}@${VERSION_MONGO_URL_HOSTS}/${VERSION_MONGO_DB_NAME}?replicaSet=${VERSION_MONGO_REPLICA_SET}
+      uri: mongodb://${VERSION_MONGO_USER}:${VERSION_MONGO_PASSWORD}@${VERSION_MONGO_URL_HOSTS}/${VERSION_MONGO_DB_NAME}?replicaSet=${VERSION_MONGO_REPLICA_SET}&authSource=admin&minPoolSize=2&retryWrites=true
 
 logging:
   level:
