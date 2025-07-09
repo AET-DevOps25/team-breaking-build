@@ -148,7 +148,7 @@ public class RecipeServiceImpl implements RecipeService {
         RecipeMetadata saved = recipeRepository.save(copy);
         
         // Copy version control and get branch info
-        BranchDTO branch = versionClient.copyRecipe(branchId, new CopyBranchRequest(saved.getId()));
+        BranchDTO branch = versionClient.copyRecipe(branchId, new CopyBranchRequest(saved.getId()), userId);
         log.info("Copied recipe {} with new branch ID: {}", saved.getId(), branch.getId());
         
         // Trigger GenAI indexing for the copied recipe

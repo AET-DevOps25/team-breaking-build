@@ -1,5 +1,7 @@
 package com.recipefy.recipe.client;
 
+import java.util.UUID;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -13,7 +15,6 @@ import com.recipefy.recipe.model.request.CopyBranchRequest;
 import com.recipefy.recipe.model.request.InitRecipeRequest;
 
 import lombok.RequiredArgsConstructor;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -39,8 +40,17 @@ public class VersionClientImpl implements VersionClient {
     }
 
     @Override
-    public BranchDTO copyRecipe(Long branchId, CopyBranchRequest request) {
+    public BranchDTO copyRecipe(Long branchId, CopyBranchRequest request, UUID userId) {
         String url = vcsServiceUrl + "/vcs/branches/" + branchId + "/copy";
-        return restTemplate.postForEntity(url, request, BranchDTO.class).getBody();
+        
+        // Create headers with userId
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-User-Id", userId.toString());
+        
+        // Create HTTP entity with request body and headers
+        HttpEntity<CopyBranchRequest> entity = new HttpEntity<>(request, headers);
+        
+        ResponseEntity<BranchDTO> response = restTemplate.exchange(url, HttpMethod.POST, entity, BranchDTO.class);
+        return response.getBody();
     }
 }
