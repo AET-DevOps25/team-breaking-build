@@ -82,3 +82,7 @@ readinessProbe:
   timeoutSeconds: 2
   successThreshold: 1
   failureThreshold: 3
+
+envFrom:
+  - configMapRef:
+      name: recipefy-config
