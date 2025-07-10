@@ -1,7 +1,12 @@
-const AUTH_BASE_URL =
-  process.env.GATEWAY_SERVICE_BASE_URL + ':' + process.env.GATEWAY_SERVICE_PORT || 'http://localhost:8089';
+const AUTH_BASE_URL = 
+  process.env.NEXT_PUBLIC_GATEWAY_SERVICE_BASE_URL 
+    ? `${process.env.NEXT_PUBLIC_GATEWAY_SERVICE_BASE_URL}${process.env.NEXT_PUBLIC_GATEWAY_SERVICE_PORT ? ':' + process.env.NEXT_PUBLIC_GATEWAY_SERVICE_PORT : ''}` 
+    : 'http://localhost:8089';
+  
 export const API_BASE_URL =
-  process.env.KEYCLOAK_SPI_BASE_URL + ':' + process.env.KEYCLOAK_SPI_PORT || 'http://localhost:8090';
+  process.env.NEXT_PUBLIC_KEYCLOAK_SPI_BASE_URL
+    ? `${process.env.NEXT_PUBLIC_KEYCLOAK_SPI_BASE_URL}${process.env.NEXT_PUBLIC_KEYCLOAK_SPI_PORT ? ':' + process.env.NEXT_PUBLIC_KEYCLOAK_SPI_PORT : ''}`
+    : 'http://localhost:8090';
 
 async function getAuthHeader(): Promise<Record<string, string>> {
   const tokens = localStorage.getItem('tokens');
