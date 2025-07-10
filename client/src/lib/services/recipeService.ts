@@ -125,9 +125,9 @@ export async function getRecipeDetails(recipeId: number): Promise<CommitDetailsR
   try {
     // First, get the branches for the recipe
     const branches = await api.get<BranchDTO[]>(`/vcs/recipes/${recipeId}/branches`);
-    
+
     // Find the main branch
-    const mainBranch = branches.find(branch => branch.name === 'main');
+    const mainBranch = branches.find((branch) => branch.name === 'main');
     if (!mainBranch) {
       console.warn('No main branch found for recipe:', recipeId);
       return null;
@@ -135,7 +135,7 @@ export async function getRecipeDetails(recipeId: number): Promise<CommitDetailsR
 
     // Get the commit details using the head commit ID
     const commitDetails = await api.get<CommitDetailsResponse>(`/vcs/commits/${mainBranch.headCommitId}`);
-    
+
     return commitDetails.recipeDetails;
   } catch (error) {
     console.error('Failed to fetch recipe details:', error);
@@ -211,11 +211,15 @@ export async function copyRecipe(recipeId: number, branchId: number): Promise<Re
   }
 }
 
-export async function commitToBranch(branchId: number, message: string, recipeDetails: CommitDetailsResponse['recipeDetails']): Promise<any> {
+export async function commitToBranch(
+  branchId: number,
+  message: string,
+  recipeDetails: CommitDetailsResponse['recipeDetails'],
+): Promise<CommitDetailsResponse> {
   try {
-    const response = await api.post(`/vcs/branches/${branchId}/commit`, {
+    const response = await api.post<CommitDetailsResponse>(`/vcs/branches/${branchId}/commit`, {
       message,
-      recipeDetails
+      recipeDetails,
     });
     return response;
   } catch (error) {

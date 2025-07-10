@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { RecipeForm } from '@/components/recipe/recipe-form';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
@@ -50,7 +50,12 @@ export default function CreateRecipePage() {
   }, []);
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.history.state && window.history.state.usr && window.history.state.usr.prefillData) {
+    if (
+      typeof window !== 'undefined' &&
+      window.history.state &&
+      window.history.state.usr &&
+      window.history.state.usr.prefillData
+    ) {
       setPrefillData(window.history.state.usr.prefillData);
     }
   }, []);

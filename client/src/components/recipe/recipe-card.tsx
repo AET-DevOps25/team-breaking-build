@@ -41,7 +41,7 @@ export function RecipeCard({ recipe, onClick }: RecipeCardProps) {
         </h2>
       </CardHeader>
       <CardContent>
-        <p className='mb-4 flex items-start line-clamp-2 text-gray-600'>
+        <p className='mb-4 line-clamp-2 flex items-start text-gray-600'>
           <FileText className='mr-2 mt-0.5 size-4 text-gray-400' />
           {recipe.description}
         </p>

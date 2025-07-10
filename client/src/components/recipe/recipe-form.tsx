@@ -17,7 +17,7 @@ function formatTagName(tagName: string): string {
   return tagName
     .toLowerCase()
     .split('_')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
 }
 
@@ -186,16 +186,18 @@ export function RecipeForm({
     reset,
   } = useForm<RecipeFormData>({
     resolver: zodResolver(recipeSchema),
-    defaultValues: prefillData ? {
-      ...prefillData,
-      tags: prefillData.tags || [],
-      ingredients: prefillData.ingredients || [{ name: '', amount: 0, unit: '' }],
-      steps: prefillData.steps || [{ order: 1, details: '', image: undefined }],
-    } : {
-      tags: [],
-      ingredients: [{ name: '', amount: 0, unit: '' }],
-      steps: [{ order: 1, details: '', image: undefined }],
-    },
+    defaultValues: prefillData
+      ? {
+          ...prefillData,
+          tags: prefillData.tags || [],
+          ingredients: prefillData.ingredients || [{ name: '', amount: 0, unit: '' }],
+          steps: prefillData.steps || [{ order: 1, details: '', image: undefined }],
+        }
+      : {
+          tags: [],
+          ingredients: [{ name: '', amount: 0, unit: '' }],
+          steps: [{ order: 1, details: '', image: undefined }],
+        },
   });
 
   const ingredients = watch('ingredients') || [];
@@ -663,16 +665,16 @@ export function RecipeForm({
 
       {/* Commit Message Field - Only show in edit mode when there are details changes */}
       {showCommitMessage && (
-        <div className="mt-6 p-4 bg-[#FF7C75]/10 border border-[#FF7C75]/20 rounded-lg">
-          <label className="block text-sm font-medium text-[#FF7C75] mb-2">
+        <div className='mt-6 rounded-lg border border-[#FF7C75]/20 bg-[#FF7C75]/10 p-4'>
+          <label className='mb-2 block text-sm font-medium text-[#FF7C75]'>
             Commit Message (required for recipe detail changes)
           </label>
           <input
-            type="text"
+            type='text'
             value={commitMessage}
             onChange={(e) => onCommitMessageChange?.(e.target.value)}
-            placeholder="Describe the changes you made..."
-            className="w-full px-3 py-2 border border-[#FF7C75]/30 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF7C75] focus:border-[#FF7C75]"
+            placeholder='Describe the changes you made...'
+            className='w-full rounded-md border border-[#FF7C75]/30 px-3 py-2 focus:border-[#FF7C75] focus:outline-none focus:ring-2 focus:ring-[#FF7C75]'
           />
         </div>
       )}
@@ -680,7 +682,7 @@ export function RecipeForm({
       <Button
         type='submit'
         disabled={isSubmitting || disabled}
-        className='w-full bg-[#FF7C75] py-6 text-lg font-semibold text-white hover:bg-[#FF7C75]/90 disabled:bg-gray-400 disabled:text-gray-500 disabled:cursor-not-allowed disabled:border-gray-300'
+        className='w-full bg-[#FF7C75] py-6 text-lg font-semibold text-white hover:bg-[#FF7C75]/90 disabled:cursor-not-allowed disabled:border-gray-300 disabled:bg-gray-400 disabled:text-gray-500'
       >
         {isSubmitting ? 'Saving...' : submitButtonText}
       </Button>

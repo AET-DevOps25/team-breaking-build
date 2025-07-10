@@ -22,12 +22,15 @@ export default function ProfilePage() {
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
   // Create a fetch function for user recipes
-  const fetchUserRecipes = useCallback(async (page: number) => {
-    if (!user?.id) return [];
+  const fetchUserRecipes = useCallback(
+    async (page: number) => {
+      if (!user?.id) return [];
 
-    const userRecipes = await getUserRecipes(user.id, page, 10);
-    return userRecipes;
-  }, [user?.id]);
+      const userRecipes = await getUserRecipes(user.id, page, 10);
+      return userRecipes;
+    },
+    [user?.id],
+  );
 
   const {
     data: recipes,
