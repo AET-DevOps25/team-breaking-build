@@ -38,6 +38,7 @@ jobs:
 
   build:
     name: Build and Push Docker Images
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     needs: test
 
@@ -69,7 +70,7 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ github.repository }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=latest,enable=true
+            type=raw,value=latest,enable={{is_default_branch}}
             type=sha
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
@@ -84,14 +85,13 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-      - name: Extract image tag from metadata
+      - name: Export Docker image tag
         id: export_tag
-        run: |
-          TAG=$(echo "${{ steps.meta.outputs.tags }}" | grep -o 'sha-[a-zA-Z0-9]\+')
-          echo "image_tag=$TAG" >> $GITHUB_OUTPUT
+        run: echo "image_tag=${{ steps.meta.outputs.version }}" >> $GITHUB_OUTPUT
 
   deploy:
     name: Deploy to Rancher with Helm
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     needs: build
 
