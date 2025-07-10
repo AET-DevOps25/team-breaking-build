@@ -32,11 +32,11 @@ spec:
             - name: {{ .Values.container.portName }}
               containerPort: {{ .Values.container.port }}
               protocol: {{ .Values.container.protocol }}
-          {{- with .Values.livenessProbe }}
           {{- with .Values.envFrom }}
           envFrom:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+          {{- with .Values.livenessProbe }}
           livenessProbe:
             {{- toYaml . | nindent 12 }}
           {{- end }}
