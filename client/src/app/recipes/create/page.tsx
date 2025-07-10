@@ -32,6 +32,7 @@ export default function CreateRecipePage() {
   const [availableTags, setAvailableTags] = useState<Tag[]>([]);
   const [isLoadingTags, setIsLoadingTags] = useState(true);
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
+  const [prefillData, setPrefillData] = useState<RecipeFormData | undefined>(undefined);
 
   useEffect(() => {
     const fetchTags = async () => {
@@ -46,6 +47,17 @@ export default function CreateRecipePage() {
     };
 
     fetchTags();
+  }, []);
+
+  useEffect(() => {
+    if (
+      typeof window !== 'undefined' &&
+      window.history.state &&
+      window.history.state.usr &&
+      window.history.state.usr.prefillData
+    ) {
+      setPrefillData(window.history.state.usr.prefillData);
+    }
   }, []);
 
   const handleSubmit = async (data: RecipeFormData) => {
@@ -113,6 +125,7 @@ export default function CreateRecipePage() {
           isLoadingTags={isLoadingTags}
           selectedTags={selectedTags}
           setSelectedTags={setSelectedTags}
+          prefillData={prefillData}
         />
       </div>
     </div>

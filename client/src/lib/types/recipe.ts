@@ -33,6 +33,7 @@ export interface RecipeDetails {
 
 export interface RecipeMetadata {
   id?: number;
+  userId?: string;
   forkedFrom?: number;
   createdAt?: string;
   updatedAt?: string;
@@ -46,6 +47,7 @@ export interface RecipeMetadata {
 // API types for backend communication
 export interface RecipeMetadataDTO {
   id?: number;
+  userId?: string;
   forkedFrom?: number;
   createdAt?: string;
   updatedAt?: string;
@@ -73,6 +75,7 @@ export interface CreateRecipeRequestDTO {
 
 export interface Recipe {
   id: number;
+  userId?: string;
   forkedFrom?: number;
   createdAt: string;
   updatedAt: string;

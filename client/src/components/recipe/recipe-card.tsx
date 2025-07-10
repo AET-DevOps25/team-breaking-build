@@ -2,7 +2,7 @@ import { Recipe } from '@/lib/types/recipe';
 import Image from 'next/image';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ImageIcon } from 'lucide-react';
+import { ImageIcon, Users, Utensils, FileText, Tags } from 'lucide-react';
 
 interface RecipeCardProps {
   recipe: Recipe;
@@ -35,11 +35,20 @@ export function RecipeCard({ recipe, onClick }: RecipeCardProps) {
         )}
       </div>
       <CardHeader>
-        <h2 className='text-xl font-semibold'>{recipe.title}</h2>
+        <h2 className='flex items-center text-xl font-semibold'>
+          <Utensils className='mr-2 size-5 text-[#FF7C75]' />
+          {recipe.title}
+        </h2>
       </CardHeader>
       <CardContent>
-        <p className='mb-4 line-clamp-2 text-gray-600'>{recipe.description}</p>
+        <p className='mb-4 line-clamp-2 flex items-start text-gray-600'>
+          <FileText className='mr-2 mt-0.5 size-4 text-gray-400' />
+          {recipe.description}
+        </p>
         <div className='mb-3 flex flex-wrap gap-2'>
+          <div className='flex items-center'>
+            <Tags className='mr-1 size-4 text-gray-400' />
+          </div>
           {recipe.tags.map((tag) => (
             <Badge
               key={tag.id || tag.name}
@@ -49,7 +58,8 @@ export function RecipeCard({ recipe, onClick }: RecipeCardProps) {
             </Badge>
           ))}
         </div>
-        <div className='text-sm text-gray-500'>
+        <div className='flex items-center text-sm text-gray-500'>
+          <Users className='mr-1 size-4' />
           <span>{recipe.servingSize} servings</span>
         </div>
       </CardContent>

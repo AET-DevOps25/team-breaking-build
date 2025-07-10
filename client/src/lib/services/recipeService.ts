@@ -9,6 +9,7 @@ export interface Tag {
 
 interface RecipeAPIResponse {
   id: number;
+  userId?: string;
   forkedFrom?: number;
   createdAt: string;
   updatedAt: string;
@@ -21,6 +22,38 @@ interface RecipeAPIResponse {
 
 interface PaginatedRecipeResponse {
   content: RecipeAPIResponse[];
+}
+
+interface BranchDTO {
+  id: number;
+  name: string;
+  recipeId: number;
+  headCommitId: number;
+  createdAt: string;
+}
+
+interface CommitDetailsResponse {
+  commit: {
+    id: number;
+    userId: string;
+    message: string;
+    parentId?: number;
+    createdAt: string;
+  };
+  recipeDetails: {
+    servingSize: number;
+    images?: { base64String?: string }[];
+    recipeIngredients: Array<{
+      name: string;
+      unit: string;
+      amount: number;
+    }>;
+    recipeSteps: Array<{
+      order: number;
+      details: string;
+      images?: { base64String?: string }[];
+    }>;
+  };
 }
 
 // Helper function to convert API Recipe to client format
@@ -88,6 +121,37 @@ export async function getRecipe(id: number): Promise<Recipe | null> {
   }
 }
 
+export async function getRecipeDetails(recipeId: number): Promise<CommitDetailsResponse['recipeDetails'] | null> {
+  try {
+    // First, get the branches for the recipe
+    const branches = await api.get<BranchDTO[]>(`/vcs/recipes/${recipeId}/branches`);
+
+    // Find the main branch
+    const mainBranch = branches.find((branch) => branch.name === 'main');
+    if (!mainBranch) {
+      console.warn('No main branch found for recipe:', recipeId);
+      return null;
+    }
+
+    // Get the commit details using the head commit ID
+    const commitDetails = await api.get<CommitDetailsResponse>(`/vcs/commits/${mainBranch.headCommitId}`);
+
+    return commitDetails.recipeDetails;
+  } catch (error) {
+    console.error('Failed to fetch recipe details:', error);
+    throw error;
+  }
+}
+
+export async function getRecipeBranches(recipeId: number): Promise<BranchDTO[]> {
+  try {
+    const response = await api.get<BranchDTO[]>(`/vcs/recipes/${recipeId}/branches`);
+    return response;
+  } catch (error) {
+    throw error;
+  }
+}
+
 export async function getTags(): Promise<Tag[]> {
   try {
     const response = await api.get<Tag[]>('/recipes/tags');
@@ -142,6 +206,22 @@ export async function copyRecipe(recipeId: number, branchId: number): Promise<Re
     // userId is extracted from header, not as query param
     const response = await api.post<RecipeAPIResponse>(`/recipes/${recipeId}/copy?branchId=${branchId}`);
     return convertRecipeFromAPI(response);
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function commitToBranch(
+  branchId: number,
+  message: string,
+  recipeDetails: CommitDetailsResponse['recipeDetails'],
+): Promise<CommitDetailsResponse> {
+  try {
+    const response = await api.post<CommitDetailsResponse>(`/vcs/branches/${branchId}/commit`, {
+      message,
+      recipeDetails,
+    });
+    return response;
   } catch (error) {
     throw error;
   }

@@ -15,6 +15,7 @@
   "dependencies": {
     "@hookform/resolvers": "^3.3.4",
     "@radix-ui/react-label": "^2.0.2",
+    "@radix-ui/react-scroll-area": "^1.2.9",
     "@radix-ui/react-slot": "^1.2.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -29,22 +30,22 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "autoprefixer": "^10.0.1",
     "eslint": "^9",
     "eslint-config-next": "15.3.2",
-    "@eslint/eslintrc": "^3",
     "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-no-relative-import-paths": "^1.6.1",
     "eslint-plugin-tailwindcss": "^3.18.0",
-    "postcss": "^8",
-    "tailwindcss": "^3.4.1",
-    "@tailwindcss/postcss": "^4",
-    "tailwind-merge": "^3.3.0",
-    "prettier": "^3.5.3",
     "husky": "^9.1.7",
+    "postcss": "^8",
+    "prettier": "^3.5.3",
+    "tailwind-merge": "^3.3.0",
+    "tailwindcss": "^3.4.1",
     "typescript": "^5"
   }
 }

@@ -4,6 +4,7 @@ import { inter } from '@/lib/fonts';
 import NavBar from '@/components/navigation/NavBar';
 import { Toaster } from 'sonner';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { Chatbot } from '@/components/chatbot/Chatbot';
 
 export const metadata: Metadata = {
   title: 'Recipefy',
@@ -24,6 +25,7 @@ export default function RootLayout({
             <div>{children}</div>
           </main>
           <Toaster />
+          <Chatbot />
         </AuthProvider>
       </body>
     </html>
