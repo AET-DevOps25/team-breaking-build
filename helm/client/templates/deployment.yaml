@@ -32,8 +32,8 @@ spec:
             - name: {{ .Values.container.portName }}
               containerPort: {{ .Values.container.port }}
               protocol: {{ .Values.container.protocol }}
-          {{- with .Values.envFrom }}
-          envFrom:
+          {{- with .Values.env }}
+          env:
             {{- toYaml . | nindent 12 }}
           {{- end }}
           {{- with .Values.livenessProbe }}
