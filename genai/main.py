@@ -43,7 +43,7 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-@app.get("/")
+@app.get("/genai")
 async def root():
     """Root endpoint"""
     return {
