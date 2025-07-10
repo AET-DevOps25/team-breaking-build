@@ -33,6 +33,10 @@ spec:
               containerPort: {{ .Values.container.port }}
               protocol: {{ .Values.container.protocol }}
           {{- with .Values.livenessProbe }}
+          {{- with .Values.envFrom }}
+          envFrom:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           livenessProbe:
             {{- toYaml . | nindent 12 }}
           {{- end }}
