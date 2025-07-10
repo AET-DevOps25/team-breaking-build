@@ -2,6 +2,7 @@ package com.recipefy.recipe.client;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -33,16 +34,41 @@ public class GenAIClientImpl implements GenAIClient {
             
             Map<String, Object> requestBody = new HashMap<>();
             Map<String, Object> recipe = new HashMap<>();
-            recipe.put("metadata", metadata);
+            
+            // Create filtered metadata with only fields needed for vector search
+            Map<String, Object> filteredMetadata = new HashMap<>();
+            filteredMetadata.put("id", metadata.getId());
+            filteredMetadata.put("title", metadata.getTitle());
+            filteredMetadata.put("description", metadata.getDescription());
+            filteredMetadata.put("servingSize", metadata.getServingSize());
+            filteredMetadata.put("tags", metadata.getTags());
+            
+            recipe.put("metadata", filteredMetadata);
+            
             if (details != null) {
-                recipe.put("details", details);
+                // Create filtered details with only fields needed for vector search
+                Map<String, Object> filteredDetails = new HashMap<>();
+                filteredDetails.put("servingSize", details.getServingSize());
+                filteredDetails.put("recipeIngredients", details.getRecipeIngredients());
+                
+                // Filter recipe steps to remove image data
+                List<Map<String, Object>> filteredSteps = new ArrayList<>();
+                if (details.getRecipeSteps() != null) {
+                    for (var step : details.getRecipeSteps()) {
+                        Map<String, Object> filteredStep = new HashMap<>();
+                        filteredStep.put("order", step.getOrder());
+                        filteredStep.put("details", step.getDetails());
+                        filteredSteps.add(filteredStep);
+                    }
+                }
+                filteredDetails.put("recipeSteps", filteredSteps);
+                recipe.put("details", filteredDetails);
             } else {
                 // For copied recipes without details, create a minimal details object
                 Map<String, Object> minimalDetails = new HashMap<>();
                 minimalDetails.put("servingSize", metadata.getServingSize() != null ? metadata.getServingSize() : 1);
                 minimalDetails.put("recipeIngredients", new ArrayList<>());
                 minimalDetails.put("recipeSteps", new ArrayList<>());
-                minimalDetails.put("images", new ArrayList<>());
                 recipe.put("details", minimalDetails);
             }
             requestBody.put("recipe", recipe);

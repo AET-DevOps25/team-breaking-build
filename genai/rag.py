@@ -127,11 +127,6 @@ class RAGHelper:
                         description="Recipe tags"
                     ),
                     weaviate.classes.config.Property(
-                        name="user_id",
-                        data_type=weaviate.classes.config.DataType.INT,
-                        description="User ID who created the recipe"
-                    ),
-                    weaviate.classes.config.Property(
                         name="serving_size",
                         data_type=weaviate.classes.config.DataType.INT,
                         description="Number of servings"
@@ -232,27 +227,25 @@ class RAGHelper:
     
     def delete_recipe_by_recipe_id(self, recipe_id: str) -> bool:
         """
-        Delete all recipes from the vector store by recipe ID (matches any branch).
+        Delete a recipe from the vector store by recipe ID.
         
         Args:
-            recipe_id: The recipe ID to match against.
+            recipe_id: The recipe ID to delete.
         
         Returns:
             True if successful, False otherwise.
         """
         try:
-            # Delete by recipe_id pattern (matches "recipeID+*" where recipeID matches exactly)
-            # Use like operator to match the part before "+" equals the recipe_id
-            pattern = f"{recipe_id}+*"
+            # Delete by exact recipe_id match
             self.weaviate_client.collections.get("recipes").data.delete_many(
-                where=Filter.by_property("recipe_id").like(pattern)
+                where=Filter.by_property("recipe_id").equal(recipe_id)
             )
             
-            logger.info(f"Deleted all recipes with recipe_id {recipe_id} from vector store")
+            logger.info(f"Deleted recipe with recipe_id {recipe_id} from vector store")
             return True
             
         except Exception as e:
-            logger.error(f"Failed to delete recipes with recipe_id {recipe_id}: {e}")
+            logger.error(f"Failed to delete recipe with recipe_id {recipe_id}: {e}")
             return False
     
     def get_collection_stats(self) -> Dict[str, Any]:
