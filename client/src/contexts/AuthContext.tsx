@@ -30,8 +30,8 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const AUTH_BASE_URL =
-  process.env.KEYCLOAK_SPI_BASE_URL && process.env.KEYCLOAK_SPI_PORT
-    ? `${process.env.KEYCLOAK_SPI_BASE_URL}:${process.env.KEYCLOAK_SPI_PORT}`
+  process.env.NEXT_PUBLIC_KEYCLOAK_SPI_BASE_URL && process.env.NEXT_PUBLIC_KEYCLOAK_SPI_PORT
+    ? `${process.env.NEXT_PUBLIC_KEYCLOAK_SPI_BASE_URL}:${process.env.NEXT_PUBLIC_KEYCLOAK_SPI_PORT}`
     : 'http://localhost:8089';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {

@@ -83,6 +83,24 @@ readinessProbe:
   successThreshold: 1
   failureThreshold: 3
 
-envFrom:
-  - configMapRef:
-      name: recipefy-config
+env:
+  - name: NEXT_PUBLIC_GATEWAY_SERVICE_BASE_URL
+    valueFrom:
+      configMapKeyRef:
+        name: recipefy-config
+        key: GATEWAY_SERVICE_BASE_URL
+  - name: NEXT_PUBLIC_GATEWAY_SERVICE_PORT
+    valueFrom:
+      configMapKeyRef:
+        name: recipefy-config
+        key: GATEWAY_SERVICE_PORT
+  - name: NEXT_PUBLIC_KEYCLOAK_SPI_BASE_URL
+    valueFrom:
+      configMapKeyRef:
+        name: recipefy-config
+        key: KEYCLOAK_SPI_BASE_URL
+  - name: NEXT_PUBLIC_KEYCLOAK_SPI_PORT
+    valueFrom:
+      configMapKeyRef:
+        name: recipefy-config
+        key: KEYCLOAK_SPI_PORT
