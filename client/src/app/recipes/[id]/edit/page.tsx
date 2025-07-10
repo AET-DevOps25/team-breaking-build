@@ -104,7 +104,7 @@ export default function EditRecipePage() {
           router.push('/recipes');
           return;
         }
-        
+
         // TypeScript assertion: we know recipeData is not null after the check above
         const recipe = recipeData as NonNullable<typeof recipeData>;
         setRecipe(recipe);
