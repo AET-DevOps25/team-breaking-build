@@ -47,22 +47,15 @@ class RecipeLLM:
             # Handle both string and integer IDs
             recipe_id = str(recipe.metadata.id) if recipe.metadata.id else "0"
             
-            # Check if recipe_id is already a combined ID (contains "+")
-            if "+" in recipe_id:
-                # Already a combined ID, use it as is
-                combined_id = recipe_id
-            else:
-                # Create combined ID from recipe and branch IDs
-                branch_id = str(recipe.metadata.forkedFrom) if recipe.metadata.forkedFrom else recipe_id
-                combined_id = f"{recipe_id}+{branch_id}"
+            # Use recipe_id as the combined ID (no forking concept in vector store)
+            combined_id = str(recipe_id)
             metadata = {
-                "recipe_id": combined_id,  # Store combined ID
+                "recipe_id": combined_id,  # Store recipe ID
                 "title": recipe.metadata.title,
                 "description": recipe.metadata.description or "",
                 "ingredients": [ing.name for ing in recipe.details.recipeIngredients],
                 "steps": [step.details for step in recipe.details.recipeSteps],
                 "tags": [tag.name for tag in recipe.metadata.tags],
-                "user_id": recipe.metadata.userId,
                 "serving_size": recipe.details.servingSize
             }
             
