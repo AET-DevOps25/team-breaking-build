@@ -43,3 +43,21 @@ env:
     value: "32"
   - name: MAX_LENGTH
     value: "512"
+
+# Autoscaling configuration
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 80
+
+imagePullSecrets: []
+podAnnotations: {}
+podLabels: {}
+podSecurityContext: {}
+securityContext: {}
+volumeMounts: []
+volumes: []
+nodeSelector: {}
+affinity: {}
+tolerations: []
