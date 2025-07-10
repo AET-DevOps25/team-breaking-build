@@ -1,0 +1,6 @@
+apiVersion: v2
+name: transformers
+description: A Helm chart for Weaviate Transformers Inference Service
+type: application
+version: 0.1.0
+appVersion: "latest"

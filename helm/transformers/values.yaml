@@ -1,0 +1,45 @@
+# Default values for transformers
+# This is a YAML-formatted file.
+
+prefix: recipefy
+name: transformers
+
+replicaCount: 1
+
+image:
+  repository: cr.weaviate.io/semitechnologies/transformers-inference
+  tag: "sentence-transformers-multi-qa-MiniLM-L6-cos-v1"
+  pullPolicy: Always
+
+service:
+  type: ClusterIP
+  port: 8080
+
+container:
+  name: transformers
+  port: 8080
+  portName: http
+  protocol: TCP
+
+serviceAccount:
+  create: true
+  automount: false
+
+resources:
+  limits:
+    cpu: 2000m
+    memory: 4Gi
+  requests:
+    cpu: 1000m
+    memory: 2Gi
+
+# Environment variables
+env:
+  - name: ENABLE_CUDA
+    value: "0"
+  - name: MODEL_NAME
+    value: "sentence-transformers-multi-qa-MiniLM-L6-cos-v1"
+  - name: BATCH_SIZE
+    value: "32"
+  - name: MAX_LENGTH
+    value: "512"

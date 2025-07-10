@@ -1,15 +1,15 @@
-name: CI/CD Pipeline for Weaviate Vector Database
+name: CI/CD Pipeline for Transformers Inference Service
 
 on:
   push:
     paths:
-      - 'helm/weaviate/**'
+      - 'helm/transformers/**'
   workflow_dispatch:
 
 env:
   HELM_NAMESPACE: team-breaking-build
-  HELM_RELEASE_NAME: recipefy-weaviate
-  CHART_PATH: ./helm/weaviate
+  HELM_RELEASE_NAME: recipefy-transformers
+  CHART_PATH: ./helm/transformers
 
 jobs:
   validate:

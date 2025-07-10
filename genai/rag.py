@@ -2,6 +2,7 @@ import os
 import logging
 from typing import List, Dict, Any
 import weaviate
+import weaviate.classes.config as wc
 from weaviate.classes.query import Filter
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_weaviate.vectorstores import WeaviateVectorStore
@@ -141,7 +142,7 @@ class RAGHelper:
                         description="Flag for placeholder documents"
                     )
                 ],
-                vectorizer_config=weaviate.classes.config.Configure.Vectorizer.text2vec_huggingface()
+                vectorizer_config=wc.Configure.Vectorizer.text2vec_transformers()
             )
             
             # Initialize vector store
