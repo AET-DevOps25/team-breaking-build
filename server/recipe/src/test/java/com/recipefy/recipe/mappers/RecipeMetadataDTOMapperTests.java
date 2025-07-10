@@ -38,6 +38,7 @@ public class RecipeMetadataDTOMapperTests {
         RecipeMetadataDTO dto = RecipeMetadataDTOMapper.toDTO(recipe);
 
         assertThat(dto.getId()).isEqualTo(recipe.getId());
+        assertThat(dto.getUserId()).isEqualTo(recipe.getUserId());
         assertThat(dto.getForkedFrom()).isEqualTo(recipe.getForkedFrom());
         assertThat(dto.getTitle()).isEqualTo(recipe.getTitle());
         assertThat(dto.getDescription()).isEqualTo(recipe.getDescription());

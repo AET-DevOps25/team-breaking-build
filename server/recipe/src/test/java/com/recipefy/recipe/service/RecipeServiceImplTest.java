@@ -212,7 +212,7 @@ class RecipeServiceImplTest {
         // Arrange
         when(recipeRepository.findById(1L)).thenReturn(Optional.of(testRecipe));
         when(recipeRepository.save(any(RecipeMetadata.class))).thenReturn(testRecipe);
-        when(versionClient.copyRecipe(anyLong(), any())).thenReturn(testBranchDTO);
+        when(versionClient.copyRecipe(anyLong(), any(), any(UUID.class))).thenReturn(testBranchDTO);
         doNothing().when(genAIClient).indexRecipe(any(RecipeMetadataDTO.class), any());
 
         // Act
@@ -224,7 +224,7 @@ class RecipeServiceImplTest {
         assertEquals(testRecipeDTO.getTitle(), result.getTitle());
         verify(recipeRepository).findById(1L);
         verify(recipeRepository).save(any(RecipeMetadata.class));
-        verify(versionClient).copyRecipe(anyLong(), any());
+        verify(versionClient).copyRecipe(anyLong(), any(), any(UUID.class));
         verify(genAIClient).indexRecipe(any(RecipeMetadataDTO.class), any());
     }
 
@@ -235,8 +235,10 @@ class RecipeServiceImplTest {
         doNothing().when(recipeRepository).deleteById(1L);
         doNothing().when(genAIClient).deleteRecipe(anyString());
 
-        // Act & Assert
-        assertThrows(UnsupportedOperationException.class, () -> recipeService.deleteRecipe(1L, UUID.fromString("550e8400-e29b-41d4-a716-446655440000")));
+        // Act
+        recipeService.deleteRecipe(1L, UUID.fromString("550e8400-e29b-41d4-a716-446655440000"));
+
+        // Assert
         verify(recipeRepository).findById(1L);
         verify(recipeRepository).deleteById(1L);
         verify(genAIClient).deleteRecipe(anyString());

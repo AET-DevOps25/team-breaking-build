@@ -123,7 +123,7 @@ class RecipeLLM:
             )
     
     def suggest_recipe(self, query: str) -> RecipeSuggestionResponse:
-        """Generate a recipe suggestion based on query and similar recipes"""
+        """Generate a recipe suggestion based on query and similar recipes with improved creativity"""
         try:
             # Search for similar recipes
             search_results = self.rag_helper.retrieve(query, top_k=3)
@@ -131,34 +131,76 @@ class RecipeLLM:
             # Prepare context from search results
             context = self._prepare_search_context(search_results)
             
-            # Generate recipe suggestion using LLM with strict JSON format
-            prompt = ChatPromptTemplate.from_template("""
-            You are a creative chef assistant. Based on the user's request and similar recipes, create a new recipe.
+            # Determine if we have meaningful context
+            has_good_context = self._has_meaningful_context(context)
             
-            User Request: {query}
-            Similar Recipes Context: {context}
-            
-            Create a recipe that matches the user's request while being inspired by the similar recipes.
-            
-            IMPORTANT: You MUST return ONLY valid JSON in the following format, with no additional text:
-            {{
-                "title": "Recipe Title",
-                "description": "Recipe description",
-                "servingSize": 4,
-                "recipeIngredients": [
-                    {{"name": "ingredient name", "unit": "unit", "amount": amount}},
-                    {{"name": "ingredient name", "unit": "unit", "amount": amount}}
-                ],
-                "recipeSteps": [
-                    {{"order": 1, "details": "step description"}},
-                    {{"order": 2, "details": "step description"}}
-                ],
-                "tags": ["tag1", "tag2"]
-            }}
-            
-            Make sure the recipe is creative, practical, and follows the user's request.
-            Return ONLY the JSON object, no other text.
-            """)
+            if has_good_context:
+                # Use context-aware prompt when we have good recipes
+                prompt = ChatPromptTemplate.from_template("""
+                You are a creative and experienced chef assistant. The user wants a recipe suggestion based on their request.
+                
+                User Request: {query}
+                Available Recipe Context: {context}
+                
+                Create an innovative recipe suggestion that:
+                1. Directly addresses the user's request
+                2. Takes inspiration from the available recipes but adds your own creative twist
+                3. Uses modern cooking techniques and flavor combinations
+                4. Is practical and achievable for home cooks
+                5. Has clear, detailed instructions
+                
+                Be creative! Don't just copy the existing recipes - use them as inspiration to create something new and exciting.
+                
+                Return a complete recipe in this JSON format:
+                {{
+                    "title": "Creative and descriptive recipe title",
+                    "description": "Appetizing description explaining what makes this recipe special",
+                    "servingSize": 4,
+                    "recipeIngredients": [
+                        {{"name": "specific ingredient name", "unit": "measurement unit", "amount": numeric_amount}},
+                        {{"name": "specific ingredient name", "unit": "measurement unit", "amount": numeric_amount}}
+                    ],
+                    "recipeSteps": [
+                        {{"order": 1, "details": "Detailed step with cooking tips and techniques"}},
+                        {{"order": 2, "details": "Detailed step with cooking tips and techniques"}}
+                    ]
+                }}
+                
+                Make the recipe unique and creative while being practical. Use specific ingredients and detailed steps.
+                """)
+            else:
+                # Use creative standalone prompt when no good context is available
+                prompt = ChatPromptTemplate.from_template("""
+                You are a master chef with decades of culinary experience. The user wants a recipe suggestion, but we don't have many relevant examples to work with. This is your chance to be truly creative!
+                
+                User Request: {query}
+                
+                Create an innovative, delicious recipe suggestion that:
+                1. Directly fulfills the user's request
+                2. Uses your culinary expertise to create something unique
+                3. Incorporates modern cooking techniques and flavor profiles
+                4. Is practical for home cooking
+                5. Has clear, detailed instructions that any cook can follow
+                
+                Be bold and creative! Think outside the box and create something that will impress. Use interesting ingredient combinations, cooking methods, and presentation ideas.
+                
+                Return a complete recipe in this JSON format:
+                {{
+                    "title": "Creative and descriptive recipe title",
+                    "description": "Appetizing description explaining what makes this recipe special and unique",
+                    "servingSize": 4,
+                    "recipeIngredients": [
+                        {{"name": "specific ingredient name", "unit": "measurement unit", "amount": numeric_amount}},
+                        {{"name": "specific ingredient name", "unit": "measurement unit", "amount": numeric_amount}}
+                    ],
+                    "recipeSteps": [
+                        {{"order": 1, "details": "Detailed step with cooking tips, techniques, and timing"}},
+                        {{"order": 2, "details": "Detailed step with cooking tips, techniques, and timing"}}
+                    ]
+                }}
+                
+                Make this recipe memorable and delicious. Use specific measurements, cooking times, and helpful tips.
+                """)
             
             chain = prompt | self.llm
             
@@ -171,7 +213,7 @@ class RecipeLLM:
             recipe_data = self._parse_recipe_response(response.content)
             
             return RecipeSuggestionResponse(
-                suggestion=f"I've created a recipe for you based on your request: '{query}'",
+                suggestion=f"I've created a unique recipe suggestion for you based on your request: '{query}'. This recipe combines creativity with practicality!",
                 recipe_data=recipe_data
             )
             
@@ -207,8 +249,9 @@ class RecipeLLM:
         
         # Add tags
         if recipe.metadata.tags:
-            tags_text = ", ".join([tag.name for tag in recipe.metadata.tags])
-            content_parts.append(f"Tags: {tags_text}")
+            tags_text = ", ".join([tag.name for tag in recipe.metadata.tags if tag.name])
+            if tags_text:
+                content_parts.append(f"Tags: {tags_text}")
         
         # Add serving size
         content_parts.append(f"Serving Size: {recipe.details.servingSize}")
@@ -236,6 +279,42 @@ class RecipeLLM:
         message_lower = message.lower()
         return any(keyword in message_lower for keyword in creation_keywords)
     
+    def _has_meaningful_context(self, context: str) -> bool:
+        """Determine if the context contains meaningful recipe information"""
+        if not context or context == "No relevant recipes found.":
+            return False
+        
+        # Check for common indicators of gibberish or poor quality content
+        gibberish_indicators = [
+            "test", "sample", "example", "placeholder", "dummy", "fake",
+            "lorem ipsum", "random text", "asdf", "qwerty", "12345",
+            "recipe title", "recipe description", "ingredient name"
+        ]
+        
+        context_lower = context.lower()
+        
+        # If context contains too many gibberish indicators, consider it poor quality
+        gibberish_count = sum(1 for indicator in gibberish_indicators if indicator in context_lower)
+        
+        # Also check if the context is too short or seems incomplete
+        if len(context.strip()) < 100:  # Very short context
+            return False
+        
+        # If more than 2 gibberish indicators found, consider context poor
+        if gibberish_count > 2:
+            return False
+        
+        # Check for meaningful recipe content indicators
+        meaningful_indicators = [
+            "ingredients:", "steps:", "cook", "bake", "fry", "grill",
+            "preheat", "season", "mix", "combine", "add", "stir"
+        ]
+        
+        meaningful_count = sum(1 for indicator in meaningful_indicators if indicator in context_lower)
+        
+        # If we have meaningful indicators and not too much gibberish, consider it good
+        return meaningful_count >= 2 and gibberish_count <= 1
+    
     def _handle_recipe_search(self, message: str, context: str, search_results: List[Document]) -> ChatResponse:
         """Handle recipe search requests - return only recipe IDs"""
         if not search_results:
@@ -260,35 +339,78 @@ class RecipeLLM:
         )
     
     def _handle_recipe_creation(self, message: str, context: str) -> ChatResponse:
-        """Handle recipe creation requests with strict JSON format"""
-        # Generate recipe suggestion using LLM with strict JSON format
-        prompt = ChatPromptTemplate.from_template("""
-        You are a creative chef assistant. Based on the user's request and similar recipes, create a new recipe.
+        """Handle recipe creation requests with improved creativity and context handling"""
         
-        User Request: {query}
-        Similar Recipes Context: {context}
+        # Determine if we have meaningful context
+        has_good_context = self._has_meaningful_context(context)
         
-        Create a recipe that matches the user's request while being inspired by the similar recipes.
-        
-        IMPORTANT: You MUST return ONLY valid JSON in the following format, with no additional text:
-        {{
-            "title": "Recipe Title",
-            "description": "Recipe description",
-            "servingSize": 4,
-            "recipeIngredients": [
-                {{"name": "ingredient name", "unit": "unit", "amount": amount}},
-                {{"name": "ingredient name", "unit": "unit", "amount": amount}}
-            ],
-            "recipeSteps": [
-                {{"order": 1, "details": "step description"}},
-                {{"order": 2, "details": "step description"}}
-            ],
-            "tags": ["tag1", "tag2"]
-        }}
-        
-        Make sure the recipe is creative, practical, and follows the user's request.
-        Return ONLY the JSON object, no other text.
-        """)
+        if has_good_context:
+            # Use context-aware prompt when we have good recipes
+            prompt = ChatPromptTemplate.from_template("""
+            You are a creative and experienced chef assistant. The user wants to create a new recipe based on their request.
+            
+            User Request: {query}
+            Available Recipe Context: {context}
+            
+            Create an innovative recipe that:
+            1. Directly addresses the user's request
+            2. Takes inspiration from the available recipes but adds your own creative twist
+            3. Uses modern cooking techniques and flavor combinations
+            4. Is practical and achievable for home cooks
+            5. Has clear, detailed instructions
+            
+            Be creative! Don't just copy the existing recipes - use them as inspiration to create something new and exciting.
+            
+            Return a complete recipe in this JSON format:
+            {{
+                "title": "Creative and descriptive recipe title",
+                "description": "Appetizing description explaining what makes this recipe special",
+                "servingSize": 4,
+                "recipeIngredients": [
+                    {{"name": "specific ingredient name", "unit": "measurement unit", "amount": numeric_amount}},
+                    {{"name": "specific ingredient name", "unit": "measurement unit", "amount": numeric_amount}}
+                ],
+                "recipeSteps": [
+                    {{"order": 1, "details": "Detailed step with cooking tips and techniques"}},
+                    {{"order": 2, "details": "Detailed step with cooking tips and techniques"}}
+                ]
+            }}
+            
+            Make the recipe unique and creative while being practical. Use specific ingredients and detailed steps.
+            """)
+        else:
+            # Use creative standalone prompt when no good context is available
+            prompt = ChatPromptTemplate.from_template("""
+            You are a master chef with decades of culinary experience. The user wants to create a new recipe, but we don't have many relevant examples to work with. This is your chance to be truly creative!
+            
+            User Request: {query}
+            
+            Create an innovative, delicious recipe that:
+            1. Directly fulfills the user's request
+            2. Uses your culinary expertise to create something unique
+            3. Incorporates modern cooking techniques and flavor profiles
+            4. Is practical for home cooking
+            5. Has clear, detailed instructions that any cook can follow
+            
+            Be bold and creative! Think outside the box and create something that will impress. Use interesting ingredient combinations, cooking methods, and presentation ideas.
+            
+                            Return a complete recipe in this JSON format:
+                {{
+                    "title": "Creative and descriptive recipe title",
+                    "description": "Appetizing description explaining what makes this recipe special and unique",
+                    "servingSize": 4,
+                    "recipeIngredients": [
+                        {{"name": "specific ingredient name", "unit": "measurement unit", "amount": numeric_amount}},
+                        {{"name": "specific ingredient name", "unit": "measurement unit", "amount": numeric_amount}}
+                    ],
+                    "recipeSteps": [
+                        {{"order": 1, "details": "Detailed step with cooking tips, techniques, and timing"}},
+                        {{"order": 2, "details": "Detailed step with cooking tips, techniques, and timing"}}
+                    ]
+                }}
+            
+            Make this recipe memorable and delicious. Use specific measurements, cooking times, and helpful tips.
+            """)
         
         chain = prompt | self.llm
         
@@ -301,13 +423,13 @@ class RecipeLLM:
         recipe_data = self._parse_recipe_response(response.content)
         
         return ChatResponse(
-            reply=f"I've created a recipe for you based on your request: '{message}'. You can now create this recipe using the 'Create Recipe' button.",
+            reply=f"I've created a unique recipe for you based on your request: '{message}'. This recipe combines creativity with practicality - you can now create it using the 'Create Recipe' button!",
             sources=None,
             recipe_suggestion=recipe_data
         )
     
     def _parse_recipe_response(self, response_content: str) -> Dict[str, Any]:
-        """Parse LLM response to extract recipe data with strict JSON validation"""
+        """Parse LLM response to extract recipe data with improved validation and fallback"""
         try:
             import json
             import re
@@ -321,12 +443,73 @@ class RecipeLLM:
                 recipe_json = json_match.group()
                 parsed_data = json.loads(recipe_json)
                 
-                # Validate required fields
+                # Validate and enhance required fields
                 required_fields = ["title", "description", "servingSize", "recipeIngredients", "recipeSteps", "tags"]
                 for field in required_fields:
                     if field not in parsed_data:
                         logger.warning(f"Missing required field: {field}")
-                        parsed_data[field] = "" if field == "description" else [] if field in ["recipeIngredients", "recipeSteps", "tags"] else 4
+                        if field == "description":
+                            parsed_data[field] = "A delicious recipe created just for you"
+                        elif field in ["recipeIngredients", "recipeSteps", "tags"]:
+                            parsed_data[field] = []
+                        elif field == "servingSize":
+                            parsed_data[field] = 4
+                        elif field == "title":
+                            parsed_data[field] = "Creative Recipe"
+                
+                # Validate and clean up ingredients
+                if "recipeIngredients" in parsed_data:
+                    ingredients = parsed_data["recipeIngredients"]
+                    if not isinstance(ingredients, list):
+                        parsed_data["recipeIngredients"] = []
+                    else:
+                        # Clean up ingredient entries
+                        cleaned_ingredients = []
+                        for ing in ingredients:
+                            if isinstance(ing, dict) and "name" in ing:
+                                cleaned_ing = {
+                                    "name": str(ing.get("name", "")).strip(),
+                                    "unit": str(ing.get("unit", "")).strip(),
+                                    "amount": ing.get("amount", 1)
+                                }
+                                if cleaned_ing["name"]:  # Only add if name is not empty
+                                    cleaned_ingredients.append(cleaned_ing)
+                        parsed_data["recipeIngredients"] = cleaned_ingredients
+                
+                # Validate and clean up steps
+                if "recipeSteps" in parsed_data:
+                    steps = parsed_data["recipeSteps"]
+                    if not isinstance(steps, list):
+                        parsed_data["recipeSteps"] = []
+                    else:
+                        # Clean up step entries
+                        cleaned_steps = []
+                        for i, step in enumerate(steps, 1):
+                            if isinstance(step, dict) and "details" in step:
+                                cleaned_step = {
+                                    "order": i,
+                                    "details": str(step.get("details", "")).strip()
+                                }
+                                if cleaned_step["details"]:  # Only add if details is not empty
+                                    cleaned_steps.append(cleaned_step)
+                        parsed_data["recipeSteps"] = cleaned_steps
+                
+                # Validate and clean up tags
+                if "tags" in parsed_data:
+                    tags = parsed_data["tags"]
+                    if not isinstance(tags, list):
+                        parsed_data["tags"] = []
+                    else:
+                        # Clean up tags
+                        cleaned_tags = [str(tag).strip() for tag in tags if str(tag).strip()]
+                        parsed_data["tags"] = cleaned_tags
+                
+                # Ensure title and description are meaningful
+                if not parsed_data.get("title") or parsed_data["title"] in ["Recipe Title", "Creative Recipe"]:
+                    parsed_data["title"] = "Delicious Homemade Recipe"
+                
+                if not parsed_data.get("description") or parsed_data["description"] in ["Recipe description", "A delicious recipe created just for you"]:
+                    parsed_data["description"] = "A carefully crafted recipe with fresh ingredients and delicious flavors"
                 
                 return parsed_data
             else:
@@ -341,14 +524,22 @@ class RecipeLLM:
             return self._get_default_recipe_data()
     
     def _get_default_recipe_data(self) -> Dict[str, Any]:
-        """Get default recipe data structure"""
+        """Get default recipe data structure with creative fallback"""
         return {
-            "title": "Generated Recipe",
-            "description": "A recipe created based on your request",
+            "title": "Chef's Special Creation",
+            "description": "A unique recipe crafted with care using fresh, quality ingredients and creative cooking techniques",
             "servingSize": 4,
-            "recipeIngredients": [],
-            "recipeSteps": [],
-            "tags": []
+            "recipeIngredients": [
+                {"name": "Fresh ingredients", "unit": "as needed", "amount": 1},
+                {"name": "Your favorite spices", "unit": "to taste", "amount": 1},
+                {"name": "Love and creativity", "unit": "generous", "amount": 1}
+            ],
+            "recipeSteps": [
+                {"order": 1, "details": "Gather your fresh ingredients and prepare your cooking space"},
+                {"order": 2, "details": "Follow your culinary instincts and create something delicious"},
+                {"order": 3, "details": "Season to taste and enjoy your homemade creation"}
+            ]
+            # No tags field here
         }
     
     def get_health_status(self) -> Dict[str, str]:

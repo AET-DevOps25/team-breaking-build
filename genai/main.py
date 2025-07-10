@@ -43,16 +43,7 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-@app.get("/")
+@app.get("/genai")
 async def root():
     """Root endpoint"""
     return {
@@ -83,7 +74,7 @@ async def health_check():
             services={"error": str(e)}
         )
 
-@app.post("/api/v1/chat", response_model=ChatResponse)
+@app.post("/genai/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
     """Chat with the AI assistant for recipe search and creation"""
     try:
@@ -95,7 +86,7 @@ async def chat(request: ChatRequest):
         logger.error(f"Error in chat: {e}")
         raise HTTPException(status_code=500, detail=f"Error in chat: {str(e)}")
 
-@app.post("/api/v1/vector/index", response_model=RecipeIndexResponse)
+@app.post("/genai/vector/index", response_model=RecipeIndexResponse)
 async def index_recipe(request: RecipeIndexRequest):
     """Index a recipe in the vector store"""
     try:
@@ -114,7 +105,7 @@ async def index_recipe(request: RecipeIndexRequest):
         logger.error(f"Error indexing recipe: {e}")
         raise HTTPException(status_code=500, detail=f"Error indexing recipe: {str(e)}")
 
-@app.delete("/api/v1/vector/{recipe_id}", response_model=RecipeDeleteResponse)
+@app.delete("/genai/vector/{recipe_id}", response_model=RecipeDeleteResponse)
 async def delete_recipe(recipe_id: str):
     """Delete a recipe from the vector store"""
     try:
@@ -133,7 +124,7 @@ async def delete_recipe(recipe_id: str):
         logger.error(f"Error deleting recipe: {e}")
         raise HTTPException(status_code=500, detail=f"Error deleting recipe: {str(e)}")
 
-@app.post("/api/v1/vector/suggest", response_model=RecipeSuggestionResponse)
+@app.post("/genai/vector/suggest", response_model=RecipeSuggestionResponse)
 async def suggest_recipe(request: RecipeSuggestionRequest):
     """Generate a recipe suggestion based on query and similar recipes"""
     try:

@@ -1,10 +1,11 @@
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime
+import uuid
 
 # Recipe DTOs matching the recipe microservice
 class RecipeImageDTO(BaseModel):
-    url: str
+    base64String: Optional[bytes] = None
 
 class RecipeIngredientDTO(BaseModel):
     name: str
@@ -21,8 +22,8 @@ class RecipeTagDTO(BaseModel):
     name: str
 
 class RecipeMetadataDTO(BaseModel):
-    id: Optional[str] = None
-    userId: int
+    id: Optional[int] = None
+    userId: str  # UUID as string
     forkedFrom: Optional[int] = None
     createdAt: Optional[datetime] = None
     updatedAt: Optional[datetime] = None
