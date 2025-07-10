@@ -1,10 +1,10 @@
 const AUTH_BASE_URL =
-  (process.env.KEYCLOAK_SPI_BASE_URL && process.env.KEYCLOAK_SPI_PORT)
+  process.env.KEYCLOAK_SPI_BASE_URL && process.env.KEYCLOAK_SPI_PORT
     ? `${process.env.KEYCLOAK_SPI_BASE_URL}:${process.env.KEYCLOAK_SPI_PORT}`
     : 'http://localhost:8089';
 
 export const API_BASE_URL =
-  (process.env.GATEWAY_SERVICE_BASE_URL && process.env.GATEWAY_SERVICE_PORT)
+  process.env.GATEWAY_SERVICE_BASE_URL && process.env.GATEWAY_SERVICE_PORT
     ? `${process.env.GATEWAY_SERVICE_BASE_URL}:${process.env.GATEWAY_SERVICE_PORT}`
     : 'http://localhost:8090';
 
