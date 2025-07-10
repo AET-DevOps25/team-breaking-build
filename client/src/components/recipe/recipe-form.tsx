@@ -12,6 +12,15 @@ import { Tag } from '@/lib/services/recipeService';
 import { Textarea } from '@/components/ui/textarea';
 import Image from 'next/image';
 
+// Utility function to format tag names from ALL_CAPS_WITH_UNDERSCORES to Capitalized
+function formatTagName(tagName: string): string {
+  return tagName
+    .toLowerCase()
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
 const recipeSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().min(1, 'Description is required'),
@@ -45,8 +54,19 @@ interface RecipeFormProps {
   isSubmitting?: boolean;
   availableTags?: Tag[];
   isLoadingTags?: boolean;
-  selectedTags: Tag[];
-  setSelectedTags: (tags: Tag[]) => void;
+  selectedTags?: Tag[];
+  setSelectedTags?: (tags: Tag[]) => void;
+  prefillData?: Partial<RecipeFormData>;
+  onChange?: (data: RecipeFormData) => void;
+  submitButtonText?: string;
+  disabled?: boolean;
+  commitMessage?: string;
+  onCommitMessageChange?: (message: string) => void;
+  showCommitMessage?: boolean;
+  existingImages?: {
+    thumbnail?: string;
+    stepImages?: (string | null)[];
+  };
 }
 
 const ingredientPlaceholders = [
@@ -110,16 +130,52 @@ export function RecipeForm({
   isSubmitting,
   availableTags = [],
   isLoadingTags = false,
-  selectedTags,
-  setSelectedTags,
+  selectedTags: externalSelectedTags,
+  setSelectedTags: externalSetSelectedTags,
+  prefillData,
+  onChange,
+  submitButtonText = 'Save Recipe',
+  disabled = false,
+  commitMessage = '',
+  onCommitMessageChange,
+  showCommitMessage = false,
+  existingImages,
 }: RecipeFormProps) {
+  const [internalSelectedTags, setInternalSelectedTags] = useState<Tag[]>([]);
+  const [internalAvailableTags, setInternalAvailableTags] = useState<Tag[]>([]);
+  const [internalIsLoadingTags, setInternalIsLoadingTags] = useState(false);
+
+  // Use external props if provided, otherwise use internal state
+  const selectedTags = externalSelectedTags || internalSelectedTags;
+  const setSelectedTags = externalSetSelectedTags || setInternalSelectedTags;
+  const availableTagsToUse = availableTags || internalAvailableTags;
+  const isLoadingTagsToUse = isLoadingTags || internalIsLoadingTags;
   const [searchQuery, setSearchQuery] = useState('');
   const [showTagDropdown, setShowTagDropdown] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [stepImages, setStepImages] = useState<(string | null)[]>([]);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(existingImages?.thumbnail || null);
+  const [stepImages, setStepImages] = useState<(string | null)[]>(existingImages?.stepImages || []);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const stepImageRefs = useRef<(HTMLInputElement | null)[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Load tags if using internal state
+  useEffect(() => {
+    if (!availableTags && !isLoadingTags) {
+      const fetchTags = async () => {
+        try {
+          setInternalIsLoadingTags(true);
+          const { getTags } = await import('@/lib/services/recipeService');
+          const tags = await getTags();
+          setInternalAvailableTags(tags);
+        } catch (error) {
+          console.error('Failed to load tags:', error);
+        } finally {
+          setInternalIsLoadingTags(false);
+        }
+      };
+      fetchTags();
+    }
+  }, [availableTags, isLoadingTags]);
 
   const {
     register,
@@ -127,9 +183,15 @@ export function RecipeForm({
     formState: { errors },
     setValue,
     watch,
+    reset,
   } = useForm<RecipeFormData>({
     resolver: zodResolver(recipeSchema),
-    defaultValues: {
+    defaultValues: prefillData ? {
+      ...prefillData,
+      tags: prefillData.tags || [],
+      ingredients: prefillData.ingredients || [{ name: '', amount: 0, unit: '' }],
+      steps: prefillData.steps || [{ order: 1, details: '', image: undefined }],
+    } : {
       tags: [],
       ingredients: [{ name: '', amount: 0, unit: '' }],
       steps: [{ order: 1, details: '', image: undefined }],
@@ -138,6 +200,16 @@ export function RecipeForm({
 
   const ingredients = watch('ingredients') || [];
   const steps = watch('steps') || [];
+
+  // Call onChange when form data changes
+  useEffect(() => {
+    if (onChange) {
+      const subscription = watch((value) => {
+        onChange(value as RecipeFormData);
+      });
+      return () => subscription.unsubscribe();
+    }
+  }, [watch, onChange]);
 
   // Initialize persistent placeholders
   const { ingredientPlaceholders: shuffledIngredients, stepPlaceholders: shuffledSteps } = useMemo(() => {
@@ -164,9 +236,10 @@ export function RecipeForm({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const filteredTags = availableTags.filter((tag) => tag.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredTags = availableTagsToUse.filter((tag) => tag.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
   const handleTagSelect = (tag: Tag) => {
+    if (!selectedTags) return;
     if (!selectedTags.some((t) => t.id === tag.id)) {
       const newTags = [...selectedTags, tag];
       setSelectedTags(newTags);
@@ -180,6 +253,7 @@ export function RecipeForm({
   };
 
   const handleTagRemove = (tagToRemove: string) => {
+    if (!selectedTags) return;
     const newTags = selectedTags.filter((tag) => tag.name !== tagToRemove);
     setSelectedTags(newTags);
     setValue(
@@ -262,6 +336,18 @@ export function RecipeForm({
       setStepImages((prev) => prev.filter((_, i) => i !== index));
     }
   };
+
+  // Add this effect to update the form when prefillData changes
+  useEffect(() => {
+    if (prefillData) {
+      reset({
+        ...prefillData,
+        tags: prefillData.tags || [],
+        ingredients: prefillData.ingredients || [{ name: '', amount: 0, unit: '' }],
+        steps: prefillData.steps || [{ order: 1, details: '', image: undefined }],
+      });
+    }
+  }, [prefillData, reset]);
 
   return (
     <form
@@ -368,7 +454,7 @@ export function RecipeForm({
             />
             {showTagDropdown && (
               <div className='absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md border border-gray-200 bg-white shadow-lg'>
-                {isLoadingTags ? (
+                {isLoadingTagsToUse ? (
                   <div className='p-2 text-center text-gray-500'>Loading tags...</div>
                 ) : filteredTags.length === 0 ? (
                   <div className='p-2 text-center text-gray-500'>No tags found</div>
@@ -379,7 +465,7 @@ export function RecipeForm({
                       className='cursor-pointer px-4 py-2 hover:bg-gray-100'
                       onClick={() => handleTagSelect(tag)}
                     >
-                      {tag.name}
+                      {formatTagName(tag.name)}
                     </div>
                   ))
                 )}
@@ -387,12 +473,12 @@ export function RecipeForm({
             )}
           </div>
           <div className='mt-2 flex flex-wrap gap-2'>
-            {selectedTags.map((tag) => (
+            {selectedTags?.map((tag) => (
               <div
                 key={tag.id}
                 className='flex items-center gap-1 rounded-full bg-[#FF7C75] px-3 py-1 text-sm text-white'
               >
-                {tag.name}
+                {formatTagName(tag.name)}
                 <button
                   type='button'
                   onClick={() => handleTagRemove(tag.name)}
@@ -575,12 +661,28 @@ export function RecipeForm({
         {errors.steps && <p className='text-sm text-red-500'>{errors.steps.message}</p>}
       </div>
 
+      {/* Commit Message Field - Only show in edit mode when there are details changes */}
+      {showCommitMessage && (
+        <div className="mt-6 p-4 bg-[#FF7C75]/10 border border-[#FF7C75]/20 rounded-lg">
+          <label className="block text-sm font-medium text-[#FF7C75] mb-2">
+            Commit Message (required for recipe detail changes)
+          </label>
+          <input
+            type="text"
+            value={commitMessage}
+            onChange={(e) => onCommitMessageChange?.(e.target.value)}
+            placeholder="Describe the changes you made..."
+            className="w-full px-3 py-2 border border-[#FF7C75]/30 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF7C75] focus:border-[#FF7C75]"
+          />
+        </div>
+      )}
+
       <Button
         type='submit'
-        disabled={isSubmitting}
-        className='w-full bg-[#FF7C75] py-6 text-lg font-semibold text-white hover:bg-[#FF7C75]/90'
+        disabled={isSubmitting || disabled}
+        className='w-full bg-[#FF7C75] py-6 text-lg font-semibold text-white hover:bg-[#FF7C75]/90 disabled:bg-gray-400 disabled:text-gray-500 disabled:cursor-not-allowed disabled:border-gray-300'
       >
-        {isSubmitting ? 'Saving...' : 'Save Recipe'}
+        {isSubmitting ? 'Saving...' : submitButtonText}
       </Button>
     </form>
   );

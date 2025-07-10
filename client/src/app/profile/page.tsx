@@ -8,42 +8,25 @@ import { Card, CardContent } from '@/components/ui/card';
 import { InfiniteScroll } from '@/components/ui/infinite-scroll';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 import { getUserRecipes } from '@/lib/services/recipeService';
+import { RecipeCard } from '@/components/recipe/recipe-card';
+import { Recipe } from '@/lib/types/recipe';
 
-import { User, ChefHat, Plus, Heart, Clock, Users, LogOut } from 'lucide-react';
+import { User, ChefHat, Plus, LogOut } from 'lucide-react';
 import Link from 'next/link';
-import Image from 'next/image';
 
-interface Recipe {
-  id: string;
-  title: string;
-  description: string;
-  base64String?: string;
-  cookingTime: number;
-  servings: number;
-  likes: number;
-  createdAt: string;
-}
+// Remove the local Recipe interface since we're importing it from types
 
 export default function ProfilePage() {
   const { user, isAuthenticated, isLoading, logout } = useAuth();
   const router = useRouter();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
-  // Create a fetch function for user recipes that transforms the data
+  // Create a fetch function for user recipes
   const fetchUserRecipes = useCallback(async (page: number) => {
     if (!user?.id) return [];
 
     const userRecipes = await getUserRecipes(user.id, page, 10);
-    return userRecipes.map((recipe) => ({
-      id: String(recipe.id),
-      title: recipe.title,
-      description: recipe.description,
-      base64String: recipe.thumbnail?.base64String || '',
-      cookingTime: 30, // Default value since API might not have this
-      servings: recipe.servingSize,
-      likes: 0, // Default value since API might not have this
-      createdAt: recipe.createdAt,
-    }));
+    return userRecipes;
   }, [user?.id]);
 
   const {
@@ -172,44 +155,11 @@ export default function ProfilePage() {
           >
             <div className='grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3'>
               {recipes.map((recipe) => (
-                <Card
+                <RecipeCard
                   key={recipe.id}
-                  className='overflow-hidden shadow-lg transition-shadow duration-300 hover:shadow-xl'
-                >
-                  <div className='flex h-48 items-center justify-center bg-gradient-to-br from-rose-100 to-rose-200'>
-                    {recipe.base64String ? (
-                      <Image
-                        src={`data:image/jpeg;base64,${recipe.base64String}`}
-                        alt={recipe.title}
-                        width={400}
-                        height={200}
-                        className='size-full object-cover'
-                      />
-                    ) : (
-                      <ChefHat className='size-16 text-[#FF7C75]' />
-                    )}
-                  </div>
-                  <CardContent className='p-4'>
-                    <h3 className='mb-2 text-lg font-semibold text-gray-900'>{recipe.title}</h3>
-                    <p className='mb-3 line-clamp-2 text-sm text-gray-600'>{recipe.description}</p>
-                    <div className='flex items-center justify-between text-sm text-gray-500'>
-                      <div className='flex items-center space-x-4'>
-                        <div className='flex items-center'>
-                          <Clock className='mr-1 size-4' />
-                          {recipe.cookingTime}min
-                        </div>
-                        <div className='flex items-center'>
-                          <Users className='mr-1 size-4' />
-                          {recipe.servings}
-                        </div>
-                      </div>
-                      <div className='flex items-center'>
-                        <Heart className='mr-1 size-4 text-[#FF7C75]' />
-                        {recipe.likes}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                  recipe={recipe}
+                  onClick={() => router.push(`/recipes/${recipe.id}`)}
+                />
               ))}
             </div>
           </InfiniteScroll>

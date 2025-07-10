@@ -1,5 +1,5 @@
 const AUTH_BASE_URL = process.env.NEXT_PUBLIC_KEYCLOAK_BASE_URL || 'http://localhost:8089';
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8090';
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8090';
 
 async function getAuthHeader(): Promise<Record<string, string>> {
   const tokens = localStorage.getItem('tokens');
@@ -113,6 +113,11 @@ export async function apiRequest<T>(endpoint: string, options: RequestInit = {})
     throw new Error(`Request failed with status: ${response.status}`);
   }
 
+  // For DELETE requests or responses with no content, return void
+  if (response.status === 204 || response.headers.get('content-length') === '0') {
+    return undefined as T;
+  }
+
   return response.json();
 }
 
@@ -127,6 +132,11 @@ export async function publicApiRequest<T>(endpoint: string, options: RequestInit
 
   if (!response.ok) {
     throw new Error(`Request failed with status: ${response.status}`);
+  }
+
+  // For DELETE requests or responses with no content, return void
+  if (response.status === 204 || response.headers.get('content-length') === '0') {
+    return undefined as T;
   }
 
   return response.json();
