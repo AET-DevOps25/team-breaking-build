@@ -23,12 +23,13 @@ class RAGHelper:
     A helper for the retrieval stage of the RAG pipeline for recipe search and generation.
     """
     
-    def __init__(self, weaviate_host: str = None, weaviate_port: int = None):
+    def __init__(self, weaviate_host: str = None, weaviate_port: int = None, weaviate_grpc_port: int = None):
         """Initialize RAG helper with Weaviate client and embeddings"""
         try:
             # Get weaviate configuration from environment or use defaults
             self.weaviate_host = weaviate_host or os.getenv("WEAVIATE_HOST", "weaviate")
             self.weaviate_port = weaviate_port or int(os.getenv("WEAVIATE_PORT", "8080"))
+            self.weaviate_grpc_port = weaviate_grpc_port or int(os.getenv("WEAVIATE_GRPC_PORT", "50051"))
             
             # Initialize Weaviate client
             self._initialize_weaviate_client()
@@ -48,7 +49,8 @@ class RAGHelper:
             # Connect to weaviate using configured host and port
             self.weaviate_client = weaviate.connect_to_local(
                 host=self.weaviate_host,
-                port=self.weaviate_port
+                port=self.weaviate_port,
+                grpc_port=self.weaviate_grpc_port
             )
             logger.info(f"Connected to Weaviate service: {self.weaviate_host}:{self.weaviate_port}")
             
@@ -139,7 +141,7 @@ class RAGHelper:
                         description="Flag for placeholder documents"
                     )
                 ],
-                vectorizer_config=weaviate.classes.config.Configure.Vectorizer.TEXT2VEC_HUGGINGFACE
+                vectorizer_config=weaviate.classes.config.Configure.Vectorizer.text2vec_huggingface()
             )
             
             # Initialize vector store
