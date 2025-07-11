@@ -10,14 +10,6 @@ RUN corepack enable && \
 # Create app directory
 WORKDIR /app
 
-# Accept build arguments for Vite environment variables
-ARG VITE_API_GATEWAY_URL
-ARG VITE_AUTH_SERVICE_URL
-
-# Set environment variables from build args
-ENV VITE_API_GATEWAY_URL=$VITE_API_GATEWAY_URL
-ENV VITE_AUTH_SERVICE_URL=$VITE_AUTH_SERVICE_URL
-
 # Copy only the files needed to install dependencies
 COPY package.json pnpm-lock.yaml ./
 
