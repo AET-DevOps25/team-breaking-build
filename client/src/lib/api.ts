@@ -1,6 +1,5 @@
-const AUTH_BASE_URL = '/auth';
-
-export const API_BASE_URL = '/api';
+const AUTH_BASE_URL = '/api/server/auth';
+export const API_BASE_URL = '/api/server';
 
 async function getAuthHeader(): Promise<Record<string, string>> {
   const tokens = localStorage.getItem('tokens');
