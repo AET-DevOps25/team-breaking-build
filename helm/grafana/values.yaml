@@ -1,4 +1,4 @@
-namespace: team-breaking-build-monitoring
+namespace: team-breaking-build
 
 name: grafana
 
@@ -15,20 +15,24 @@ service:
 
 ingress:
   enabled: true
-  annotations:
-    kubernetes.io/ingress.class: nginx
-    cert-manager.io/cluster-issuer: letsencrypt-prod
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
-  tls:
-    - hosts:
-        - team-breaking-build.student.k8s.aet.cit.tum.de
-      secretName: team-breaking-build-tls
-  className: nginx
   hosts:
     - host: grafana.team-breaking-build.student.k8s.aet.cit.tum.de
       paths:
         - path: /
           pathType: Prefix
+  existingSecret: team-breaking-build-grafana-tls
+  ingressClassName: nginx
+  tls: true
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+
+certificate:
+  enabled: true
+  usages:
+    - digital signature
+    - key encipherment
 
 resources:
   requests:

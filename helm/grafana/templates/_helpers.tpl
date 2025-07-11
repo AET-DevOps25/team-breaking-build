@@ -85,3 +85,70 @@ Selector labels
 app.kubernetes.io/name: {{ include "grafana.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
+
+{{/*
+Generate certificate name using the same name as the secret
+*/}}
+{{- define "grafana.certificateName" -}}
+{{- .Values.ingress.existingSecret | default (printf "%s-tls" (include "grafana.fullname" .)) }}
+{{- end }}
+
+{{/*
+Generate DNS names for certificate from ingress hosts
+*/}}
+{{- define "grafana.certificateDnsNames" -}}
+{{- range .Values.ingress.hosts }}
+- {{ .host }}
+{{- end }}
+{{- end }}
+
+{{/*
+Get the common name for certificate (first host)
+*/}}
+{{- define "grafana.certificateCommonName" -}}
+{{- if .Values.ingress.hosts }}
+{{- (index .Values.ingress.hosts 0).host }}
+{{- else }}
+{{- include "grafana.fullname" . }}
+{{- end }}
+{{- end }}
+
+{{/*
+Extract cert-manager issuer name from ingress annotations
+*/}}
+{{- define "grafana.certificateIssuerName" -}}
+{{- if .Values.ingress.annotations }}
+{{- $issuerName := index .Values.ingress.annotations "cert-manager.io/cluster-issuer" }}
+{{- if $issuerName }}
+{{- $issuerName }}
+{{- else if and .Values.certificate .Values.certificate.issuer .Values.certificate.issuer.name }}
+{{- .Values.certificate.issuer.name }}
+{{- else }}
+{{- "letsencrypt-prod" }}
+{{- end }}
+{{- else if and .Values.certificate .Values.certificate.issuer .Values.certificate.issuer.name }}
+{{- .Values.certificate.issuer.name }}
+{{- else }}
+{{- "letsencrypt-prod" }}
+{{- end }}
+{{- end }}
+
+{{/*
+Extract cert-manager issuer kind from ingress annotations or use default
+*/}}
+{{- define "grafana.certificateIssuerKind" -}}
+{{- if .Values.ingress.annotations }}
+{{- $issuerAnnotation := index .Values.ingress.annotations "cert-manager.io/issuer" }}
+{{- if $issuerAnnotation }}
+{{- "Issuer" }}
+{{- else if and .Values.certificate .Values.certificate.issuer .Values.certificate.issuer.kind }}
+{{- .Values.certificate.issuer.kind }}
+{{- else }}
+{{- "ClusterIssuer" }}
+{{- end }}
+{{- else if and .Values.certificate .Values.certificate.issuer .Values.certificate.issuer.kind }}
+{{- .Values.certificate.issuer.kind }}
+{{- else }}
+{{- "ClusterIssuer" }}
+{{- end }}
+{{- end }}

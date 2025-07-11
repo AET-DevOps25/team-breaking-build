@@ -20,4 +20,4 @@ data:
       - name: Loki
         type: loki
         access: proxy
-        url: http://loki.team-breaking-build.svc.cluster.local
+        url: http://loki.team-breaking-build.svc.cluster.local:3100
