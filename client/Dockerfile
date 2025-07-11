@@ -10,6 +10,14 @@ RUN corepack enable && \
 # Create app directory
 WORKDIR /app
 
+# Accept build arguments for Vite environment variables
+ARG VITE_API_GATEWAY_URL
+ARG VITE_AUTH_SERVICE_URL
+
+# Set environment variables from build args
+ENV VITE_API_GATEWAY_URL=$VITE_API_GATEWAY_URL
+ENV VITE_AUTH_SERVICE_URL=$VITE_AUTH_SERVICE_URL
+
 # Copy only the files needed to install dependencies
 COPY package.json pnpm-lock.yaml ./
 
@@ -19,30 +27,22 @@ RUN pnpm install --frozen-lockfile
 # Copy the rest of the source code
 COPY . .
 
-# Build Next.js
-RUN pnpm exec next build
+# Build Vite app
+RUN pnpm run build
 
 # ──────────────────────────────────────────────────────────
 # 2️⃣  Production runtime stage
 # ──────────────────────────────────────────────────────────
-FROM node:20-alpine AS runner
+FROM nginx:alpine AS runner
 
-# Install pnpm so `pnpm exec next` works
-RUN corepack enable && \
-    corepack prepare pnpm@latest --activate
+# Copy built assets from builder stage
+COPY --from=builder /app/dist /usr/share/nginx/html
 
-WORKDIR /app
+# Copy nginx configuration
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Copy only what’s needed to run the server
-COPY --from=builder /app/package.json .
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/pnpm-lock.yaml ./
-# Install *production* deps only
-RUN pnpm install --prod --frozen-lockfile --ignore-scripts
-
-# Expose Next.js default port
+# Expose port 3000 to match the original port
 EXPOSE 3000
 
-# Start the server
-CMD ["pnpm", "exec", "next", "start"]
+# Start nginx
+CMD ["nginx", "-g", "daemon off;"]

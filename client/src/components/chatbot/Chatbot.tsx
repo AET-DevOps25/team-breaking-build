@@ -1,5 +1,3 @@
-'use client';
-
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -8,7 +6,7 @@ import { MessageCircle, X, Send, ChefHat } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api';
 
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 
 interface ChatMessage {
   id: string;
@@ -80,7 +78,7 @@ export function Chatbot() {
   const [isLoading, setIsLoading] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const router = useRouter();
+  const navigate = useNavigate();
 
   // Scroll to bottom whenever messages change
   useEffect(() => {
@@ -165,28 +163,28 @@ export function Chatbot() {
   const handleCreateRecipe = (
     recipe:
       | {
-          title?: string;
-          description?: string;
-          servingSize?: number;
-          ingredients?: Array<{
-            name: string;
-            amount: number;
-            unit: string;
-          }>;
-          steps?: Array<{
-            order: number;
-            details: string;
-          }>;
-          recipeIngredients?: Array<{
-            name: string;
-            amount: number;
-            unit: string;
-          }>;
-          recipeSteps?: Array<{
-            order: number;
-            details: string;
-          }>;
-        }
+        title?: string;
+        description?: string;
+        servingSize?: number;
+        ingredients?: Array<{
+          name: string;
+          amount: number;
+          unit: string;
+        }>;
+        steps?: Array<{
+          order: number;
+          details: string;
+        }>;
+        recipeIngredients?: Array<{
+          name: string;
+          amount: number;
+          unit: string;
+        }>;
+        recipeSteps?: Array<{
+          order: number;
+          details: string;
+        }>;
+      }
       | undefined,
   ) => {
     if (!recipe) return;
@@ -212,7 +210,7 @@ export function Chatbot() {
 
     // Store prefill data in sessionStorage for the create page to access
     sessionStorage.setItem('recipePrefillData', JSON.stringify(prefillData));
-    router.push('/recipes/create');
+    navigate('/recipes/create');
   };
 
   return (

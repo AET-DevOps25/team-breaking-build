@@ -65,7 +65,7 @@ autoscaling:
 
 livenessProbe:
   httpGet:
-    path: /api/health
+    path: /
     port: 3000
   initialDelaySeconds: 30
   periodSeconds: 10
@@ -75,32 +75,10 @@ livenessProbe:
 
 readinessProbe:
   httpGet:
-    path: /api/health
+    path: /
     port: 3000
   initialDelaySeconds: 20
   periodSeconds: 10
   timeoutSeconds: 2
   successThreshold: 1
   failureThreshold: 3
-
-env:
-  - name: NEXT_PUBLIC_GATEWAY_SERVICE_BASE_URL
-    valueFrom:
-      configMapKeyRef:
-        name: recipefy-config
-        key: GATEWAY_SERVICE_BASE_URL
-  - name: NEXT_PUBLIC_GATEWAY_SERVICE_PORT
-    valueFrom:
-      configMapKeyRef:
-        name: recipefy-config
-        key: GATEWAY_SERVICE_PORT
-  - name: NEXT_PUBLIC_KEYCLOAK_SPI_BASE_URL
-    valueFrom:
-      configMapKeyRef:
-        name: recipefy-config
-        key: KEYCLOAK_SPI_BASE_URL
-  - name: NEXT_PUBLIC_KEYCLOAK_SPI_PORT
-    valueFrom:
-      configMapKeyRef:
-        name: recipefy-config
-        key: KEYCLOAK_SPI_PORT

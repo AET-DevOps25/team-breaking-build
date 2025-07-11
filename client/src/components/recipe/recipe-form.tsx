@@ -1,5 +1,3 @@
-'use client';
-
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -10,7 +8,6 @@ import { Label } from '@/components/ui/label';
 import { X, Image as ImageIcon, Plus, Trash2 } from 'lucide-react';
 import { Tag } from '@/lib/services/recipeService';
 import { Textarea } from '@/components/ui/textarea';
-import Image from 'next/image';
 
 // Utility function to format tag names from ALL_CAPS_WITH_UNDERSCORES to Capitalized
 function formatTagName(tagName: string): string {
@@ -188,16 +185,16 @@ export function RecipeForm({
     resolver: zodResolver(recipeSchema),
     defaultValues: prefillData
       ? {
-          ...prefillData,
-          tags: prefillData.tags || [],
-          ingredients: prefillData.ingredients || [{ name: '', amount: 0, unit: '' }],
-          steps: prefillData.steps || [{ order: 1, details: '', image: undefined }],
-        }
+        ...prefillData,
+        tags: prefillData.tags || [],
+        ingredients: prefillData.ingredients || [{ name: '', amount: 0, unit: '' }],
+        steps: prefillData.steps || [{ order: 1, details: '', image: undefined }],
+      }
       : {
-          tags: [],
-          ingredients: [{ name: '', amount: 0, unit: '' }],
-          steps: [{ order: 1, details: '', image: undefined }],
-        },
+        tags: [],
+        ingredients: [{ name: '', amount: 0, unit: '' }],
+        steps: [{ order: 1, details: '', image: undefined }],
+      },
   });
 
   const ingredients = watch('ingredients') || [];
@@ -372,11 +369,9 @@ export function RecipeForm({
             />
             {previewUrl ? (
               <div className='relative'>
-                <Image
+                <img
                   src={previewUrl}
                   alt='Preview'
-                  width={800}
-                  height={400}
                   className='h-48 w-full rounded-lg object-cover'
                 />
                 <Button
@@ -614,11 +609,9 @@ export function RecipeForm({
                 />
                 {stepImages[index] ? (
                   <div className='relative h-full'>
-                    <Image
+                    <img
                       src={stepImages[index]!}
                       alt={`Step ${index + 1}`}
-                      width={400}
-                      height={300}
                       className='size-full rounded-lg object-cover'
                     />
                     <Button

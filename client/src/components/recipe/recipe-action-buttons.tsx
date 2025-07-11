@@ -1,4 +1,4 @@
-'use client';
+
 
 import { Button } from '@/components/ui/button';
 import { Copy, Edit, Trash2, Loader2 } from 'lucide-react';

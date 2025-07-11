@@ -1,6 +1,4 @@
-'use client';
-
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 import { Recipe } from '@/lib/types/recipe';
 import { getRecipes } from '@/lib/services/recipeService';
 import { RecipeCard } from '@/components/recipe/recipe-card';
@@ -11,7 +9,7 @@ import { Plus, ChefHat } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function RecipesPage() {
-  const router = useRouter();
+  const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
 
   const {
@@ -32,7 +30,7 @@ export default function RecipesPage() {
         <h1 className='text-3xl font-bold'>Recipes</h1>
         {isAuthenticated && (
           <Button
-            onClick={() => router.push('/recipes/create')}
+            onClick={() => navigate('/recipes/create')}
             className='bg-[#FF7C75] hover:bg-[#FF7C75]/90'
           >
             <Plus className='mr-2 size-4' />
@@ -60,7 +58,7 @@ export default function RecipesPage() {
                 <RecipeCard
                   key={recipe.id}
                   recipe={recipe}
-                  onClick={() => router.push(`/recipes/${recipe.id}`)}
+                  onClick={() => navigate(`/recipes/${recipe.id}`)}
                 />
               );
             })}
@@ -79,4 +77,4 @@ export default function RecipesPage() {
       ) : null}
     </div>
   );
-}
+} 

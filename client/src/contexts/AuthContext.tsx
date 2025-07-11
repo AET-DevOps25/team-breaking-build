@@ -1,7 +1,5 @@
-'use client';
-
 import { createContext, useContext, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 
 interface User {
   id: string;
@@ -34,7 +32,7 @@ const AUTH_BASE_URL = '/api/server/auth';
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const router = useRouter();
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Check for existing session on mount
@@ -75,8 +73,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Fetch user info with the new access token
       await fetchUserInfo(tokens.accessToken);
-
-      router.push('/');
     } catch (error) {
       throw error;
     }
@@ -234,7 +230,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('tokens');
     localStorage.removeItem('user');
     setUser(null);
-    router.push('/login');
+    navigate('/login');
   };
 
   return (
