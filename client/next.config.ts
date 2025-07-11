@@ -8,12 +8,12 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       {
-        source: '/api/:path',
-        destination: 'http://recipefy-api-gateway:8080/:path',
+        source: '/api/:path*',
+        destination: 'http://recipefy-api-gateway:8080/:path*',
       },
       {
-        source: '/auth/:path',
-        destination: 'http://recipefy-keycloak-service-keycloak-spi:8080/auth/:path',
+        source: '/auth/:path*',
+        destination: 'http://recipefy-keycloak-service-keycloak-spi:8080/auth/:path*',
       },
     ];
   },
