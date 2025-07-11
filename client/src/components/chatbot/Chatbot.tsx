@@ -177,15 +177,39 @@ export function Chatbot() {
             order: number;
             details: string;
           }>;
+          recipeIngredients?: Array<{
+            name: string;
+            amount: number;
+            unit: string;
+          }>;
+          recipeSteps?: Array<{
+            order: number;
+            details: string;
+          }>;
         }
       | undefined,
   ) => {
     if (!recipe) return;
 
-    // Remove any image fields from steps and thumbnail
-    const { steps, ...rest } = recipe;
-    const stepsWithoutImages = Array.isArray(steps) ? steps.map(({ ...stepRest }) => stepRest) : [];
-    const prefillData = { ...rest, steps: stepsWithoutImages, thumbnail: undefined };
+    // Transform the data to match RecipeFormData interface
+    const prefillData = {
+      title: recipe.title || '',
+      description: recipe.description || '',
+      servingSize: recipe.servingSize || 4,
+      tags: [],
+      // Map recipeIngredients to ingredients (prefer ingredients if both exist)
+      ingredients: (recipe.ingredients || recipe.recipeIngredients || []).map((ing) => ({
+        name: ing.name || '',
+        amount: ing.amount || 0,
+        unit: ing.unit || '',
+      })),
+      // Map recipeSteps to steps (prefer steps if both exist)
+      steps: (recipe.steps || recipe.recipeSteps || []).map((step, index) => ({
+        order: step.order || index + 1,
+        details: step.details || '',
+      })),
+    };
+
     // Store prefill data in sessionStorage for the create page to access
     sessionStorage.setItem('recipePrefillData', JSON.stringify(prefillData));
     router.push('/recipes/create');

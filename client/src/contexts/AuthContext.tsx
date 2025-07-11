@@ -29,10 +29,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const AUTH_BASE_URL =
-  process.env.NEXT_PUBLIC_KEYCLOAK_SPI_BASE_URL && process.env.NEXT_PUBLIC_KEYCLOAK_SPI_PORT
-    ? `${process.env.NEXT_PUBLIC_KEYCLOAK_SPI_BASE_URL}:${process.env.NEXT_PUBLIC_KEYCLOAK_SPI_PORT}`
-    : 'http://localhost:8089';
+const AUTH_BASE_URL = '/auth';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -52,7 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string) => {
     try {
-      const response = await fetch(`${AUTH_BASE_URL}/auth/login`, {
+      const response = await fetch(`${AUTH_BASE_URL}/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -87,7 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const register = async (email: string, password: string, firstName: string, lastName: string) => {
     try {
-      const response = await fetch(`${AUTH_BASE_URL}/auth/register`, {
+      const response = await fetch(`${AUTH_BASE_URL}/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -123,7 +120,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error('No refresh token available');
     }
 
-    const response = await fetch(`${AUTH_BASE_URL}/auth/refresh`, {
+    const response = await fetch(`${AUTH_BASE_URL}/refresh`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -154,7 +151,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchUserInfo = async (accessToken: string) => {
     try {
-      const response = await fetch(`${AUTH_BASE_URL}/auth/userinfo`, {
+      const response = await fetch(`${AUTH_BASE_URL}/userinfo`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

@@ -536,7 +536,7 @@ export function RecipeForm({
             <div className='w-24'>
               <Input
                 type='number'
-                step='0.1'
+                step='0.01'
                 min='0'
                 {...register(`ingredients.${index}.amount`, { valueAsNumber: true })}
                 placeholder='How much?'

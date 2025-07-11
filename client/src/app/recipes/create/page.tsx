@@ -26,13 +26,75 @@ type RecipeFormData = {
   }>;
 };
 
+// Types for prefill data parsing
+type PrefillIngredient = {
+  name?: string;
+  amount?: number;
+  unit?: string;
+};
+
+type PrefillStep = {
+  order?: number;
+  details?: string;
+};
+
+type PrefillDataRaw = {
+  title?: string;
+  description?: string;
+  servingSize?: number;
+  tags?: string[];
+  recipeIngredients?: PrefillIngredient[];
+  ingredients?: PrefillIngredient[];
+  recipeSteps?: PrefillStep[];
+  steps?: PrefillStep[];
+};
+
 export default function CreateRecipePage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [availableTags, setAvailableTags] = useState<Tag[]>([]);
   const [isLoadingTags, setIsLoadingTags] = useState(true);
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
-  const [prefillData, setPrefillData] = useState<RecipeFormData | undefined>(undefined);
+
+  // Get prefill data from sessionStorage during component initialization
+  const prefillData: RecipeFormData | undefined = (() => {
+    if (typeof window !== 'undefined') {
+      const storedData = sessionStorage.getItem('recipePrefillData');
+      if (storedData) {
+        try {
+          const parsedData: PrefillDataRaw = JSON.parse(storedData);
+
+          // Transform the data to match RecipeFormData interface
+          const transformedData: RecipeFormData = {
+            title: parsedData.title || '',
+            description: parsedData.description || '',
+            servingSize: parsedData.servingSize || 4,
+            tags: parsedData.tags || [],
+            // Transform recipeIngredients to ingredients
+            ingredients: (parsedData.recipeIngredients || parsedData.ingredients || []).map(
+              (ing: PrefillIngredient) => ({
+                name: ing.name || '',
+                amount: ing.amount || 0,
+                unit: ing.unit || '',
+              }),
+            ),
+            // Transform recipeSteps to steps
+            steps: (parsedData.recipeSteps || parsedData.steps || []).map((step: PrefillStep, index: number) => ({
+              order: step.order || index + 1,
+              details: step.details || '',
+            })),
+          };
+
+          console.log('Prefill data loaded from sessionStorage:', transformedData);
+          return transformedData;
+        } catch (error) {
+          console.error('Error parsing prefill data:', error);
+          sessionStorage.removeItem('recipePrefillData');
+        }
+      }
+    }
+    return undefined;
+  })();
 
   useEffect(() => {
     const fetchTags = async () => {
@@ -49,16 +111,14 @@ export default function CreateRecipePage() {
     fetchTags();
   }, []);
 
+  // Clear sessionStorage after component has mounted and prefillData is set
   useEffect(() => {
-    if (
-      typeof window !== 'undefined' &&
-      window.history.state &&
-      window.history.state.usr &&
-      window.history.state.usr.prefillData
-    ) {
-      setPrefillData(window.history.state.usr.prefillData);
+    if (prefillData && typeof window !== 'undefined') {
+      // Clear the sessionStorage after the prefill data has been successfully loaded
+      sessionStorage.removeItem('recipePrefillData');
+      console.log('Cleared sessionStorage after successful prefill');
     }
-  }, []);
+  }, [prefillData]);
 
   const handleSubmit = async (data: RecipeFormData) => {
     setIsSubmitting(true);

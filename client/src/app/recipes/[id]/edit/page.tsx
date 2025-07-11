@@ -189,12 +189,16 @@ export default function EditRecipePage() {
 
     setIsSubmitting(true);
     try {
+      // Check for thumbnail changes - if a new thumbnail is uploaded, it's considered a metadata change
+      const hasThumbnailChange = data.thumbnail !== originalData?.thumbnail;
+
       // Check if there are changes
       const hasMetadataChanges =
         data.title !== originalData?.title ||
         data.description !== originalData?.description ||
         data.servingSize !== originalData?.servingSize ||
-        JSON.stringify(data.tags) !== JSON.stringify(originalData?.tags);
+        JSON.stringify(data.tags) !== JSON.stringify(originalData?.tags) ||
+        hasThumbnailChange;
 
       const hasDetailsChanges =
         JSON.stringify(data.ingredients) !== JSON.stringify(originalData?.ingredients) ||
@@ -268,11 +272,15 @@ export default function EditRecipePage() {
   const handleFormChange = (data: RecipeFormData) => {
     if (!originalData) return;
 
+    // Check for thumbnail changes - if a new thumbnail is uploaded, it's considered a metadata change
+    const hasThumbnailChange = data.thumbnail !== originalData.thumbnail;
+
     const hasMetadataChanges =
       data.title !== originalData.title ||
       data.description !== originalData.description ||
       data.servingSize !== originalData.servingSize ||
-      JSON.stringify(data.tags) !== JSON.stringify(originalData.tags);
+      JSON.stringify(data.tags) !== JSON.stringify(originalData.tags) ||
+      hasThumbnailChange;
 
     const detailsChanges =
       JSON.stringify(data.ingredients) !== JSON.stringify(originalData.ingredients) ||
