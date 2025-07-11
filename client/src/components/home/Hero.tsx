@@ -1,20 +1,18 @@
-'use client';
 import { useEffect } from 'react';
-import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
 const Hero = () => {
-  const router = useRouter();
+  const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
 
   // Redirect authenticated users to recipes page
   useEffect(() => {
     if (isAuthenticated) {
-      router.push('/recipes');
+      navigate('/recipes');
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, navigate]);
 
   // Don't render anything if user is authenticated (will redirect)
   if (isAuthenticated) {
@@ -51,7 +49,7 @@ const Hero = () => {
             <div className='flex flex-row items-center justify-center gap-4 lg:justify-start'>
               <Button
                 size='lg'
-                onClick={() => router.push('/register')}
+                onClick={() => navigate('/register')}
                 className='bg-[#FF7C75] hover:bg-rose-600'
               >
                 Get Started
@@ -59,7 +57,7 @@ const Hero = () => {
               <Button
                 variant='outline'
                 size='lg'
-                onClick={() => router.push('/login')}
+                onClick={() => navigate('/login')}
                 className='border-[#FF7C75] text-[#FF7C75] hover:bg-rose-50'
               >
                 Login
@@ -67,11 +65,12 @@ const Hero = () => {
             </div>
           </div>
           <div className='relative col-span-6 flex justify-center'>
-            <Image
+            <img
               src='/hero.svg'
               alt='hero'
               width={1000}
               height={805}
+              className='max-w-full h-auto'
             />
           </div>
         </div>

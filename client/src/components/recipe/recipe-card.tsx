@@ -1,5 +1,4 @@
 import { Recipe } from '@/lib/types/recipe';
-import Image from 'next/image';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ImageIcon, Users, Utensils, FileText, Tags } from 'lucide-react';
@@ -17,11 +16,10 @@ export function RecipeCard({ recipe, onClick }: RecipeCardProps) {
     >
       <div className='relative h-48'>
         {recipe.thumbnail?.base64String ? (
-          <Image
+          <img
             src={`data:image/jpeg;base64,${recipe.thumbnail.base64String}`}
             alt={recipe.title}
-            fill
-            className='object-cover'
+            className='h-full w-full object-cover'
           />
         ) : (
           <div className='flex h-full flex-col items-center justify-center bg-gray-100'>

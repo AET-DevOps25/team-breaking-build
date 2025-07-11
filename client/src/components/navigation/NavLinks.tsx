@@ -1,7 +1,4 @@
-'use client';
-
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { Link, useLocation } from 'react-router-dom';
 import clsx from 'clsx';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -16,7 +13,7 @@ const authLinks = [
 ];
 
 export default function NavLinks() {
-  const pathname = usePathname();
+  const location = useLocation();
   const { isAuthenticated } = useAuth();
 
   const links = [
@@ -29,11 +26,11 @@ export default function NavLinks() {
       {links.map((link) => (
         <Link
           key={link.name}
-          href={link.href}
+          to={link.href}
           className={clsx(
             'flex h-[48px] flex-none grow items-center justify-start gap-2 rounded-md p-2 px-3 text-sm font-bold text-[#FF7C75] hover:bg-rose-100 hover:text-rose-600',
             {
-              'underline underline-offset-4 decoration-4': pathname === link.href,
+              'underline underline-offset-4 decoration-4': location.pathname === link.href,
             },
           )}
         >
@@ -42,11 +39,11 @@ export default function NavLinks() {
       ))}
       {isAuthenticated && (
         <Link
-          href='/profile'
+          to='/profile'
           className={clsx(
             'flex h-[48px] flex-none grow items-center justify-start gap-2 rounded-md p-2 px-3 text-sm font-bold text-[#FF7C75] hover:bg-rose-100 hover:text-rose-600',
             {
-              'underline underline-offset-4 decoration-4': pathname === '/profile',
+              'underline underline-offset-4 decoration-4': location.pathname === '/profile',
             },
           )}
         >

@@ -1,9 +1,6 @@
-'use client';
-
 import { Recipe, RecipeIngredient, RecipeStep } from '@/lib/types/recipe';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
-import Image from 'next/image';
 import { Users, Calendar } from 'lucide-react';
 
 interface RecipeDetails {
@@ -93,11 +90,9 @@ export function RecipeDetailView({ recipe, recipeDetails, isLoadingDetails, orig
         <div className='space-y-2'>
           <Label>Recipe Image</Label>
           <div className='relative overflow-hidden rounded-lg'>
-            <Image
+            <img
               src={`data:image/jpeg;base64,${recipe.thumbnail.base64String}`}
               alt={recipe.title}
-              width={800}
-              height={400}
               className='h-64 w-full object-cover'
             />
           </div>
@@ -215,11 +210,9 @@ export function RecipeDetailView({ recipe, recipeDetails, isLoadingDetails, orig
                   <p className='leading-relaxed text-gray-900'>{step.details}</p>
                   {step.recipeImageDTOS && step.recipeImageDTOS.length > 0 && (
                     <div className='mt-3'>
-                      <Image
+                      <img
                         src={`data:image/jpeg;base64,${step.recipeImageDTOS[0].base64String}`}
                         alt={`Step ${step.order}`}
-                        width={400}
-                        height={300}
                         className='max-w-xs rounded-lg object-cover'
                       />
                     </div>

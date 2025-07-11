@@ -1,6 +1,4 @@
-'use client';
-
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 import { RecipeForm } from '@/components/recipe/recipe-form';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
@@ -50,7 +48,7 @@ type PrefillDataRaw = {
 };
 
 export default function CreateRecipePage() {
-  const router = useRouter();
+  const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [availableTags, setAvailableTags] = useState<Tag[]>([]);
   const [isLoadingTags, setIsLoadingTags] = useState(true);
@@ -166,7 +164,7 @@ export default function CreateRecipePage() {
 
       await createRecipe(createRequest);
       toast.success('Recipe created successfully');
-      router.push('/recipes');
+      navigate('/recipes');
     } catch {
       toast.error('Failed to create recipe');
     } finally {
@@ -190,4 +188,4 @@ export default function CreateRecipePage() {
       </div>
     </div>
   );
-}
+} 
