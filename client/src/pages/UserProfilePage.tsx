@@ -1,30 +1,35 @@
 import { useEffect, useState, useCallback } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { InfiniteScroll } from '@/components/ui/infinite-scroll';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 import { getUserRecipes } from '@/lib/services/recipeService';
+import { getUserDisplayInfo } from '@/lib/services/userService';
 import { RecipeCard } from '@/components/recipe/recipe-card';
 import { Recipe } from '@/lib/types/recipe';
+import { UserDisplayInfo } from '@/lib/types/user';
+import { UserAvatar } from '@/components/user/UserAvatar';
+import { ArrowLeft, ChefHat, User } from 'lucide-react';
 
-import { User, ChefHat, Plus, LogOut } from 'lucide-react';
-
-export default function ProfilePage() {
-    const { user, isAuthenticated, isLoading, logout } = useAuth();
+export default function UserProfilePage() {
+    const params = useParams();
     const navigate = useNavigate();
-    const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+    const { user: currentUser } = useAuth();
+    const [userInfo, setUserInfo] = useState<UserDisplayInfo | null>(null);
+    const [isLoadingUser, setIsLoadingUser] = useState(true);
+    const userId = params.userId as string;
 
     // Create a fetch function for user recipes
     const fetchUserRecipes = useCallback(
         async (page: number) => {
-            if (!user?.id) return [];
+            if (!userId) return [];
 
-            const userRecipes = await getUserRecipes(user.id, page, 10);
+            const userRecipes = await getUserRecipes(userId, page, 10);
             return userRecipes;
         },
-        [user?.id],
+        [userId],
     );
 
     const {
@@ -40,83 +45,108 @@ export default function ProfilePage() {
         initialPage: 0,
     });
 
-    // Reset infinite scroll when user changes
+    // Fetch user information
     useEffect(() => {
-        if (user?.id) {
+        const fetchUserInfo = async () => {
+            if (!userId) return;
+
+            try {
+                setIsLoadingUser(true);
+                const info = await getUserDisplayInfo(userId);
+                setUserInfo(info);
+            } catch (error) {
+                console.error('Failed to fetch user info:', error);
+            } finally {
+                setIsLoadingUser(false);
+            }
+        };
+
+        fetchUserInfo();
+    }, [userId]);
+
+    // Reset infinite scroll when userId changes
+    useEffect(() => {
+        if (userId) {
             reset();
         }
-    }, [user?.id, reset]);
+    }, [userId, reset]);
 
+    // Redirect to own profile if viewing own user ID
     useEffect(() => {
-        if (!isLoading && !isAuthenticated) {
-            navigate('/login');
+        if (currentUser && userId === currentUser.id) {
+            navigate('/profile');
         }
-    }, [isAuthenticated, isLoading, navigate]);
+    }, [currentUser, userId, navigate]);
 
-    if (isLoading) {
-        return (
-            <div className='flex min-h-screen items-center justify-center'>
-                <div className='size-32 animate-spin rounded-full border-b-2 border-[#FF7C75]'></div>
-            </div>
-        );
-    }
-
-    if (!isAuthenticated) {
-        return null;
-    }
-
-    // Don't render infinite scroll until user is loaded
-    if (!user?.id) {
-        return (
-            <div className='flex min-h-screen items-center justify-center'>
-                <div className='size-32 animate-spin rounded-full border-b-2 border-[#FF7C75]'></div>
-            </div>
-        );
-    }
-
-    const handleLogout = () => {
-        logout();
-        setShowLogoutDialog(false);
-        navigate('/');
+    const handleBackClick = () => {
+        navigate(-1);
     };
+
+    if (isLoadingUser) {
+        return (
+            <div className='flex min-h-screen items-center justify-center'>
+                <div className='size-32 animate-spin rounded-full border-b-2 border-[#FF7C75]'></div>
+            </div>
+        );
+    }
+
+    if (!userInfo) {
+        return (
+            <div className='min-h-screen bg-white pt-20'>
+                <div className='mx-auto max-w-4xl px-4 py-8'>
+                    <div className='text-center'>
+                        <h1 className='mb-4 text-2xl font-bold text-gray-900'>User Not Found</h1>
+                        <p className='mb-8 text-gray-600'>
+                            The user you&apos;re looking for doesn&apos;t exist or has been removed.
+                        </p>
+                        <Button onClick={handleBackClick} className='bg-[#FF7C75] hover:bg-[#FF7C75]/90'>
+                            <ArrowLeft className='mr-2 size-4' />
+                            Go Back
+                        </Button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className='min-h-screen bg-white pt-20'>
             <div className='mx-auto max-w-4xl px-4 py-8'>
+                {/* Back Button */}
+                <Button
+                    onClick={handleBackClick}
+                    variant='outline'
+                    size='sm'
+                    className='mb-6 border-[#FF7C75] text-[#FF7C75] hover:bg-[#FF7C75] hover:text-white'
+                >
+                    <ArrowLeft className='mr-2 size-4' />
+                    Back
+                </Button>
+
                 {/* Profile Details Section */}
                 <div className='mb-6'>
                     <h2 className='mb-4 flex items-center text-2xl font-bold text-gray-900'>
                         <User className='mr-2 size-6 text-[#FF7C75]' />
-                        Profile Details
+                        Profile
                     </h2>
                 </div>
 
                 <Card className='mx-4 mb-8 border-0 shadow-lg'>
                     <CardContent className='p-8'>
                         <div className='flex items-center space-x-8'>
-                            <div className='flex size-24 shrink-0 items-center justify-center rounded-full bg-[#FF7C75] shadow-lg'>
-                                <span className='text-2xl font-bold text-white'>
-                                    {user?.firstName && user?.lastName
-                                        ? `${user.firstName.charAt(0).toUpperCase()}${user.lastName.charAt(0).toUpperCase()}`
-                                        : user?.email?.charAt(0).toUpperCase() || 'C'}
-                                </span>
-                            </div>
+                            <UserAvatar
+                                firstName={userInfo.firstName}
+                                lastName={userInfo.lastName}
+                                displayName={userInfo.displayName}
+                                email={userInfo.email}
+                                size='xl'
+                                className='size-24 text-2xl'
+                            />
                             <div className='flex-1'>
                                 <h1 className='mb-2 text-3xl font-bold text-gray-900'>
-                                    {user?.firstName && user?.lastName
-                                        ? `${user.firstName} ${user.lastName}`
-                                        : user?.email?.split('@')[0] || 'Chef'}
+                                    {userInfo.displayName}
                                 </h1>
-                                <p className='mb-4 text-lg text-gray-600'>{user?.email}</p>
-                            </div>
-                            <div className='shrink-0'>
-                                <Button
-                                    onClick={() => setShowLogoutDialog(true)}
-                                    className='rounded-lg bg-[#FF7C75] px-6 py-3 font-semibold text-white shadow-md transition-colors duration-200 hover:bg-rose-600 hover:shadow-lg'
-                                >
-                                    <LogOut className='mr-2 size-4' />
-                                    Logout
-                                </Button>
+                                <p className='mb-4 text-lg text-gray-600'>{userInfo.email}</p>
                             </div>
                         </div>
                     </CardContent>
@@ -126,7 +156,7 @@ export default function ProfilePage() {
                 <div className='mb-6'>
                     <h2 className='mb-4 flex items-center text-2xl font-bold text-gray-900'>
                         <ChefHat className='mr-2 size-6 text-[#FF7C75]' />
-                        My Recipes
+                        {userInfo.displayName}&apos;s Recipes
                     </h2>
                 </div>
 
@@ -168,7 +198,7 @@ export default function ProfilePage() {
                         </div>
                     </InfiniteScroll>
                 ) : (
-                    /* Empty State - Call to Action */
+                    /* Empty State */
                     <Card className='border-0 py-12 text-center shadow-lg'>
                         <CardContent>
                             <div className='mx-auto mb-6 flex size-24 items-center justify-center rounded-full bg-rose-100'>
@@ -176,51 +206,12 @@ export default function ProfilePage() {
                             </div>
                             <h3 className='mb-4 text-2xl font-bold text-gray-900'>No recipes yet!</h3>
                             <p className='mx-auto mb-8 max-w-md text-gray-600'>
-                                Start your culinary journey by creating your first recipe. Share your favorite dishes with the world!
+                                {userInfo.displayName} hasn&apos;t shared any recipes yet. Check back later for delicious creations!
                             </p>
-                            <Link to='/recipes/create'>
-                                <Button className='mx-auto flex items-center rounded-lg bg-[#FF7C75] px-6 py-3 font-semibold text-white transition-colors duration-200 hover:bg-rose-600'>
-                                    <Plus className='mr-2 size-5' />
-                                    Create Your First Recipe
-                                </Button>
-                            </Link>
                         </CardContent>
                     </Card>
                 )}
             </div>
-
-            {/* Logout Confirmation Dialog */}
-            {showLogoutDialog && (
-                <div className='fixed inset-0 z-50 flex items-center justify-center'>
-                    <div
-                        className='fixed inset-0 bg-black/50 backdrop-blur-sm'
-                        onClick={() => setShowLogoutDialog(false)}
-                    />
-                    <div className='relative z-50 m-4 w-full max-w-lg rounded-lg bg-white p-6 shadow-lg'>
-                        <div className='flex flex-col space-y-1.5 text-center sm:text-left'>
-                            <h2 className='text-lg font-semibold leading-none tracking-tight'>Confirm Logout</h2>
-                            <p className='text-sm text-gray-600'>
-                                Are you sure you want to log out? You'll need to sign in again to access your account.
-                            </p>
-                        </div>
-                        <div className='flex flex-col-reverse gap-2 pt-6 sm:flex-row sm:justify-end'>
-                            <Button
-                                variant='outline'
-                                onClick={() => setShowLogoutDialog(false)}
-                                className='border-2 border-gray-300 px-4 py-2'
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                onClick={handleLogout}
-                                className='bg-[#FF7C75] px-4 py-2 text-white hover:bg-rose-600'
-                            >
-                                Logout
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 } 

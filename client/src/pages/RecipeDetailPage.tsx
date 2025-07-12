@@ -1,8 +1,8 @@
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { getRecipe, getRecipeDetails, deleteRecipe, copyRecipe, getRecipeBranches } from '@/lib/services/recipeService';
-import { Recipe, RecipeIngredient, RecipeStep } from '@/lib/types/recipe';
+import { getRecipe, getRecipeDetails, deleteRecipe, copyRecipe, getRecipeBranches, getCommitDetails } from '@/lib/services/recipeService';
+import { Recipe, RecipeIngredient, RecipeStep, BranchDTO } from '@/lib/types/recipe';
 import { RecipeDetailView } from '@/components/recipe/recipe-detail-view';
 import { RecipeActionButtons } from '@/components/recipe/recipe-action-buttons';
 import { useAuth } from '@/contexts/AuthContext';
@@ -16,10 +16,12 @@ interface RecipeDetails {
 export default function RecipeDetailPage() {
     const params = useParams();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const { user } = useAuth();
     const [recipe, setRecipe] = useState<Recipe | null>(null);
     const [recipeDetails, setRecipeDetails] = useState<RecipeDetails | null>(null);
     const [originalRecipe, setOriginalRecipe] = useState<Recipe | null>(null);
+    const [currentBranch, setCurrentBranch] = useState<BranchDTO | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isLoadingDetails, setIsLoadingDetails] = useState(true);
     const [recipeId, setRecipeId] = useState<number | null>(null);
@@ -64,27 +66,15 @@ export default function RecipeDetailPage() {
                 if (recipeData && recipeData.forkedFrom) {
                     await fetchOriginalRecipe(recipeData.forkedFrom);
                 }
+
+                // Initialize the current branch (default to main branch)
+                await initializeBranch(recipeId);
             } catch (error) {
                 console.error('Failed to fetch recipe:', error);
                 toast.error('Failed to load recipe');
                 navigate('/recipes');
             } finally {
                 setIsLoading(false);
-            }
-        };
-
-        const fetchRecipeDetails = async () => {
-            try {
-                setIsLoadingDetails(true);
-                const details = await getRecipeDetails(recipeId);
-                if (details) {
-                    setRecipeDetails(details);
-                }
-            } catch (error) {
-                console.error('Failed to fetch recipe details:', error);
-                toast.error('Failed to load recipe details');
-            } finally {
-                setIsLoadingDetails(false);
             }
         };
 
@@ -99,31 +89,88 @@ export default function RecipeDetailPage() {
         };
 
         fetchRecipe();
-        fetchRecipeDetails();
     }, [recipeId, navigate]);
+
+    // Initialize the current branch and fetch recipe details
+    const initializeBranch = async (recipeId: number) => {
+        try {
+            const branches = await getRecipeBranches(recipeId);
+            
+            // Check if branch information is provided in URL parameters
+            const urlBranchId = searchParams.get('branchId');
+            const urlBranchName = searchParams.get('branchName');
+            
+            let targetBranch = null;
+            
+            if (urlBranchId && urlBranchName) {
+                // Try to find the branch by ID
+                targetBranch = branches.find((branch) => branch.id === Number(urlBranchId));
+                
+                // If not found by ID, try by name as fallback
+                if (!targetBranch) {
+                    targetBranch = branches.find((branch) => branch.name === urlBranchName);
+                }
+            }
+            
+            // If no branch found from URL params, default to main branch
+            if (!targetBranch) {
+                targetBranch = branches.find((branch) => branch.name === 'main');
+            }
+
+            if (targetBranch) {
+                setCurrentBranch(targetBranch);
+                await fetchRecipeDetailsForBranch(targetBranch.headCommitId);
+            } else {
+                console.warn('No suitable branch found for recipe:', recipeId);
+            }
+        } catch (error) {
+            console.error('Failed to initialize branch:', error);
+            toast.error('Failed to load recipe branches');
+        }
+    };
+
+    // Fetch recipe details for a specific commit
+    const fetchRecipeDetailsForBranch = async (commitId: number) => {
+        try {
+            setIsLoadingDetails(true);
+            const response = await getCommitDetails(commitId);
+
+            if (response?.recipeDetails) {
+                setRecipeDetails(response.recipeDetails);
+            }
+        } catch (error) {
+            console.error('Failed to fetch recipe details:', error);
+            toast.error('Failed to load recipe details');
+        } finally {
+            setIsLoadingDetails(false);
+        }
+    };
+
+    // Handle branch change
+    const handleBranchChange = async (branch: BranchDTO) => {
+        setCurrentBranch(branch);
+        await fetchRecipeDetailsForBranch(branch.headCommitId);
+    };
+
+    // Handle history button click
+    const handleHistoryClick = () => {
+        if (currentBranch && recipeId) {
+            navigate(`/recipes/${recipeId}/history?branchId=${currentBranch.id}&branchName=${currentBranch.name}`);
+        }
+    };
 
     // Fix ownership check - compare user.id with recipe.userId
     const isOwner = Boolean(user && recipe && user.id === recipe.userId);
 
     const handleCopy = async () => {
-        if (!recipe || !user) {
+        if (!recipe || !user || !currentBranch) {
             toast.error('You must be logged in to clone a recipe');
             return;
         }
 
         try {
             setIsCloning(true);
-
-            // Fetch the branches for this recipe to get the main branch ID
-            const branches = await getRecipeBranches(recipe.id);
-            const mainBranch = branches.find((branch) => branch.name === 'main');
-
-            if (!mainBranch) {
-                toast.error('No main branch found for this recipe');
-                return;
-            }
-
-            const clonedRecipe = await copyRecipe(recipe.id, mainBranch.id);
+            const clonedRecipe = await copyRecipe(recipe.id, currentBranch.id);
 
             if (clonedRecipe) {
                 toast.success('Recipe successfully cloned!');
@@ -141,7 +188,11 @@ export default function RecipeDetailPage() {
     };
 
     const handleEdit = () => {
-        navigate(`/recipes/${recipeId}/edit`);
+        if (currentBranch) {
+            navigate(`/recipes/${recipeId}/edit?branchId=${currentBranch.id}&branchName=${currentBranch.name}`);
+        } else {
+            navigate(`/recipes/${recipeId}/edit`);
+        }
     };
 
     const handleDelete = async () => {
@@ -213,6 +264,10 @@ export default function RecipeDetailPage() {
         <div className='container mx-auto px-4 py-8'>
             <div className='mx-auto max-w-4xl'>
                 <RecipeActionButtons
+                    recipeId={recipe.id}
+                    currentBranch={currentBranch}
+                    onBranchChange={handleBranchChange}
+                    onHistoryClick={handleHistoryClick}
                     isOwner={isOwner}
                     onCopy={handleCopy}
                     onEdit={handleEdit}
@@ -235,27 +290,25 @@ export default function RecipeDetailPage() {
                         className='fixed inset-0 bg-black/50 backdrop-blur-sm'
                         onClick={() => setShowDeleteDialog(false)}
                     />
-                    <div className='relative z-50 m-4 w-full max-w-lg rounded-lg bg-white p-6 shadow-lg'>
-                        <div className='flex flex-col space-y-1.5 text-center sm:text-left'>
-                            <h2 className='text-lg font-semibold leading-none tracking-tight'>Confirm Delete</h2>
-                            <p className='mt-2 text-sm text-gray-600'>
-                                Are you sure you want to delete this recipe? This action cannot be undone.
-                            </p>
+                    <div className='relative bg-white rounded-lg p-6 w-full max-w-md mx-4 shadow-xl'>
+                        <div className='flex items-center justify-between mb-4'>
+                            <h3 className='text-lg font-semibold text-gray-900'>Delete Recipe</h3>
                         </div>
-                        <div className='mt-6 flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2'>
+                        <p className='text-gray-600 mb-6'>
+                            Are you sure you want to delete this recipe? This action cannot be undone.
+                        </p>
+                        <div className='flex justify-end gap-3'>
                             <button
-                                type='button'
                                 onClick={() => setShowDeleteDialog(false)}
-                                className='rounded-lg border border-gray-300 px-4 py-2 font-semibold text-gray-700 transition-colors hover:bg-gray-50 hover:text-gray-900'
+                                className='px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors'
                                 disabled={isDeleting}
                             >
                                 Cancel
                             </button>
                             <button
-                                type='button'
                                 onClick={confirmDelete}
-                                className='rounded-lg bg-[#FF7C75] px-4 py-2 font-semibold text-white transition-colors hover:bg-rose-600'
                                 disabled={isDeleting}
+                                className='px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50'
                             >
                                 {isDeleting ? 'Deleting...' : 'Delete'}
                             </button>

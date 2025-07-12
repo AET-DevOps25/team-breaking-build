@@ -5,9 +5,26 @@ import { z } from 'zod';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { X, Image as ImageIcon, Plus, Trash2 } from 'lucide-react';
+import { X, Image as ImageIcon, Plus, Trash2, GripVertical } from 'lucide-react';
 import { Tag } from '@/lib/services/recipeService';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  DndContext,
+  closestCenter,
+  DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+  arrayMove,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 // Utility function to format tag names from ALL_CAPS_WITH_UNDERSCORES to Capitalized
 function formatTagName(tagName: string): string {
@@ -122,6 +139,203 @@ const stepPlaceholders = [
   'Take a moment to be proud of your creation',
 ] as const;
 
+// Sortable Ingredient Component
+interface SortableIngredientProps {
+  id: string;
+  index: number;
+  register: any;
+  placeholder: string;
+  onRemove: (index: number) => void;
+  canRemove: boolean;
+}
+
+function SortableIngredient({ id, index, register, placeholder, onRemove, canRemove }: SortableIngredientProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`flex items-start gap-4 rounded-lg border bg-white p-3 ${isDragging ? 'opacity-50 shadow-lg' : ''
+        }`}
+    >
+      <div
+        {...attributes}
+        {...listeners}
+        className="flex cursor-grab items-center text-gray-400 hover:text-gray-600 active:cursor-grabbing"
+      >
+        <GripVertical className="size-5" />
+      </div>
+      <div className="flex-1">
+        <Input
+          {...register(`ingredients.${index}.name`)}
+          placeholder={placeholder}
+          className="border-[#FF7C75] focus:border-[#FF7C75] focus:ring-[#FF7C75]"
+        />
+      </div>
+      <div className="w-24">
+        <Input
+          type="number"
+          step="0.01"
+          min="0"
+          {...register(`ingredients.${index}.amount`, { valueAsNumber: true })}
+          placeholder="How much?"
+          className="border-[#FF7C75] focus:border-[#FF7C75] focus:ring-[#FF7C75]"
+        />
+        <p className="mt-1 text-xs text-gray-500">Quantity</p>
+      </div>
+      <div className="w-24">
+        <Input
+          {...register(`ingredients.${index}.unit`)}
+          placeholder="Unit"
+          className="border-[#FF7C75] focus:border-[#FF7C75] focus:ring-[#FF7C75]"
+        />
+      </div>
+      {canRemove && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={() => onRemove(index)}
+          className="text-red-500 hover:bg-red-50 hover:text-red-700"
+        >
+          <Trash2 className="size-4" />
+        </Button>
+      )}
+    </div>
+  );
+}
+
+// Sortable Step Component
+interface SortableStepProps {
+  id: string;
+  index: number;
+  register: any;
+  placeholder: string;
+  onRemove: (index: number) => void;
+  canRemove: boolean;
+  stepImages: (string | null)[];
+  onImageClick: (index: number) => void;
+  onImageChange: (index: number) => (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onImageRemove: (index: number) => (e: React.MouseEvent) => void;
+  stepImageRefs: React.MutableRefObject<(HTMLInputElement | null)[]>;
+}
+
+function SortableStep({
+  id,
+  index,
+  register,
+  placeholder,
+  onRemove,
+  canRemove,
+  stepImages,
+  onImageClick,
+  onImageChange,
+  onImageRemove,
+  stepImageRefs,
+}: SortableStepProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`flex items-start gap-4 rounded-lg border bg-white p-3 ${isDragging ? 'opacity-50 shadow-lg' : ''
+        }`}
+    >
+      <div
+        {...attributes}
+        {...listeners}
+        className="flex cursor-grab items-center text-gray-400 hover:text-gray-600 active:cursor-grabbing"
+      >
+        <GripVertical className="size-5" />
+      </div>
+      <div className="h-[120px] w-1/4">
+        <div
+          onClick={() => onImageClick(index)}
+          className="relative h-full cursor-pointer rounded-lg border-2 border-dashed border-[#FF7C75] p-2 transition-colors hover:border-[#FF7C75]/80"
+        >
+          <input
+            type="file"
+            ref={(el) => {
+              stepImageRefs.current[index] = el;
+            }}
+            onChange={onImageChange(index)}
+            accept="image/*"
+            className="hidden"
+          />
+          {stepImages[index] ? (
+            <div className="relative h-full">
+              <img
+                src={stepImages[index]!}
+                alt={`Step ${index + 1}`}
+                className="size-full rounded-lg object-cover"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="absolute left-2 top-2 bg-white/90 text-red-500 hover:bg-white hover:text-red-700"
+                onClick={onImageRemove(index)}
+              >
+                <Trash2 className="size-4" />
+              </Button>
+            </div>
+          ) : (
+            <div className="flex h-full flex-col items-center justify-center text-gray-500">
+              <ImageIcon className="mb-1 size-8" />
+              <p className="text-sm font-medium">Show us how!</p>
+              <p className="text-xs text-gray-400">Make it visual</p>
+            </div>
+          )}
+        </div>
+      </div>
+      <div className="flex-1">
+        <Textarea
+          {...register(`steps.${index}.details`)}
+          placeholder={placeholder}
+          className="min-h-[120px] border-[#FF7C75] focus:border-[#FF7C75] focus:ring-[#FF7C75]"
+        />
+      </div>
+      {canRemove && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={() => onRemove(index)}
+          className="text-red-500 hover:bg-red-50 hover:text-red-700"
+        >
+          <Trash2 className="size-4" />
+        </Button>
+      )}
+    </div>
+  );
+}
+
 export function RecipeForm({
   onSubmit,
   isSubmitting,
@@ -154,6 +368,20 @@ export function RecipeForm({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const stepImageRefs = useRef<(HTMLInputElement | null)[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Drag and drop state
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [ingredientIds, setIngredientIds] = useState<string[]>([]);
+  const [stepIds, setStepIds] = useState<string[]>([]);
+
+  // Drag sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
 
   // Load tags if using internal state
   useEffect(() => {
@@ -307,6 +535,7 @@ export function RecipeForm({
 
   const addIngredient = () => {
     setValue('ingredients', [...ingredients, { name: '', amount: 0, unit: '' }]);
+    setIngredientIds((prev) => [...prev, `ingredient-${Date.now()}`]);
   };
 
   const removeIngredient = (index: number) => {
@@ -315,12 +544,14 @@ export function RecipeForm({
         'ingredients',
         ingredients.filter((_, i) => i !== index),
       );
+      setIngredientIds((prev) => prev.filter((_, i) => i !== index));
     }
   };
 
   const addStep = () => {
     setValue('steps', [...steps, { order: steps.length + 1, details: '', image: undefined }]);
     setStepImages((prev) => [...prev, null]);
+    setStepIds((prev) => [...prev, `step-${Date.now()}`]);
   };
 
   const removeStep = (index: number) => {
@@ -333,8 +564,73 @@ export function RecipeForm({
         }));
       setValue('steps', newSteps);
       setStepImages((prev) => prev.filter((_, i) => i !== index));
+      setStepIds((prev) => prev.filter((_, i) => i !== index));
     }
   };
+
+  // Drag handlers
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over) return;
+
+    const activeId = active.id as string;
+    const overId = over.id as string;
+
+    if (activeId !== overId) {
+      // Handle ingredient reordering
+      if (activeId.startsWith('ingredient-') && overId.startsWith('ingredient-')) {
+        const oldIndex = ingredientIds.indexOf(activeId);
+        const newIndex = ingredientIds.indexOf(overId);
+
+        if (oldIndex !== -1 && newIndex !== -1) {
+          const newIngredientIds = arrayMove(ingredientIds, oldIndex, newIndex);
+          const newIngredients = arrayMove(ingredients, oldIndex, newIndex);
+
+          setIngredientIds(newIngredientIds);
+          setValue('ingredients', newIngredients);
+        }
+      }
+
+      // Handle step reordering
+      if (activeId.startsWith('step-') && overId.startsWith('step-')) {
+        const oldIndex = stepIds.indexOf(activeId);
+        const newIndex = stepIds.indexOf(overId);
+
+        if (oldIndex !== -1 && newIndex !== -1) {
+          const newStepIds = arrayMove(stepIds, oldIndex, newIndex);
+          const newSteps = arrayMove(steps, oldIndex, newIndex).map((step, i) => ({
+            ...step,
+            order: i + 1,
+          }));
+          const newStepImages = arrayMove(stepImages, oldIndex, newIndex);
+
+          setStepIds(newStepIds);
+          setValue('steps', newSteps);
+          setStepImages(newStepImages);
+        }
+      }
+    }
+
+    setActiveId(null);
+  };
+
+  // Initialize IDs when ingredients or steps change
+  useEffect(() => {
+    if (ingredients.length > 0 && ingredientIds.length !== ingredients.length) {
+      setIngredientIds(ingredients.map((_, i) => `ingredient-${i}-${Date.now()}`));
+    }
+  }, [ingredients.length, ingredientIds.length]);
+
+  useEffect(() => {
+    if (steps.length > 0 && stepIds.length !== steps.length) {
+      setStepIds(steps.map((_, i) => `step-${i}-${Date.now()}`));
+    }
+  }, [steps.length, stepIds.length]);
 
   // Add this effect to update the form when prefillData changes
   useEffect(() => {
@@ -516,49 +812,30 @@ export function RecipeForm({
             Add Ingredient
           </Button>
         </div>
-        {ingredients?.map((_, index) => (
-          <div
-            key={index}
-            className='flex items-start gap-4'
-          >
-            <div className='flex-1'>
-              <Input
-                {...register(`ingredients.${index}.name`)}
-                placeholder={getPlaceholder(shuffledIngredients, index)}
-                className='border-[#FF7C75] focus:border-[#FF7C75] focus:ring-[#FF7C75]'
-              />
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext items={ingredientIds} strategy={verticalListSortingStrategy}>
+            <div className='space-y-3'>
+              {ingredients?.map((_, index) => (
+                ingredientIds[index] && (
+                  <SortableIngredient
+                    key={ingredientIds[index]}
+                    id={ingredientIds[index]}
+                    index={index}
+                    register={register}
+                    placeholder={getPlaceholder(shuffledIngredients, index)}
+                    onRemove={removeIngredient}
+                    canRemove={ingredients.length > 1}
+                  />
+                )
+              ))}
             </div>
-            <div className='w-24'>
-              <Input
-                type='number'
-                step='0.01'
-                min='0'
-                {...register(`ingredients.${index}.amount`, { valueAsNumber: true })}
-                placeholder='How much?'
-                className='border-[#FF7C75] focus:border-[#FF7C75] focus:ring-[#FF7C75]'
-              />
-              <p className='mt-1 text-xs text-gray-500'>Quantity</p>
-            </div>
-            <div className='w-24'>
-              <Input
-                {...register(`ingredients.${index}.unit`)}
-                placeholder='Unit'
-                className='border-[#FF7C75] focus:border-[#FF7C75] focus:ring-[#FF7C75]'
-              />
-            </div>
-            {ingredients.length > 1 && (
-              <Button
-                type='button'
-                variant='ghost'
-                size='icon'
-                onClick={() => removeIngredient(index)}
-                className='text-red-500 hover:bg-red-50 hover:text-red-700'
-              >
-                <Trash2 className='size-4' />
-              </Button>
-            )}
-          </div>
-        ))}
+          </SortableContext>
+        </DndContext>
         {errors.ingredients && <p className='text-sm text-red-500'>{errors.ingredients.message}</p>}
       </div>
 
@@ -588,71 +865,35 @@ export function RecipeForm({
             Add Step
           </Button>
         </div>
-        {steps?.map((_, index) => (
-          <div
-            key={index}
-            className='flex items-start gap-4'
-          >
-            <div className='h-[120px] w-1/4'>
-              <div
-                onClick={() => handleStepImageClick(index)}
-                className='relative h-full cursor-pointer rounded-lg border-2 border-dashed border-[#FF7C75] p-2 transition-colors hover:border-[#FF7C75]/80'
-              >
-                <input
-                  type='file'
-                  ref={(el) => {
-                    stepImageRefs.current[index] = el;
-                  }}
-                  onChange={handleStepImageChange(index)}
-                  accept='image/*'
-                  className='hidden'
-                />
-                {stepImages[index] ? (
-                  <div className='relative h-full'>
-                    <img
-                      src={stepImages[index]!}
-                      alt={`Step ${index + 1}`}
-                      className='size-full rounded-lg object-cover'
-                    />
-                    <Button
-                      type='button'
-                      variant='ghost'
-                      size='icon'
-                      className='absolute left-2 top-2 bg-white/90 text-red-500 hover:bg-white hover:text-red-700'
-                      onClick={handleStepImageRemove(index)}
-                    >
-                      <Trash2 className='size-4' />
-                    </Button>
-                  </div>
-                ) : (
-                  <div className='flex h-full flex-col items-center justify-center text-gray-500'>
-                    <ImageIcon className='mb-1 size-8' />
-                    <p className='text-sm font-medium'>Show us how!</p>
-                    <p className='text-xs text-gray-400'>Make it visual</p>
-                  </div>
-                )}
-              </div>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext items={stepIds} strategy={verticalListSortingStrategy}>
+            <div className='space-y-3'>
+              {steps?.map((_, index) => (
+                stepIds[index] && (
+                  <SortableStep
+                    key={stepIds[index]}
+                    id={stepIds[index]}
+                    index={index}
+                    register={register}
+                    placeholder={`Step ${index + 1}: ${getPlaceholder(shuffledSteps, index)}`}
+                    onRemove={removeStep}
+                    canRemove={steps.length > 1}
+                    stepImages={stepImages}
+                    onImageClick={handleStepImageClick}
+                    onImageChange={handleStepImageChange}
+                    onImageRemove={handleStepImageRemove}
+                    stepImageRefs={stepImageRefs}
+                  />
+                )
+              ))}
             </div>
-            <div className='flex-1'>
-              <Textarea
-                {...register(`steps.${index}.details`)}
-                placeholder={`Step ${index + 1}: ${getPlaceholder(shuffledSteps, index)}`}
-                className='min-h-[120px] border-[#FF7C75] focus:border-[#FF7C75] focus:ring-[#FF7C75]'
-              />
-            </div>
-            {steps.length > 1 && (
-              <Button
-                type='button'
-                variant='ghost'
-                size='icon'
-                onClick={() => removeStep(index)}
-                className='text-red-500 hover:bg-red-50 hover:text-red-700'
-              >
-                <Trash2 className='size-4' />
-              </Button>
-            )}
-          </div>
-        ))}
+          </SortableContext>
+        </DndContext>
         {errors.steps && <p className='text-sm text-red-500'>{errors.steps.message}</p>}
       </div>
 

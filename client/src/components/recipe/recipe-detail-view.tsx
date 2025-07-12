@@ -2,6 +2,7 @@ import { Recipe, RecipeIngredient, RecipeStep } from '@/lib/types/recipe';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Users, Calendar } from 'lucide-react';
+import { UserInfo } from '@/components/user';
 
 interface RecipeDetails {
   servingSize: number;
@@ -54,32 +55,44 @@ export function RecipeDetailView({ recipe, recipeDetails, isLoadingDetails, orig
 
         <p className='text-lg leading-relaxed text-gray-700'>{recipe.description}</p>
 
-        <div className='flex items-center gap-6 text-sm text-gray-600'>
-          <div className='flex items-center gap-2'>
-            <Users className='size-4' />
-            <span>{recipeDetails?.servingSize || recipe.servingSize} servings</span>
-          </div>
-          {recipe.forkedFrom && originalRecipe && (
+        <div className='flex items-center justify-between'>
+          <div className='flex items-center gap-6 text-sm text-gray-600'>
             <div className='flex items-center gap-2'>
-              <svg
-                className='size-4'
-                fill='none'
-                stroke='currentColor'
-                viewBox='0 0 24 24'
-              >
-                <path
-                  strokeLinecap='round'
-                  strokeLinejoin='round'
-                  strokeWidth={2}
-                  d='M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z'
-                />
-              </svg>
-              <span
-                className='cursor-pointer italic text-gray-600 underline hover:text-gray-800'
-                onClick={() => (window.location.href = `/recipes/${originalRecipe.id}`)}
-              >
-                Copied from {originalRecipe.title}
-              </span>
+              <Users className='size-4' />
+              <span>{recipeDetails?.servingSize || recipe.servingSize} servings</span>
+            </div>
+            {recipe.forkedFrom && originalRecipe && (
+              <div className='flex items-center gap-2'>
+                <svg
+                  className='size-4'
+                  fill='none'
+                  stroke='currentColor'
+                  viewBox='0 0 24 24'
+                >
+                  <path
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                    strokeWidth={2}
+                    d='M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z'
+                  />
+                </svg>
+                <span
+                  className='cursor-pointer italic text-gray-600 underline hover:text-gray-800'
+                  onClick={() => (window.location.href = `/recipes/${originalRecipe.id}`)}
+                >
+                  Copied from {originalRecipe.title}
+                </span>
+              </div>
+            )}
+          </div>
+          {recipe.userId && (
+            <div className='flex items-center gap-2'>
+              <span className='text-sm text-gray-600'>By:</span>
+              <UserInfo
+                userId={recipe.userId}
+                size='md'
+                clickable={true}
+              />
             </div>
           )}
         </div>

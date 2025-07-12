@@ -1,4 +1,4 @@
-import { Recipe, RecipeMetadata, CreateRecipeRequest, RecipeMetadataDTO } from '@/lib/types/recipe';
+import { Recipe, RecipeMetadata, CreateRecipeRequest, RecipeMetadataDTO, BranchDTO, CommitDTO, CommitDetailsResponse, ChangeResponse } from '@/lib/types/recipe';
 import { api } from '@/lib/api';
 import { encodeRecipeImageForAPI, decodeRecipeImageFromAPI } from '@/lib/utils';
 
@@ -24,37 +24,9 @@ interface PaginatedRecipeResponse {
   content: RecipeAPIResponse[];
 }
 
-interface BranchDTO {
-  id: number;
-  name: string;
-  recipeId: number;
-  headCommitId: number;
-  createdAt: string;
-}
 
-interface CommitDetailsResponse {
-  commit: {
-    id: number;
-    userId: string;
-    message: string;
-    parentId?: number;
-    createdAt: string;
-  };
-  recipeDetails: {
-    servingSize: number;
-    images?: { base64String?: string }[];
-    recipeIngredients: Array<{
-      name: string;
-      unit: string;
-      amount: number;
-    }>;
-    recipeSteps: Array<{
-      order: number;
-      details: string;
-      images?: { base64String?: string }[];
-    }>;
-  };
-}
+
+
 
 // Helper function to convert API Recipe to client format
 function convertRecipeFromAPI(apiRecipe: RecipeAPIResponse): Recipe {
@@ -215,12 +187,55 @@ export async function commitToBranch(
   branchId: number,
   message: string,
   recipeDetails: CommitDetailsResponse['recipeDetails'],
-): Promise<CommitDetailsResponse> {
+): Promise<CommitDTO> {
   try {
-    const response = await api.post<CommitDetailsResponse>(`/vcs/branches/${branchId}/commit`, {
+    const response = await api.post<CommitDTO>(`/vcs/branches/${branchId}/commit`, {
       message,
       recipeDetails,
     });
+    return response;
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function createBranch(
+  recipeId: number,
+  branchName: string,
+  sourceBranchId: number,
+): Promise<BranchDTO> {
+  try {
+    const response = await api.post<BranchDTO>(`/vcs/recipes/${recipeId}/branches`, {
+      branchName,
+      sourceBranchId,
+    });
+    return response;
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function getBranchHistory(branchId: number): Promise<CommitDTO[]> {
+  try {
+    const response = await api.get<CommitDTO[]>(`/vcs/branches/${branchId}/history`);
+    return response;
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function getCommitDetails(commitId: number): Promise<CommitDetailsResponse> {
+  try {
+    const response = await api.get<CommitDetailsResponse>(`/vcs/commits/${commitId}`);
+    return response;
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function getCommitChanges(commitId: number): Promise<ChangeResponse> {
+  try {
+    const response = await api.get<ChangeResponse>(`/vcs/commits/${commitId}/changes`);
     return response;
   } catch (error) {
     throw error;

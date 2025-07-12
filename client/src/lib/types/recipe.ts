@@ -31,6 +31,34 @@ export interface RecipeDetails {
   recipeSteps: RecipeStep[];
 }
 
+export interface BranchDTO {
+  id: number;
+  name: string;
+  recipeId: number;
+  headCommitId: number;
+  createdAt: string;
+}
+
+export interface CommitDTO {
+  id: number;
+  userId: string;
+  message: string;
+  parentId: number | null;
+  createdAt: string;
+}
+
+export interface CommitDetailsResponse {
+  commitMetadata: CommitDTO;
+  recipeDetails: RecipeDetails;
+}
+
+export interface ChangeResponse {
+  oldDetails: RecipeDetails;
+  currentDetails: RecipeDetails;
+  changes: any; // JsonNode - represents the diff between versions
+  firstCommit: boolean;
+}
+
 export interface RecipeMetadata {
   id?: number;
   userId?: string;
