@@ -9,23 +9,36 @@ services:
         env_file:
             - ./.env
         depends_on:
-            - gateway
+            - recipefy-api-gateway
+            - recipefy-keycloak-service-keycloak-spi
+
+    # ----  KEYCLOAK SPI MICROSERVICE ----
+    recipefy-keycloak-service-keycloak-spi:
+        build:
+            context: ./server/keycloak
+        env_file:
+            - ./.env
+        restart: always
+        container_name: recipefy-keycloak-service-keycloak-spi
+        depends_on:
+            - keycloak
+        environment:
+            KEYCLOAK_BASE_URL: http://keycloak:8080
+
 
     # ----  GATEWAY MICROSERVICE ----
-    gateway:
+    recipefy-api-gateway:
         build:
             context: ./server/api-gateway
         env_file:
             - ./.env
         restart: always
-        container_name: api-gateway
+        container_name: recipefy-api-gateway
         depends_on:
             - keycloak
             - recipe
             - version
             - genai
-        ports:
-            - "8080:8080"
         environment:
             SPRING_CLOUD_GATEWAY_ROUTES_0_ID: version-control-system
             SPRING_CLOUD_GATEWAY_ROUTES_0_URI: http://version:8080
@@ -36,11 +49,15 @@ services:
             SPRING_CLOUD_GATEWAY_ROUTES_1_PREDICATES_0: Path=/recipes/**
 
             SPRING_CLOUD_GATEWAY_ROUTES_2_ID: genai
-            SPRING_CLOUD_GATEWAY_ROUTES_2_URI: http://genai:8000
+            SPRING_CLOUD_GATEWAY_ROUTES_2_URI: http://genai:8080
             SPRING_CLOUD_GATEWAY_ROUTES_2_PREDICATES_0: Path=/genai/**
 
-            APP_SECURITY_CORS_ALLOWED_ORIGINS_0: localhost
-            APP_SECURITY_CORS_ALLOWED_ORIGINS_1: nebeklion.com
+            SPRING_CLOUD_GATEWAY_ROUTES_3_ID: user-recipes
+            SPRING_CLOUD_GATEWAY_ROUTES_3_URI: http://recipe:8080
+            SPRING_CLOUD_GATEWAY_ROUTES_3_PREDICATES_0: Path=/users/*/recipes/**
+
+            APP_SECURITY_CORS_ALLOWED_ORIGINS_0: http://localhost:3000
+            APP_SECURITY_CORS_ALLOWED_ORIGINS_1: https://team-breaking-build.student.k8s.aet.cit.tum.de/
 
             KEYCLOAK_BASE_URL: http://keycloak:8080
             KEYCLOAK_REALMS: recipefy
@@ -52,34 +69,29 @@ services:
         build:
             context: ./server/recipe
         environment:
-            - RECIPE_POSTGRES_URL_HOST=${RECIPE_POSTGRES_URL_HOST}
-            - RECIPE_POSTGRES_URL_PORT=${RECIPE_POSTGRES_URL_PORT}
-            - RECIPE_POSTGRES_USER=${RECIPE_POSTGRES_USER}
-            - RECIPE_POSTGRES_PASSWORD=${RECIPE_POSTGRES_PASSWORD}
-            - RECIPE_POSTGRES_DB_NAME=${RECIPE_POSTGRES_DB_NAME}
-        ports:
-            - "8081:8080"
+            RECIPE_POSTGRES_URL_HOST: postgres
+            RECIPE_POSTGRES_URL_PORT: 5432
+            VERSION_SERVICE_HOST: http://version
+            VERSION_SERVICE_PORT: 8080
+            GENAI_SERVICE_HOST: http://genai
+            GENAI_SERVICE_PORT: 8080
         env_file:
             - ./.env
         depends_on:
             - postgres
+            - version
 
     # ---- VERSION MICROSERVICE -----
     version:
         container_name: version
         restart: always
         environment:
-            - VERSION_POSTGRES_URL_HOST=${VERSION_POSTGRES_URL_HOST}
-            - VERSION_POSTGRES_URL_PORT=${VERSION_POSTGRES_URL_PORT}
-            - VERSION_POSTGRES_DB_NAME=${VERSION_POSTGRES_DB_NAME}
-            - VERSION_POSTGRES_USER=${VERSION_POSTGRES_USER}
-            - VERSION_POSTGRES_PASSWORD=${VERSION_POSTGRES_PASSWORD}
-            - VERSION_MONGO_URL_HOST=${VERSION_MONGO_URL_HOST}
-            - VERSION_MONGO_URL_PORT=${VERSION_MONGO_URL_PORT}
+            VERSION_MONGO_URL_HOST: mongo
+            VERSION_MONGO_URL_PORT: 27017
+            VERSION_POSTGRES_URL_HOST: postgres
+            VERSION_POSTGRES_URL_PORT: 5432
         build:
             context: ./server/version
-        ports:
-            - "8082:8080"
         env_file:
             - ./.env
         depends_on:
@@ -91,16 +103,11 @@ services:
         container_name: postgres
         image: postgres:17
         restart: always
-        environment:
-            - POSTGRES_DB=${POSTGRES_DB}
-            - POSTGRES_USER=${POSTGRES_USER}
-            - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
         env_file:
             - ./.env
-        ports:
-            - "5432:5432"
         volumes:
-            - ./postgres-data:/var/lib/postgresql/data
+            - ./config/init.sql:/docker-entrypoint-initdb.d/db.sql
+            - postgres-data:/var/lib/postgresql/data
 
     # ---- MONGO DB -----
     mongo:
@@ -109,65 +116,62 @@ services:
         restart: always
         env_file:
             - ./.env
-        environment:
-            - MONGO_INITDB_DATABASE=${MONGO_DB}
-            - MONGO_INITDB_ROOT_USERNAME=${MONGO_USER}
-            - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD}
-        ports:
-            - "27017:27017"
         volumes:
-            - ./mongo-data:/data/db
+            - mongo-data:/data/db
 
     # ---- KEYCLOACK ----
     keycloak:
         image: quay.io/keycloak/keycloak:26.2.4
         container_name: keycloak
+        ports:
+            - "8080:8080"
         env_file:
             - ./.env
         depends_on:
             - postgres
         restart: always
         environment:
-            - CLIENT_ID=${CLIENT_ID}
-            - CLIENT_SECRET=${CLIENT_SECRET}
-
-            - KC_BOOTSTRAP_ADMIN_USERNAME=${KC_BOOTSTRAP_ADMIN_USERNAME}
-            - KC_BOOTSTRAP_ADMIN_PASSWORD=${KC_BOOTSTRAP_ADMIN_PASSWORD}
-
-            - KC_DB_URL_HOST=${KC_DB_URL_HOST}
-            - KC_DB_URL_PORT=${KC_DB_URL_PORT}
-            - KC_DB_DATABASE=${KC_DB_DATABASE}
-            - KC_DB_USERNAME=${KC_DB_USERNAME}
-            - KC_DB_PASSWORD=${KC_DB_PASSWORD}
+            - KC_DB_URL_HOST=postgres
+            - KC_DB_URL_PORT=5432
             - KC_HOSTNAME=keycloak
             - KC_PROXY=edge
             - KC_LOG_LEVEL=info
             - KC_METRICS_ENABLED=true
             - KC_HEALTH_ENABLED=true
             - KC_HTTP_ENABLED=true
-        command: start --import-realm
-        ports:
-            - "8083:8080"
-            - "8443:8443"
+        command: start --import-realm --verbose
         volumes:
             - ./config/realm-export.json:/opt/keycloak/data/import/realm.json
-            - ./keycloak-data:/opt/keycloak/data
+            - keycloak-data:/opt/keycloak/data
+
+    transformers:
+        image: cr.weaviate.io/semitechnologies/transformers-inference:sentence-transformers-multi-qa-MiniLM-L6-cos-v1
+        restart: always
+        container_name: transformers
+        environment:
+            - ENABLE_CUDA=0
+            - MODEL_NAME="sentence-transformers-multi-qa-MiniLM-L6-cos-v1"
+            - BATCH_SIZE=32
+            - MAX_LENGTH=512
 
     # ---- WEAVIATE VECTOR DATABASE ----
     weaviate:
         image: semitechnologies/weaviate:1.24.1
         container_name: weaviate
         restart: always
-        ports:
-            - "8084:8080"
+        depends_on:
+            - transformers
         environment:
             - QUERY_DEFAULTS_LIMIT=25
             - AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=true
             - PERSISTENCE_DATA_PATH=/var/lib/weaviate
             - CLUSTER_HOSTNAME=node1
             - LOG_LEVEL=info
+            - TRANSFORMERS_INFERENCE_API=http://transformers:8080
+            - DEFAULT_VECTORIZER_MODULE=text2vec-transformers
+            - ENABLE_MODULES=text2vec-transformers
         volumes:
-            - ./weaviate-data:/var/lib/weaviate
+            - weaviate-data:/var/lib/weaviate
 
     # ---- GENAI MICROSERVICE ----
     genai:
@@ -175,18 +179,21 @@ services:
         build:
             context: ./genai
         restart: always
-        ports:
-            - "8085:8080"
         env_file:
             - ./.env
         environment:
-            - LLM_MODEL=${LLM_MODEL}
-            - LLM_TEMPERATURE=${LLM_TEMPERATURE}
-            - OPEN_WEBUI_API_KEY=${OPEN_WEBUI_API_KEY}
-            - LLM_BASE_URL=${LLM_BASE_URL}
-            - WEAVIATE_HOST=${WEAVIATE_HOST}
-            - WEAVIATE_PORT=${WEAVIATE_PORT}
-            - DEBUG=${DEBUG:-false}
-            - LOG_LEVEL=${LOG_LEVEL:-INFO}
+            - LLM_MODEL=llama3.3:latest
+            - LLM_TEMPERATURE=0.7
+            - LLM_BASE_URL=https://gpu.aet.cit.tum.de/api/
+            - WEAVIATE_HOST=weaviate
+            - WEAVIATE_PORT=8080
+            - DEBUG=false
+            - LOG_LEVEL=INFO
         depends_on:
             - weaviate
+
+volumes:
+    mongo-data:
+    weaviate-data:
+    postgres-data:
+    keycloak-data:
