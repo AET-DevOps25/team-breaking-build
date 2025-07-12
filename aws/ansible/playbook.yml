@@ -1,0 +1,105 @@
+- name: Configure EC2 instance and deploy app
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Update apt package cache
+      apt:
+        update_cache: yes
+
+    - name: Install required system packages
+      apt:
+        pkg:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+          - python3-pip
+          - virtualenv
+          - python3-setuptools
+        state: latest
+        update_cache: true
+
+    - name: Add Docker GPG apt Key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker Repository
+      apt_repository:
+        repo: deb https://download.docker.com/linux/ubuntu focal stable
+        state: present
+
+    - name: Update apt and install docker-ce
+      apt:
+        name: docker-ce
+        state: latest
+        update_cache: true
+
+    - name: Install Docker Module for Python
+      pip:
+        name: docker
+
+    - name: Add ubuntu user to docker group
+      ansible.builtin.user:
+        name: ubuntu
+        groups: docker
+        append: yes
+
+    - name: Reboot to apply group membership
+      reboot:
+
+    - name: Ensure Docker service is running
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Install Docker Compose v2 plugin (latest) for ubuntu user
+      become_user: ubuntu
+      shell: |
+        mkdir -p ~/.docker/cli-plugins
+        curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
+        chmod +x ~/.docker/cli-plugins/docker-compose
+
+    - name: Verify Docker Compose version
+      become_user: ubuntu
+      shell: docker compose version
+      register: compose_version_output
+
+    - name: Print Docker Compose version
+      debug:
+        msg: "{{ compose_version_output.stdout }}"
+
+    - name: Copy docker-compose.yml
+      copy:
+        src: docker-compose.yml
+        dest: /home/ubuntu/docker-compose.yml
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
+
+    - name: Copy .env_vault
+      copy:
+        src: .env_vault
+        dest: /home/ubuntu/.env_vault
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
+
+    - name: Copy config directory to EC2
+      copy:
+        src: config/
+        dest: /home/ubuntu/config/
+        owner: ubuntu
+        group: ubuntu
+        mode: '0755'
+
+    - name: Launch containers using docker-compose (async)
+      become: true
+      become_user: ubuntu
+      shell: docker compose -f /home/ubuntu/docker-compose.yml up -d --build
+      args:
+        chdir: /home/ubuntu
+      async: 1200
+      poll: 30

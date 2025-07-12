@@ -377,3 +377,10 @@ sketch
 # gitignore template for Vue.js projects
 #
 # Recommended template: Node.gitignore
+
+# Terraform
+aws/terraform/.terraform
+aws/terraform/terraform.tfstate
+aws/terraform/terraform.tfstate.backup
+aws/terraform/.terraform.lock.hcl
+aws/ansible/.vault_password
