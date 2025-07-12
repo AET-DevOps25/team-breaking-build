@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
 
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
@@ -40,5 +42,10 @@ public class AuthController {
     @PostMapping("/refresh")
     public Mono<TokenResponse> refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
         return keycloakService.refreshToken(request);
+    }
+
+    @GetMapping("/users/{userId}")
+    public Mono<UserDetails> getUser(@PathVariable UUID userId) {
+        return keycloakService.getUser(userId);
     }
 }

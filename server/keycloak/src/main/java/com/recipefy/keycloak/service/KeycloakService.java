@@ -12,6 +12,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -80,5 +81,12 @@ public class KeycloakService {
                 .bodyValue(body)
                 .retrieve()
                 .bodyToMono(TokenResponse.class);
+    }
+
+    public Mono<UserDetails> getUser(UUID userId) {
+        return keycloakAdminClient.get()
+                .uri(properties.getAdminUri() + "/users/" + userId)
+                .retrieve()
+                .bodyToMono(UserDetails.class);
     }
 }
