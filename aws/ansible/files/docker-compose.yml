@@ -1,0 +1,193 @@
+services:
+  # ---- CLIENT -----
+  client:
+    container_name: client
+    image: ghcr.io/aet-devops25/team-breaking-build/client:latest
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./.env_vault
+    depends_on:
+      - recipefy-api-gateway
+      - recipefy-keycloak-service-keycloak-spi
+
+  # ----  KEYCLOAK SPI MICROSERVICE ----
+  recipefy-keycloak-service-keycloak-spi:
+    image: ghcr.io/aet-devops25/team-breaking-build/server/keycloak-service:latest
+    env_file:
+      - ./.env_vault
+    restart: always
+    container_name: recipefy-keycloak-service-keycloak-spi
+    depends_on:
+      - keycloak
+    environment:
+      KEYCLOAK_BASE_URL: http://keycloak:8080
+
+
+  # ----  GATEWAY MICROSERVICE ----
+  recipefy-api-gateway:
+    image: ghcr.io/aet-devops25/team-breaking-build/server/api-gateway:latest
+    env_file:
+      - ./.env_vault
+    restart: always
+    container_name: recipefy-api-gateway
+    depends_on:
+      - keycloak
+      - recipe
+      - version
+      - genai
+    environment:
+      SPRING_CLOUD_GATEWAY_ROUTES_0_ID: version-control-system
+      SPRING_CLOUD_GATEWAY_ROUTES_0_URI: http://version:8080
+      SPRING_CLOUD_GATEWAY_ROUTES_0_PREDICATES_0: Path=/vcs/**
+
+      SPRING_CLOUD_GATEWAY_ROUTES_1_ID: recipes
+      SPRING_CLOUD_GATEWAY_ROUTES_1_URI: http://recipe:8080
+      SPRING_CLOUD_GATEWAY_ROUTES_1_PREDICATES_0: Path=/recipes/**
+
+      SPRING_CLOUD_GATEWAY_ROUTES_2_ID: genai
+      SPRING_CLOUD_GATEWAY_ROUTES_2_URI: http://genai:8080
+      SPRING_CLOUD_GATEWAY_ROUTES_2_PREDICATES_0: Path=/genai/**
+
+      SPRING_CLOUD_GATEWAY_ROUTES_3_ID: user-recipes
+      SPRING_CLOUD_GATEWAY_ROUTES_3_URI: http://recipe:8080
+      SPRING_CLOUD_GATEWAY_ROUTES_3_PREDICATES_0: Path=/users/*/recipes/**
+
+      APP_SECURITY_CORS_ALLOWED_ORIGINS_0: http://localhost:3000
+      APP_SECURITY_CORS_ALLOWED_ORIGINS_1: https://team-breaking-build.student.k8s.aet.cit.tum.de/
+
+      KEYCLOAK_BASE_URL: http://keycloak:8080
+      KEYCLOAK_REALMS: recipefy
+
+  # ---- RECIPE MICROSERVICE -----
+  recipe:
+    container_name: recipe
+    restart: always
+    image: ghcr.io/aet-devops25/team-breaking-build/server/recipe:latest
+    environment:
+      RECIPE_POSTGRES_URL_HOST: postgres
+      RECIPE_POSTGRES_URL_PORT: 5432
+      VERSION_SERVICE_HOST: http://version
+      VERSION_SERVICE_PORT: 8080
+      GENAI_SERVICE_HOST: http://genai
+      GENAI_SERVICE_PORT: 8080
+    env_file:
+      - ./.env_vault
+    depends_on:
+      - postgres
+      - version
+
+  # ---- VERSION MICROSERVICE -----
+  version:
+    container_name: version
+    restart: always
+    image: ghcr.io/aet-devops25/team-breaking-build/server/version:latest
+    environment:
+      VERSION_MONGO_URL_HOST: mongo
+      VERSION_MONGO_URL_PORT: 27017
+      VERSION_POSTGRES_URL_HOST: postgres
+      VERSION_POSTGRES_URL_PORT: 5432
+    env_file:
+      - ./.env_vault
+    depends_on:
+      - postgres
+      - mongo
+
+  # ---- POSTGRESQL -----
+  postgres:
+    container_name: postgres
+    image: postgres:17
+    restart: always
+    env_file:
+      - ./.env_vault
+    volumes:
+      - ./config/init.sql:/docker-entrypoint-initdb.d/db.sql
+      - postgres-data:/var/lib/postgresql/data
+
+  # ---- MONGO DB -----
+  mongo:
+    container_name: mongo
+    image: mongo:6.0
+    restart: always
+    env_file:
+      - ./.env_vault
+    volumes:
+      - mongo-data:/data/db
+
+  # ---- KEYCLOACK ----
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.2.4
+    container_name: keycloak
+    ports:
+      - "8080:8080"
+    env_file:
+      - ./.env_vault
+    depends_on:
+      - postgres
+    restart: always
+    environment:
+      - KC_DB_URL_HOST=postgres
+      - KC_DB_URL_PORT=5432
+      - KC_HOSTNAME=keycloak
+      - KC_PROXY=edge
+      - KC_LOG_LEVEL=info
+      - KC_METRICS_ENABLED=true
+      - KC_HEALTH_ENABLED=true
+      - KC_HTTP_ENABLED=true
+    command: start --import-realm --verbose
+    volumes:
+      - ./config/realm-export.json:/opt/keycloak/data/import/realm.json
+      - keycloak-data:/opt/keycloak/data
+
+  transformers:
+    image: cr.weaviate.io/semitechnologies/transformers-inference:sentence-transformers-multi-qa-MiniLM-L6-cos-v1
+    restart: always
+    container_name: transformers
+    environment:
+      - ENABLE_CUDA=0
+      - MODEL_NAME="sentence-transformers-multi-qa-MiniLM-L6-cos-v1"
+      - BATCH_SIZE=32
+      - MAX_LENGTH=512
+
+  # ---- WEAVIATE VECTOR DATABASE ----
+  weaviate:
+    image: semitechnologies/weaviate:1.24.1
+    container_name: weaviate
+    restart: always
+    depends_on:
+      - transformers
+    environment:
+      - QUERY_DEFAULTS_LIMIT=25
+      - AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=true
+      - PERSISTENCE_DATA_PATH=/var/lib/weaviate
+      - CLUSTER_HOSTNAME=node1
+      - LOG_LEVEL=info
+      - TRANSFORMERS_INFERENCE_API=http://transformers:8080
+      - DEFAULT_VECTORIZER_MODULE=text2vec-transformers
+      - ENABLE_MODULES=text2vec-transformers
+    volumes:
+      - weaviate-data:/var/lib/weaviate
+
+  # ---- GENAI MICROSERVICE ----
+  genai:
+    container_name: genai
+    image: ghcr.io/aet-devops25/team-breaking-build/genai:latest
+    restart: always
+    env_file:
+      - ./.env_vault
+    environment:
+      - LLM_MODEL=llama3.3:latest
+      - LLM_TEMPERATURE=0.7
+      - LLM_BASE_URL=https://gpu.aet.cit.tum.de/api/
+      - WEAVIATE_HOST=weaviate
+      - WEAVIATE_PORT=8080
+      - DEBUG=false
+      - LOG_LEVEL=INFO
+    depends_on:
+      - weaviate
+
+volumes:
+  mongo-data:
+  weaviate-data:
+  postgres-data:
+  keycloak-data:
