@@ -2,6 +2,7 @@ import { Recipe } from '@/lib/types/recipe';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ImageIcon, Users, Utensils, FileText, Tags } from 'lucide-react';
+import { UserInfo } from '@/components/user';
 
 interface RecipeCardProps {
   recipe: Recipe;
@@ -56,9 +57,18 @@ export function RecipeCard({ recipe, onClick }: RecipeCardProps) {
             </Badge>
           ))}
         </div>
-        <div className='flex items-center text-sm text-gray-500'>
-          <Users className='mr-1 size-4' />
-          <span>{recipe.servingSize} servings</span>
+        <div className='flex items-center justify-between text-sm text-gray-500'>
+          <div className='flex items-center'>
+            <Users className='mr-1 size-4' />
+            <span>{recipe.servingSize} servings</span>
+          </div>
+          {recipe.userId && (
+            <UserInfo
+              userId={recipe.userId}
+              size='sm'
+              clickable={false}
+            />
+          )}
         </div>
       </CardContent>
     </Card>

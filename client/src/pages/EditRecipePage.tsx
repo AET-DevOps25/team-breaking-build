@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { RecipeForm } from '@/components/recipe/recipe-form';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
@@ -36,6 +36,7 @@ type RecipeFormData = {
 export default function EditRecipePage() {
     const params = useParams();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const { user } = useAuth();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [availableTags, setAvailableTags] = useState<Tag[]>([]);
@@ -68,7 +69,7 @@ export default function EditRecipePage() {
             images?: Array<{ base64String?: string }>;
         }>;
     } | null>(null);
-    const [mainBranch, setMainBranch] = useState<{
+    const [selectedBranch, setSelectedBranch] = useState<{
         id: number;
         name: string;
         recipeId: number;
@@ -111,13 +112,31 @@ export default function EditRecipePage() {
                 const details = await getRecipeDetails(recipeId);
                 setRecipeDetails(details);
 
-                // Fetch branches to get main branch
+                // Fetch branches and determine which branch to use
                 const branches = await getRecipeBranches(recipeId);
-                const main = branches.find(
-                    (branch: { name: string; id: number; recipeId: number; headCommitId: number; createdAt: string }) =>
-                        branch.name === 'main',
-                );
-                setMainBranch(main || null);
+                
+                // Check if branch information is provided in URL parameters
+                const urlBranchId = searchParams.get('branchId');
+                const urlBranchName = searchParams.get('branchName');
+                
+                let targetBranch = null;
+                
+                if (urlBranchId && urlBranchName) {
+                    // Try to find the branch by ID
+                    targetBranch = branches.find((branch) => branch.id === Number(urlBranchId));
+                    
+                    // If not found by ID, try by name as fallback
+                    if (!targetBranch) {
+                        targetBranch = branches.find((branch) => branch.name === urlBranchName);
+                    }
+                }
+                
+                // If no branch found from URL params, default to main branch
+                if (!targetBranch) {
+                    targetBranch = branches.find((branch) => branch.name === 'main');
+                }
+                
+                setSelectedBranch(targetBranch || null);
 
                 // Prepare prefill data
                 const prefill: RecipeFormData = {
@@ -180,7 +199,7 @@ export default function EditRecipePage() {
     }, [recipeId, navigate]);
 
     const handleSubmit = async (data: RecipeFormData) => {
-        if (!user || !recipe || !mainBranch || !recipeId) {
+        if (!user || !recipe || !selectedBranch || !recipeId) {
             toast.error('You must be logged in to edit a recipe');
             return;
         }
@@ -254,11 +273,16 @@ export default function EditRecipePage() {
                     recipeSteps,
                 };
 
-                await commitToBranch(mainBranch.id, commitMessage, recipeDetails);
+                await commitToBranch(selectedBranch.id, commitMessage, recipeDetails);
             }
 
             toast.success('Recipe updated successfully');
-            navigate(`/recipes/${recipeId}`);
+            // Navigate back to the detail page with branch information
+            if (selectedBranch) {
+                navigate(`/recipes/${recipeId}?branchId=${selectedBranch.id}&branchName=${selectedBranch.name}`);
+            } else {
+                navigate(`/recipes/${recipeId}`);
+            }
         } catch (error) {
             console.error('Failed to update recipe:', error);
             toast.error('Failed to update recipe');
