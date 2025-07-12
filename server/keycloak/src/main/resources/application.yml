@@ -2,6 +2,17 @@ spring:
   application:
     name: keycloak
 
+logging:
+  level:
+    root: INFO
+    com.recipefy.keycloak: DEBUG
+    com.recipefy.keycloak.controller: DEBUG
+    com.recipefy.keycloak.service: DEBUG
+    com.recipefy.keycloak.config: DEBUG
+    org.springframework.web: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
 keycloak:
   baseUrl: https://keycloak.team-breaking-build.student.k8s.aet.cit.tum.de
   realm: recipefy
@@ -21,8 +32,17 @@ management:
       probes:
         enabled: true
       show-details: always
+    prometheus:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,prometheus
 
