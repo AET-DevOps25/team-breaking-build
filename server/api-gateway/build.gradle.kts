@@ -27,6 +27,10 @@ dependencies {
     implementation("org.springframework.cloud:spring-cloud-starter-gateway")
     implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
+    implementation("io.micrometer:micrometer-registry-prometheus")
+    implementation("org.springframework.boot:spring-boot-starter-logging")
+    implementation("ch.qos.logback:logback-classic")
+    implementation("net.logstash.logback:logstash-logback-encoder:7.4")
 
     implementation("com.nimbusds:oauth2-oidc-sdk:11.24")
     implementation("org.springdoc:springdoc-openapi-starter-webflux-ui:2.3.0")

@@ -20,8 +20,8 @@ container:
 
 podAnnotations:
   prometheus.io/scrape: "true"
-  prometheus.io/path: "/actuator/prometheus"
-  prometheus.io/port: "8080"
+  prometheus.io/path: "/health"
+  prometheus.io/port: "3000"
   cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
   app.kubernetes.io/version: "1.0.0"
   sidecar.istio.io/inject: "true"

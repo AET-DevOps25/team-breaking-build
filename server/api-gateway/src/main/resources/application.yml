@@ -12,6 +12,18 @@ spring:
           uri: http://localhost:8082
           predicates:
             - Path=/version
+
+logging:
+  level:
+    root: INFO
+    com.recipefy.gateway: DEBUG
+    com.recipefy.gateway.config: DEBUG
+    com.recipefy.gateway.controller: DEBUG
+    org.springframework.web: DEBUG
+    org.springframework.cloud.gateway: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
 app:
   security:
     cors:
@@ -31,7 +43,16 @@ management:
       probes:
         enabled: true
       show-details: always
+    prometheus:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,prometheus

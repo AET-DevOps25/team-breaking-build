@@ -29,6 +29,11 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	implementation 'org.springframework.boot:spring-boot-starter-aop'
+	implementation 'io.micrometer:micrometer-registry-prometheus'
+	implementation 'org.springframework.boot:spring-boot-starter-logging'
+	implementation 'ch.qos.logback:logback-classic'
+	implementation 'net.logstash.logback:logstash-logback-encoder:7.4'
 
 	// Lombok
 	compileOnly 'org.projectlombok:lombok'
