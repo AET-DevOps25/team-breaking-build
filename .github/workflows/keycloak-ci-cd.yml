@@ -63,4 +63,4 @@ jobs:
           helm repo add bitnami https://charts.bitnami.com/bitnami
           helm repo update
           helm upgrade ${{ env.RELEASE_NAME }} ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} \
-            -n ${{ env.HNAMESPACE }} -f ${{ env.CHART_PATH }}/values.yaml
+            -n ${{ env.NAMESPACE }} -f ${{ env.CHART_PATH }}/values.yaml
