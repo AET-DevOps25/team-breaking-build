@@ -1,10 +1,6 @@
 name: CI/CD Pipeline for Keycloak
 
 on:
-  push:
-    paths:
-      - ".github/workflows/keycloak-ci-cd.yml"
-      - 'helm/keycloak/**'
   workflow_dispatch:
 
 env:
