@@ -8,20 +8,12 @@ from fastapi.middleware.cors import CORSMiddleware
 import logging
 from typing import Callable
 
-# Prometheus metrics imports
-from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
+# Prometheus instrumentator import
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from request_models import ChatRequest, RecipeIndexRequest, RecipeDeleteRequest, RecipeSuggestionRequest
 from response_models import ChatResponse, RecipeIndexResponse, RecipeDeleteResponse, RecipeSuggestionResponse, HealthResponse
 from llm import RecipeLLM
-
-# Prometheus metrics
-REQUEST_COUNT = Counter('genai_requests_total', 'Total number of requests', ['method', 'endpoint', 'status'])
-REQUEST_DURATION = Histogram('genai_request_duration_seconds', 'Request duration in seconds', ['method', 'endpoint'])
-ACTIVE_REQUESTS = Gauge('genai_active_requests', 'Number of active requests')
-LLM_OPERATIONS = Counter('genai_llm_operations_total', 'Total number of LLM operations', ['operation_type', 'status'])
-VECTOR_OPERATIONS = Counter('genai_vector_operations_total', 'Total number of vector operations', ['operation_type', 'status'])
-SERVICE_HEALTH = Gauge('genai_service_health', 'Service health status (1=healthy, 0=unhealthy)')
 
 # Enhanced logging configuration
 class StructuredFormatter(logging.Formatter):
@@ -71,14 +63,11 @@ structured_logger.setLevel(logging.INFO)
 
 logger = logging.getLogger(__name__)
 
-# Add request ID tracking and Prometheus metrics middleware
+# Add request ID tracking middleware
 async def add_request_id_middleware(request: Request, call_next: Callable) -> Response:
-    """Add request ID to all requests for tracing and collect Prometheus metrics"""
+    """Add request ID to all requests for tracing"""
     request_id = str(uuid.uuid4())
     request.state.request_id = request_id
-    
-    # Track active requests
-    ACTIVE_REQUESTS.inc()
     
     # Log incoming request
     start_time = time.time()
@@ -101,18 +90,6 @@ async def add_request_id_middleware(request: Request, call_next: Callable) -> Re
         
         # Calculate request duration
         duration_ms = round((time.time() - start_time) * 1000, 2)
-        duration_seconds = (time.time() - start_time)
-        
-        # Update Prometheus metrics
-        REQUEST_COUNT.labels(
-            method=request.method, 
-            endpoint=request.url.path, 
-            status=str(response.status_code)
-        ).inc()
-        REQUEST_DURATION.labels(
-            method=request.method, 
-            endpoint=request.url.path
-        ).observe(duration_seconds)
         
         # Log response
         structured_logger.info(
@@ -134,18 +111,6 @@ async def add_request_id_middleware(request: Request, call_next: Callable) -> Re
         
     except Exception as e:
         duration_ms = round((time.time() - start_time) * 1000, 2)
-        duration_seconds = (time.time() - start_time)
-        
-        # Update Prometheus metrics for failed requests
-        REQUEST_COUNT.labels(
-            method=request.method, 
-            endpoint=request.url.path, 
-            status="500"
-        ).inc()
-        REQUEST_DURATION.labels(
-            method=request.method, 
-            endpoint=request.url.path
-        ).observe(duration_seconds)
         
         structured_logger.error(
             f"Request failed: {request.method} {request.url.path} - {str(e)}",
@@ -159,9 +124,6 @@ async def add_request_id_middleware(request: Request, call_next: Callable) -> Re
             }
         )
         raise
-    finally:
-        # Decrement active requests
-        ACTIVE_REQUESTS.dec()
 
 # Global LLM instance
 llm_instance: RecipeLLM = None
@@ -210,6 +172,9 @@ app = FastAPI(
     description="GenAI Recipe Service - Vector operations and LLM interactions for recipes",
     lifespan=lifespan
 )
+
+# Add Prometheus metrics
+Instrumentator().instrument(app).expose(app)
 
 # Add middleware
 app.middleware("http")(add_request_id_middleware)
@@ -306,22 +271,6 @@ async def health_check(request: Request):
             services={"error": str(e)}
         )
 
-@app.get("/metrics")
-async def metrics():
-    """Prometheus metrics endpoint"""
-    # Update service health metric based on current status
-    try:
-        if llm_instance:
-            services_status = llm_instance.get_health_status()
-            overall_health = 1 if all("healthy" in status for status in services_status.values()) else 0
-        else:
-            overall_health = 0
-        SERVICE_HEALTH.set(overall_health)
-    except Exception:
-        SERVICE_HEALTH.set(0)
-    
-    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
-
 @app.post("/genai/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest, http_request: Request):
     """Chat with the AI assistant for recipe search and creation"""
@@ -354,9 +303,6 @@ async def chat(request: ChatRequest, http_request: Request):
         response = llm_instance.chat(request.message)
         duration_ms = round((time.time() - start_time) * 1000, 2)
         
-        # Update LLM operation metrics
-        LLM_OPERATIONS.labels(operation_type='chat', status='success').inc()
-        
         structured_logger.info(
             "Chat request completed successfully",
             extra={
@@ -375,9 +321,6 @@ async def chat(request: ChatRequest, http_request: Request):
         
     except Exception as e:
         duration_ms = round((time.time() - start_time) * 1000, 2)
-        
-        # Update LLM operation metrics for failures
-        LLM_OPERATIONS.labels(operation_type='chat', status='error').inc()
         
         logger.error(f"Error in chat: {e}", exc_info=True)
         structured_logger.error(
@@ -430,9 +373,6 @@ async def index_recipe(request: RecipeIndexRequest, http_request: Request):
         duration_ms = round((time.time() - start_time) * 1000, 2)
         
         if success:
-            # Update vector operation metrics for success
-            VECTOR_OPERATIONS.labels(operation_type='index', status='success').inc()
-            
             structured_logger.info(
                 f"Recipe indexed successfully: {request.recipe.metadata.title}",
                 extra={
@@ -451,9 +391,6 @@ async def index_recipe(request: RecipeIndexRequest, http_request: Request):
                 recipe_id=request.recipe.metadata.id
             )
         else:
-            # Update vector operation metrics for failure
-            VECTOR_OPERATIONS.labels(operation_type='index', status='error').inc()
-            
             structured_logger.error(
                 f"Recipe indexing failed: {request.recipe.metadata.title}",
                 extra={
@@ -471,9 +408,6 @@ async def index_recipe(request: RecipeIndexRequest, http_request: Request):
             
     except Exception as e:
         duration_ms = round((time.time() - start_time) * 1000, 2)
-        
-        # Update vector operation metrics for exceptions
-        VECTOR_OPERATIONS.labels(operation_type='index', status='error').inc()
         
         logger.error(f"Error indexing recipe: {e}", exc_info=True)
         structured_logger.error(
@@ -524,9 +458,6 @@ async def delete_recipe(recipe_id: str, http_request: Request):
         duration_ms = round((time.time() - start_time) * 1000, 2)
         
         if success:
-            # Update vector operation metrics for success
-            VECTOR_OPERATIONS.labels(operation_type='delete', status='success').inc()
-            
             structured_logger.info(
                 f"Recipe deleted successfully: {recipe_id}",
                 extra={
@@ -544,9 +475,6 @@ async def delete_recipe(recipe_id: str, http_request: Request):
                 recipe_id=recipe_id
             )
         else:
-            # Update vector operation metrics for failure
-            VECTOR_OPERATIONS.labels(operation_type='delete', status='error').inc()
-            
             structured_logger.error(
                 f"Recipe deletion failed: {recipe_id}",
                 extra={
@@ -563,9 +491,6 @@ async def delete_recipe(recipe_id: str, http_request: Request):
             
     except Exception as e:
         duration_ms = round((time.time() - start_time) * 1000, 2)
-        
-        # Update vector operation metrics for exceptions
-        VECTOR_OPERATIONS.labels(operation_type='delete', status='error').inc()
         
         logger.error(f"Error deleting recipe: {e}", exc_info=True)
         structured_logger.error(
@@ -615,9 +540,6 @@ async def suggest_recipe(request: RecipeSuggestionRequest, http_request: Request
         response = llm_instance.suggest_recipe(request.query)
         duration_ms = round((time.time() - start_time) * 1000, 2)
         
-        # Update LLM operation metrics for success
-        LLM_OPERATIONS.labels(operation_type='suggest', status='success').inc()
-        
         structured_logger.info(
             "Recipe suggestion completed successfully",
             extra={
@@ -635,9 +557,6 @@ async def suggest_recipe(request: RecipeSuggestionRequest, http_request: Request
         
     except Exception as e:
         duration_ms = round((time.time() - start_time) * 1000, 2)
-        
-        # Update LLM operation metrics for failures
-        LLM_OPERATIONS.labels(operation_type='suggest', status='error').inc()
         
         logger.error(f"Error in recipe suggestion: {e}", exc_info=True)
         structured_logger.error(

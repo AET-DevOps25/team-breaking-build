@@ -7,8 +7,8 @@ on:
   workflow_dispatch:
 
 env:
-  HELM_NAMESPACE: team-breaking-build
-  HELM_RELEASE_NAME: recipefy-transformers
+  HELM_NAMESPACE: recipefy
+  HELM_RELEASE_NAME: transformers
   CHART_PATH: ./helm/transformers
 
 jobs:

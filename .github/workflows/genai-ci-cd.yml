@@ -11,9 +11,11 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: genai
   WORKING_DIRECTORY: genai
-  HELM_NAMESPACE: team-breaking-build
-  HELM_RELEASE_NAME: recipefy-genai
+  HELM_NAMESPACE: recipefy
+  HELM_RELEASE_NAME: genai
   CHART_PATH: ./helm/genai
+  SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
+  SECRET_FILE: ./helm/genai/templates/secret.yaml
 
 jobs:
   test:
@@ -122,8 +124,21 @@ jobs:
           method: kubeconfig
           kubeconfig: ${{ secrets.KUBE_CONFIG }}
 
+      - name: Set up SOPS
+        uses: nhedger/setup-sops@v2
+        with:
+          version: 3.8.1
+
+      - name: Decrypt secret
+        run: |
+          sops --decrypt "$SECRET_FILE" > tmp && mv tmp "$SECRET_FILE"
+
+      - name: Set image tag
+        run: echo "IMAGE_TAG=$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_ENV
+
       - name: Deploy Helm Chart
         run: |
           helm upgrade --install ${{ env.HELM_RELEASE_NAME }} ${{ env.CHART_PATH }} \
             --namespace ${{ env.HELM_NAMESPACE }} \
-            --wait --timeout 5m 
+            --set image.tag=sha-${{ env.IMAGE_TAG }} \
+            --wait --timeout 5m

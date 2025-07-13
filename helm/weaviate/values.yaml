@@ -91,7 +91,7 @@ env:
   - name: TRANSFORMERS_INFERENCE_API
     valueFrom:
       configMapKeyRef:
-        name: recipefy-config
+        name: weaviate-config
         key: TRANSFORMERS_INFERENCE_API
 
 # Persistent volume

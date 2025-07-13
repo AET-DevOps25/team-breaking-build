@@ -7,8 +7,8 @@ on:
   workflow_dispatch:
 
 env:
-  HELM_NAMESPACE: team-breaking-build
-  HELM_RELEASE_NAME: recipefy-weaviate
+  HELM_NAMESPACE: recipefy-database
+  HELM_RELEASE_NAME: weaviate
   CHART_PATH: ./helm/weaviate
 
 jobs:
