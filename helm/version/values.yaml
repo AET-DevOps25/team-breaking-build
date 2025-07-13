@@ -1,4 +1,3 @@
-prefix: recipefy
 name: version
 
 replicaCount: 2
@@ -64,50 +63,50 @@ env:
   - name: VERSION_POSTGRES_URL_HOST
     valueFrom:
       configMapKeyRef:
-        name: recipefy-version-config
+        name: version-config
         key: VERSION_POSTGRES_URL_HOST
   - name: VERSION_POSTGRES_URL_PORT
     valueFrom:
       configMapKeyRef:
-        name: recipefy-version-config
+        name: version-config
         key: VERSION_POSTGRES_URL_PORT
   - name: VERSION_POSTGRES_DB_NAME
     valueFrom:
       configMapKeyRef:
-        name: recipefy-version-config
+        name: version-config
         key: VERSION_POSTGRES_DB_NAME
   - name: VERSION_MONGO_URL_HOSTS
     valueFrom:
       configMapKeyRef:
-        name: recipefy-version-config
+        name: version-config
         key: VERSION_MONGO_URL_HOSTS
   - name: VERSION_MONGO_REPLICA_SET
     valueFrom:
       configMapKeyRef:
-        name: recipefy-version-config
+        name: version-config
         key: VERSION_MONGO_REPLICA_SET
   - name: VERSION_MONGO_DB_NAME
     valueFrom:
       configMapKeyRef:
-        name: recipefy-version-config
+        name: version-config
         key: VERSION_MONGO_DB_NAME
   - name: VERSION_POSTGRES_USER
     valueFrom:
       secretKeyRef:
-        name: recipefy-version-secret
+        name: version-secret
         key: VERSION_POSTGRES_USER
   - name: VERSION_POSTGRES_PASSWORD
     valueFrom:
       secretKeyRef:
-        name: recipefy-version-secret
+        name: version-secret
         key: VERSION_POSTGRES_PASSWORD
   - name: VERSION_MONGO_USER
     valueFrom:
       secretKeyRef:
-        name: recipefy-version-secret
+        name: version-secret
         key: VERSION_MONGO_USER
   - name: VERSION_MONGO_PASSWORD
     valueFrom:
       secretKeyRef:
-        name: recipefy-version-secret
+        name: version-secret
         key: VERSION_MONGO_PASSWORD
