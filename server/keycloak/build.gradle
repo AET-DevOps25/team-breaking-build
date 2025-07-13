@@ -26,8 +26,10 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-logging'
 	implementation 'ch.qos.logback:logback-classic'
 	implementation 'net.logstash.logback:logstash-logback-encoder:7.4'
+	implementation 'org.springdoc:springdoc-openapi-starter-webflux-ui:2.3.0'
 
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'io.projectreactor:reactor-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
 	compileOnly 'org.projectlombok:lombok'

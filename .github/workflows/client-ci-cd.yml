@@ -35,11 +35,18 @@ jobs:
       - name: Install pnpm
         run: npm install -g pnpm
 
-      - name: Build Vite Client with pnpm
+      - name: Install dependencies
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+        run: pnpm install
+
+      - name: Run TypeScript tests
         working-directory: ${{ env.WORKING_DIRECTORY }}
         run: |
-          pnpm install
+          # Run TypeScript compilation check
           pnpm run build
+          
+          # Run test suite with vitest
+          pnpm run test
 
   build:
     name: Build and Push Docker Images
