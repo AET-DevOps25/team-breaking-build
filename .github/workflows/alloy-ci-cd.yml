@@ -1,0 +1,38 @@
+name: Deploy Alloy
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
+      NAMESPACE: recipefy
+      RELEASE_NAME: alloy
+      CHART_NAME: grafana/alloy
+      VALUES_FILE: ./helm/alloy/values.yaml
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: v3.14.4
+
+      - name: Configure Kubernetes Context
+        uses: azure/k8s-set-context@v4
+        with:
+          method: kubeconfig
+          kubeconfig: ${{ env.KUBE_CONFIG }}
+
+      - name: Deploy MongoDB with Helm
+        run: |
+          helm repo add grafana https://grafana.github.io/helm-charts
+          helm repo update
+          helm upgrade --install "$RELEASE_NAME" "$CHART_NAME" \
+            -f "$VALUES_FILE" \
+            --namespace "$NAMESPACE"
