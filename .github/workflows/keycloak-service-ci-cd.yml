@@ -103,15 +103,6 @@ jobs:
           method: kubeconfig
           kubeconfig: ${{ secrets.KUBE_CONFIG }}
 
-      - name: Set up SOPS
-        uses: nhedger/setup-sops@v2
-        with:
-          version: 3.8.1
-
-      - name: Decrypt secret
-        run: |
-          sops --decrypt "$SECRET_FILE" > tmp && mv tmp "$SECRET_FILE"
-
       - name: Set image tag
         run: |
           if [ -z "$GITHUB_SHA" ]; then
