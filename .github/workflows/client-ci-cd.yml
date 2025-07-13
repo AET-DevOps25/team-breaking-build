@@ -125,4 +125,5 @@ jobs:
         run: |
           helm upgrade --install ${{ env.HELM_RELEASE_NAME }} ${{ env.CHART_PATH }} \
             --namespace ${{ env.HELM_NAMESPACE }} \
+            --set image.tag=${{ env.IMAGE_TAG }} \
             --wait --timeout 5m
