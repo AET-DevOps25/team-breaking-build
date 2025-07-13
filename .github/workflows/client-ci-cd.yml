@@ -112,6 +112,14 @@ jobs:
         with:
           method: kubeconfig
           kubeconfig: ${{ secrets.KUBE_CONFIG }}
+      
+      - name: Set image tag
+        run: |
+          if [ -z "$GITHUB_SHA" ]; then
+            echo "IMAGE_TAG=latest" >> $GITHUB_ENV
+          else
+            echo "IMAGE_TAG=sha-$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_ENV
+          fi
 
       - name: Deploy Helm Chart
         run: |
