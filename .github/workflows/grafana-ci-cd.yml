@@ -8,6 +8,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
+      KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
       NAMESPACE: recipefy-monitoring
       RELEASE_NAME: grafana
       CHART_PATH: ./helm/grafana
