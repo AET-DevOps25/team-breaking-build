@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: genai-config
+data:
+  LLM_MODEL: "gemma3:27b"
+  LLM_TEMPERATURE: "0.7"
+  LLM_BASE_URL: "https://gpu.aet.cit.tum.de/api/"
+  WEAVIATE_HOST: "http://weaviate.recipefy-database.svc.cluster.local"
+  WEAVIATE_PORT: "8080"
+  DEBUG: "false"
+  LOG_LEVEL: "INFO"

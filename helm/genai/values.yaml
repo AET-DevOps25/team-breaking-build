@@ -49,42 +49,42 @@ env:
   - name: LLM_MODEL
     valueFrom:
       configMapKeyRef:
-        name: recipefy-genai-config
+        name: genai-config
         key: LLM_MODEL
   - name: LLM_TEMPERATURE
     valueFrom:
       configMapKeyRef:
-        name: recipefy-genai-config
+        name: genai-config
         key: LLM_TEMPERATURE
   - name: OPEN_WEBUI_API_KEY
     valueFrom:
       secretKeyRef:
-        name: recipefy-genai-secret
+        name: genai-secret
         key: OPEN_WEBUI_API_KEY
   - name: LLM_BASE_URL
     valueFrom:
       configMapKeyRef:
-        name: recipefy-genai-config
+        name: genai-config
         key: LLM_BASE_URL
   - name: WEAVIATE_HOST
     valueFrom:
       configMapKeyRef:
-        name: recipefy-genai-config
+        name: genai-config
         key: WEAVIATE_HOST
   - name: WEAVIATE_PORT
     valueFrom:
       configMapKeyRef:
-        name: recipefy-genai-config
+        name: genai-config
         key: WEAVIATE_PORT
   - name: DEBUG
     valueFrom:
       configMapKeyRef:
-        name: recipefy-genai-config
+        name: genai-config
         key: DEBUG
   - name: LOG_LEVEL
     valueFrom:
       configMapKeyRef:
-        name: recipefy-genai-config
+        name: genai-config
         key: LOG_LEVEL
 
 livenessProbe:
