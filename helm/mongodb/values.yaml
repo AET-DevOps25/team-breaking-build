@@ -1,0 +1,49 @@
+architecture: replicaset
+
+replicaSet:
+  enabled: true
+  replicas: 3
+
+auth:
+  enabled: true
+  existingSecret: mongodb-secret
+
+persistence:
+  enabled: true
+  storageClass: csi-rbd-sc
+  existingClaim: recipefy-mongodb-pvc
+
+volumePermissions:
+  enabled: true
+
+arbiter:
+  enabled: true
+
+resources:
+  requests:
+    memory: 512Mi
+    cpu: 250m
+  limits:
+    memory: 1Gi
+    cpu: 500m
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 2
+
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: false
+
+tls:
+  enabled: false
+
+livenessProbe:
+  enabled: true
+
+readinessProbe:
+  enabled: true
+
+service:
+  type: ClusterIP
