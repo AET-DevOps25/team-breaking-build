@@ -1,5 +1,5 @@
 apiVersion: v2
-name: keycloak-spi
+name: keycloak-service
 description: A Helm chart for Keycloak service
 type: application
 version: 0.1.0

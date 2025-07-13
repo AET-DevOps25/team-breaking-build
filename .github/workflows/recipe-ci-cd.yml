@@ -11,9 +11,11 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: server/recipe
   WORKING_DIRECTORY: server/recipe
-  HELM_NAMESPACE: team-breaking-build
-  HELM_RELEASE_NAME: recipefy-recipe
+  HELM_NAMESPACE: recipefy
+  HELM_RELEASE_NAME: recipe
   CHART_PATH: ./helm/recipe
+  SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
+  SECRET_FILE: ./helm/recipe/templates/secret.yaml
 
 jobs:
   test:
@@ -85,9 +87,17 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-      - name: Export Docker image tag
-        id: export_tag
-        run: echo "image_tag=${{ steps.meta.outputs.version }}" >> $GITHUB_OUTPUT
+      - name: Set up SOPS
+        uses: nhedger/setup-sops@v2
+        with:
+          version: 3.8.1
+
+      - name: Decrypt secret
+        run: |
+          sops --decrypt "$SECRET_FILE" > tmp && mv tmp "$SECRET_FILE"
+
+      - name: Set image tag
+        run: echo "IMAGE_TAG=$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_ENV
 
   deploy:
     name: Deploy to Rancher with Helm
@@ -112,5 +122,5 @@ jobs:
         run: |
           helm upgrade --install ${{ env.HELM_RELEASE_NAME }} ${{ env.CHART_PATH }} \
             --namespace ${{ env.HELM_NAMESPACE }} \
-            --set image.tag=${{ needs.build.outputs.image_tag }} \
+            --set image.tag=sha-${{ env.IMAGE_TAG }} \
             --wait --timeout 5m

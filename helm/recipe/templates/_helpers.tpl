@@ -17,6 +17,13 @@ Return the chart name with prefix (customizable fullname)
 {{- end }}
 
 {{/*
+Return the full config name
+*/}}
+{{- define "recipe.configName" -}}
+{{ include "recipe.fullname" . }}-config
+{{- end }}
+
+{{/*
 Return the full service name
 */}}
 {{- define "recipe.serviceName" -}}
