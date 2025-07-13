@@ -1,19 +1,8 @@
 package com.recipefy.version.controller;
 
-import com.recipefy.version.annotation.LogContext;
-import com.recipefy.version.model.dto.BranchDTO;
-import com.recipefy.version.model.dto.CommitDTO;
-import com.recipefy.version.model.dto.RecipeDetailsDTO;
-import com.recipefy.version.model.request.CopyBranchRequest;
-import com.recipefy.version.model.request.CommitToBranchRequest;
-import com.recipefy.version.model.request.CreateBranchRequest;
-import com.recipefy.version.model.request.InitRecipeRequest;
-import com.recipefy.version.model.response.ChangeResponse;
-import com.recipefy.version.model.response.CommitDetailsResponse;
-import com.recipefy.version.service.VersionControlService;
-import com.recipefy.version.util.HeaderUtil;
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import java.util.List;
+import java.util.UUID;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -24,8 +13,20 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-import java.util.UUID;
+import com.recipefy.version.annotation.LogContext;
+import com.recipefy.version.model.dto.BranchDTO;
+import com.recipefy.version.model.dto.CommitDTO;
+import com.recipefy.version.model.request.CommitToBranchRequest;
+import com.recipefy.version.model.request.CopyBranchRequest;
+import com.recipefy.version.model.request.CreateBranchRequest;
+import com.recipefy.version.model.request.InitRecipeRequest;
+import com.recipefy.version.model.response.ChangeResponse;
+import com.recipefy.version.model.response.CommitDetailsResponse;
+import com.recipefy.version.service.VersionControlService;
+import com.recipefy.version.util.HeaderUtil;
+
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/vcs")
@@ -123,6 +124,8 @@ public class VersionController {
     public ResponseEntity<BranchDTO> copyRecipe(
             @PathVariable Long branchId,
             @RequestBody @Valid CopyBranchRequest copyBranchRequest) {
+        UUID userId = HeaderUtil.extractRequiredUserIdFromHeader();
+        logger.info("Copying recipe from branch {} to new recipe {} for user {}", branchId, copyBranchRequest.getRecipeId(), userId);
         try {
             BranchDTO copiedBranch = vcsService.copyRecipe(branchId, copyBranchRequest);
             logger.info("Successfully copied recipe to new branch ID: {}", copiedBranch.getId());
