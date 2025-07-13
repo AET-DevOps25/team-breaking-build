@@ -1,0 +1,39 @@
+fullnameOverride: postgresql
+
+postgresql:
+  replicaCount: 3
+
+  initdbScriptsCM: postgresql-init-db
+
+  enablePostgresUser: true
+
+  existingSecret: postgresql-secret
+  secretKeys:
+    postgresPasswordKey: postgres-password
+    repmgrPasswordKey: repmgr-password
+    adminPasswordKey: password
+
+  persistence:
+    enabled: true
+    existingClaim: "recipefy-postgresql-ha-pvc"
+
+  resources:
+    requests:
+      memory: 512Mi
+      cpu: 250m
+    limits:
+      memory: 1Gi
+      cpu: 500m
+
+pgpool:
+  enabled: true
+  existingSecret: pgpool-secret
+  secretKeys:
+    adminPasswordKey: admin-password
+    srCheckPasswordKey: sr-check-password
+
+patroni:
+  enabled: true
+
+volumePermissions:
+  enabled: true

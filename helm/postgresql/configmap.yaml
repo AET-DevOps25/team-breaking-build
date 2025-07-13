@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgresql-init-db
+data:
+  init-user-db.sh: |
+    #!/bin/bash
+    psql -U "$POSTGRESQL_POSTGRES_USER" <<EOF
+    CREATE DATABASE recipe;
+    CREATE DATABASE version;
+    CREATE DATABASE keycloak;
+
+    GRANT ALL PRIVILEGES ON DATABASE recipe TO admin;
+    GRANT ALL PRIVILEGES ON DATABASE version TO admin;
+    GRANT ALL PRIVILEGES ON DATABASE keycloak TO admin;
+    EOF
