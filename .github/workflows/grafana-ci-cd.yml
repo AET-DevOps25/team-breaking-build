@@ -1,0 +1,48 @@
+name: Deploy Grafana
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      NAMESPACE: recipefy-monitoring
+      RELEASE_NAME: grafana
+      CHART_PATH: ./helm/grafana
+      SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
+      SECRET_FILE: ./helm/grafana/templates/secret.yaml
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up SOPS
+        uses: nhedger/setup-sops@v2
+        with:
+          version: 3.8.1
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: v3.14.4
+
+      - name: Configure Kubernetes Context
+        uses: azure/k8s-set-context@v4
+        with:
+          method: kubeconfig
+          kubeconfig: ${{ env.KUBE_CONFIG }}
+
+      - name: Decrypt secret
+        run: |
+          sops --decrypt "$SECRET_FILE" > tmp && mv tmp "$SECRET_FILE"
+
+      - name: Deploy Grafana with Helm
+        run: |
+          helm upgrade --install ${{ env.HELM_RELEASE_NAME }} ${{ env.CHART_PATH }} \
+            --namespace ${{ env.HELM_NAMESPACE }} \
+            --wait --timeout 5m
+
+      - name: Clean up decrypted file
+        run: rm -f "$SECRET_FILE_DECRYPTED"

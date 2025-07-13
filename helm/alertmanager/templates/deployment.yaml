@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "prometheus-alertmanager.fullname" . }}
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "prometheus-alertmanager.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "prometheus-alertmanager.name" . }}
+    spec:
+      serviceAccountName: {{ include "prometheus-alertmanager.serviceAccountName" . }}
+      containers:
+        - name: alertmanager
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - "--config.file=/etc/alertmanager/alertmanager.yml"
+            - "--storage.path=/alertmanager"
+          ports:
+            - name: http
+              containerPort: 9093
+          volumeMounts:
+            - name: config
+              mountPath: /etc/alertmanager
+              readOnly: true
+            - name: data
+              mountPath: /alertmanager
+            - name: smtp-secret
+              mountPath: /etc/alertmanager/secrets
+              readOnly: true
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          {{- with .Values.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "prometheus-alertmanager.configName" . }}
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "prometheus-alertmanager.pvcName" . }}
+        - name: smtp-secret
+          secret:
+            secretName: alertmanager-secret

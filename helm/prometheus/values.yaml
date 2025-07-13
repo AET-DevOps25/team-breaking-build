@@ -1,4 +1,4 @@
-namespace: team-breaking-build
+namespace: recipefy-monitoring
 
 name: prometheus
 

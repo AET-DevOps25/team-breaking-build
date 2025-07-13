@@ -1,0 +1,34 @@
+name: Deploy Prometheus
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      NAMESPACE: recipefy-monitoring
+      RELEASE_NAME: prometheus
+      CHART_PATH: ./helm/prometheus
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: v3.14.4
+
+      - name: Configure Kubernetes Context
+        uses: azure/k8s-set-context@v4
+        with:
+          method: kubeconfig
+          kubeconfig: ${{ env.KUBE_CONFIG }}
+
+      - name: Deploy Prometheus with Helm
+        run: |
+          helm upgrade --install ${{ env.HELM_RELEASE_NAME }} ${{ env.CHART_PATH }} \
+            --namespace ${{ env.HELM_NAMESPACE }} \
+            --wait --timeout 5m
