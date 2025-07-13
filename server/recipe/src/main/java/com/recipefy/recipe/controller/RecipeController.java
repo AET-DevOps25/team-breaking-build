@@ -148,6 +148,21 @@ public class RecipeController {
         }
     }
 
+    @GetMapping("/batch")
+    @LogContext(extractUserIdFromHeader = true)
+    public ResponseEntity<List<RecipeMetadataDTO>> getRecipesByIds(@RequestParam List<Long> ids) {
+        UUID userId = HeaderUtil.extractRequiredUserIdFromHeader();
+        logger.debug("Fetching recipes by IDs: {} for user: {}", ids, userId);
+        try {
+            List<RecipeMetadataDTO> recipes = recipeService.getRecipesByIds(ids);
+            logger.debug("Found {} recipes for IDs: {}", recipes.size(), ids);
+            return ResponseEntity.ok(recipes);
+        } catch (Exception e) {
+            logger.error("Failed to fetch recipes by IDs: {}", ids, e);
+            throw e;
+        }
+    }
+
     @GetMapping("/tags")
     @LogContext(extractUserIdFromHeader = true)
     public ResponseEntity<List<RecipeTagDTO>> getAllTags() {
