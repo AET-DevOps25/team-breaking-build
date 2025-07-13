@@ -41,8 +41,8 @@ jobs:
 
       - name: Deploy Alertmanager with Helm
         run: |
-          helm upgrade --install ${{ env.HELM_RELEASE_NAME }} ${{ env.CHART_PATH }} \
-            --namespace ${{ env.HELM_NAMESPACE }} \
+          helm upgrade --install ${{ env.RELEASE_NAME }} ${{ env.CHART_PATH }} \
+            --namespace ${{ env.NAMESPACE }} \
             --wait --timeout 5m
 
       - name: Clean up decrypted file
