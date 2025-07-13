@@ -1,4 +1,5 @@
 package com.recipefy.gateway.config
+
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -9,7 +10,10 @@ import org.springframework.web.cors.reactive.CorsConfigurationSource
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource
 
 @Configuration
-@EnableConfigurationProperties(CorsConfigurationProperties::class, KeyCloakConfigurationProperties::class)
+@EnableConfigurationProperties(
+    CorsConfigurationProperties::class,
+    KeyCloakConfigurationProperties::class
+)
 class SecurityConfig(
     private val corsProperties: CorsConfigurationProperties,
     private val keycloakProperties: KeyCloakConfigurationProperties
@@ -19,8 +23,11 @@ class SecurityConfig(
         http
             .authorizeExchange { exchanges ->
                 exchanges
-                    .pathMatchers("/actuator/**", "/webjars/swagger-ui/**", "/v3/api-docs/**")
-                    .permitAll()
+                    .pathMatchers(
+                        "/actuator/**",
+                        "/webjars/swagger-ui/**",
+                        "/v3/api-docs/**"
+                    ).permitAll()
                     .anyExchange()
                     .authenticated()
             }.oauth2ResourceServer { oauth2 ->
@@ -37,7 +44,7 @@ class SecurityConfig(
         return http.build()
     }
 
-    private fun corsConfigurationSource(): CorsConfigurationSource {
+    internal fun corsConfigurationSource(): CorsConfigurationSource {
         val config =
             CorsConfiguration().apply {
                 allowCredentials = true
@@ -46,8 +53,6 @@ class SecurityConfig(
                 allowedMethods = listOf("GET", "POST", "PUT", "DELETE", "OPTIONS")
             }
 
-        return UrlBasedCorsConfigurationSource().apply {
-            registerCorsConfiguration("/**", config)
-        }
+        return UrlBasedCorsConfigurationSource().apply { registerCorsConfiguration("/**", config) }
     }
 }
