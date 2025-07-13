@@ -1,4 +1,4 @@
-name: CI/CD Pipeline for Keycloak SPI
+name: CI/CD Pipeline for Keycloak
 
 on:
   push:
@@ -22,7 +22,6 @@ jobs:
     name: Deploy to Rancher with Helm
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    needs: build
 
     steps:
       - name: Checkout code
