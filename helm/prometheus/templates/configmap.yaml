@@ -23,10 +23,22 @@ data:
         metrics_path: '/actuator/prometheus'
         static_configs:
           - targets: ['version-service.recipefy.svc.cluster.local:8080']
+
       - job_name: 'recipe-service'
         metrics_path: '/actuator/prometheus'
         static_configs:
           - targets: ['recipe-service.recipefy.svc.cluster.local:8080']
+
+      - job_name: 'keycloak-service'
+        metrics_path: '/actuator/prometheus'
+        static_configs:
+          - targets: ['keycloak-service.recipefy.svc.cluster.local:8080']
+
+      - job_name: 'gateway-service'
+        metrics_path: '/actuator/prometheus'
+        static_configs:
+          - targets: ['api-gateway.recipefy.svc.cluster.local:8080']
+
       - job_name: 'genai'
         metrics_path: '/metrics'
         static_configs:
@@ -44,6 +56,7 @@ data:
             annotations:
               summary: "Version service is down"
               description: "All targets behind 'version-service' are down."
+
           - alert: VersionServiceHighLatency
             expr: histogram_quantile(0.95, rate(http_server_requests_seconds_bucket{job="version-service"}[2m])) > 1
             for: 2m
@@ -128,3 +141,67 @@ data:
             annotations:
               summary: "High 5xx error rate in GenAI"
               description: "More than 10% of requests to GenAI return 5xx errors."
+
+      - name: keycloak-alerts
+        rules:
+          - alert: KeycloakServiceDown
+            expr: up{job="keycloak-service"} == 0
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Keycloak service is down"
+              description: "All targets behind 'keycloak-service' are down."
+
+          - alert: KeycloakServiceHighLatency
+            expr: histogram_quantile(0.95, rate(http_server_requests_seconds_bucket{job="keycloak-service"}[2m])) > 1
+            for: 2m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High latency in keycloak service"
+              description: "95th percentile latency for keycloak-service exceeds 1 second."
+
+          - alert: KeycloakServiceHighErrorRate
+            expr: |
+              sum(rate(http_server_requests_seconds_count{job="keycloak-service", status=~"5.."}[2m]))
+              /
+              sum(rate(http_server_requests_seconds_count{job="keycloak-service"}[2m])) > 0.1
+            for: 2m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High 5xx error rate in keycloak service"
+              description: "More than 10% of requests return 5xx errors for keycloak service."
+
+      - name: gateway-alerts
+        rules:
+          - alert: GatewayServiceDown
+            expr: up{job="gateway-service"} == 0
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Gateway service is down"
+              description: "All targets behind 'gateway-service' are down."
+
+          - alert: GatewayServiceHighLatency
+            expr: histogram_quantile(0.95, rate(http_server_requests_seconds_bucket{job="gateway-service"}[2m])) > 1
+            for: 2m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High latency in gateway service"
+              description: "95th percentile latency for gateway-service exceeds 1 second."
+
+          - alert: GatewayServiceHighErrorRate
+            expr: |
+              sum(rate(http_server_requests_seconds_count{job="gateway-service", status=~"5.."}[2m]))
+              /
+              sum(rate(http_server_requests_seconds_count{job="gateway-service"}[2m])) > 0.1
+            for: 2m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High 5xx error rate in gateway service"
+              description: "More than 10% of requests return 5xx errors for gateway service."
