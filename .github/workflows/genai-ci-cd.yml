@@ -48,7 +48,7 @@ jobs:
           python -m py_compile response_models.py
           
           # Run comprehensive test suite
-          pytest test_genai.py -v --tb=short
+          PYTHONPATH=. pytest test_genai.py -v --tb=short
 
   build:
     name: Build and Push Docker Images
