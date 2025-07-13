@@ -19,43 +19,112 @@ data:
             - targets: ['alertmanager:9093']
 
     scrape_configs:
-      - job_name: 'recipefy-version-service'
+      - job_name: 'version-service'
         metrics_path: '/actuator/prometheus'
         static_configs:
-          - targets: ['recipefy-version-service.team-breaking-build.svc.cluster.local:8080']
-
-      - job_name: 'recipefy-version-pods'
+          - targets: ['version-service.recipefy.svc.cluster.local:8080']
+      - job_name: 'recipe-service'
         metrics_path: '/actuator/prometheus'
-        scrape_interval: 15s
-        kubernetes_sd_configs:
-          - role: pod
-            namespaces:
-              names:
-                - team-breaking-build
-        relabel_configs:
-          - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
-            regex: version
-            action: keep
-          - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_instance]
-            regex: recipefy-version
-            action: keep
-          - source_labels: [__meta_kubernetes_pod_ip]
-            target_label: __address__
-            replacement: $1:8080
-          - source_labels: [__meta_kubernetes_pod_name]
-            target_label: pod
-          - source_labels: [__meta_kubernetes_pod_container_name]
-            target_label: container
+        static_configs:
+          - targets: ['recipe-service.recipefy.svc.cluster.local:8080']
+      - job_name: 'genai'
+        metrics_path: '/metrics'
+        static_configs:
+          - targets: ['genai.recipefy.svc.cluster.local:8080']
 
   alert.rules.yml: |
     groups:
-      - name: recipefy-version-alerts
+      - name: version-alerts
         rules:
-          - alert: AllPodsDown
-            expr: absent(up{job="recipefy-version-pods"}) or sum(up{job="recipefy-version-pods"}) == 0
+          - alert: VersionServiceDown
+            expr: up{job="version-service"} == 0
             for: 1m
             labels:
               severity: critical
             annotations:
-              summary: "All recipefy-version pods are down"
-              description: "No reachable pods found for job 'recipefy-version-pods'."
+              summary: "Version service is down"
+              description: "All targets behind 'version-service' are down."
+          - alert: VersionServiceHighLatency
+            expr: histogram_quantile(0.95, rate(http_server_requests_seconds_bucket{job="version-service"}[2m])) > 1
+            for: 2m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High latency in version service"
+              description: "95th percentile latency for version-service exceeds 1 second."
+
+          - alert: VersionServiceHighErrorRate
+            expr: |
+              sum(rate(http_server_requests_seconds_count{job="version-service", status=~"5.."}[2m]))
+              /
+              sum(rate(http_server_requests_seconds_count{job="version-service"}[2m])) > 0.1
+            for: 2m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High 5xx error rate in version service"
+              description: "More than 10% of requests return 5xx errors for version service."
+
+      - name: recipe-alerts
+        rules:
+          - alert: RecipeServiceDown
+            expr: up{job="recipe-service"} == 0
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Recipe service is down"
+              description: "The recipe-service (Spring Boot) is unreachable."
+
+          - alert: RecipeServiceHighLatency
+            expr: histogram_quantile(0.95, rate(http_server_requests_seconds_bucket{job="recipe-service"}[2m])) > 1
+            for: 2m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High latency in recipe service"
+              description: "95th percentile latency for recipe-service exceeds 1 second."
+
+          - alert: RecipeServiceErrorRate
+            expr: |
+              sum(rate(http_server_requests_seconds_count{job="recipe-service", status=~"5.."}[2m]))
+              /
+              sum(rate(http_server_requests_seconds_count{job="recipe-service"}[2m])) > 0.1
+            for: 2m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High 5xx error rate in recipe service"
+              description: "More than 10% of requests return 5xx errors for recipe service."
+
+      - name: genai-alerts
+        rules:
+          - alert: GenAIServiceDown
+            expr: up{job="genai"} == 0
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "GenAI service is down"
+              description: "The GenAI (FastAPI) service is not responding."
+
+          - alert: GenAIHighCPU
+            expr: rate(process_cpu_seconds_total{job="genai"}[2m]) > 0.9
+            for: 2m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High CPU usage in GenAI"
+              description: "CPU usage in GenAI service exceeds 90%."
+
+          - alert: GenAIRequestErrorRate
+            expr: |
+              sum(rate(http_requests_total{job="genai", status=~"5.."}[2m]))
+              /
+              sum(rate(http_requests_total{job="genai"}[2m])) > 0.1
+            for: 2m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High 5xx error rate in GenAI"
+              description: "More than 10% of requests to GenAI return 5xx errors."
