@@ -11,49 +11,49 @@ import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource
 
 @Configuration
 @EnableConfigurationProperties(
-        CorsConfigurationProperties::class,
-        KeyCloakConfigurationProperties::class
+    CorsConfigurationProperties::class,
+    KeyCloakConfigurationProperties::class
 )
 class SecurityConfig(
-        private val corsProperties: CorsConfigurationProperties,
-        private val keycloakProperties: KeyCloakConfigurationProperties
+    private val corsProperties: CorsConfigurationProperties,
+    private val keycloakProperties: KeyCloakConfigurationProperties
 ) {
     @Bean
     fun securityWebFilterChain(http: ServerHttpSecurity): SecurityWebFilterChain {
         http
-                .authorizeExchange { exchanges ->
-                    exchanges
-                            .pathMatchers(
-                                    "/actuator/**",
-                                    "/webjars/swagger-ui/**",
-                                    "/v3/api-docs/**"
-                            )
-                            .permitAll()
-                            .anyExchange()
-                            .authenticated()
+            .authorizeExchange { exchanges ->
+                exchanges
+                    .pathMatchers(
+                        "/actuator/**",
+                        "/webjars/swagger-ui/**",
+                        "/v3/api-docs/**"
+                    )
+                    .permitAll()
+                    .anyExchange()
+                    .authenticated()
+            }
+            .oauth2ResourceServer { oauth2 ->
+                oauth2.opaqueToken { opaque ->
+                    opaque.introspectionUri(keycloakProperties.introspectUrl)
+                        .introspectionClientCredentials(
+                            keycloakProperties.clientId,
+                            keycloakProperties.clientSecret
+                        )
                 }
-                .oauth2ResourceServer { oauth2 ->
-                    oauth2.opaqueToken { opaque ->
-                        opaque.introspectionUri(keycloakProperties.introspectUrl)
-                                .introspectionClientCredentials(
-                                        keycloakProperties.clientId,
-                                        keycloakProperties.clientSecret
-                                )
-                    }
-                }
-                .csrf { csrf -> csrf.disable() }
-                .cors { cors -> cors.configurationSource(corsConfigurationSource()) }
+            }
+            .csrf { csrf -> csrf.disable() }
+            .cors { cors -> cors.configurationSource(corsConfigurationSource()) }
         return http.build()
     }
 
     internal fun corsConfigurationSource(): CorsConfigurationSource {
         val config =
-                CorsConfiguration().apply {
-                    allowCredentials = true
-                    allowedOrigins = corsProperties.allowedOrigins
-                    allowedHeaders = listOf("*")
-                    allowedMethods = listOf("GET", "POST", "PUT", "DELETE", "OPTIONS")
-                }
+            CorsConfiguration().apply {
+                allowCredentials = true
+                allowedOrigins = corsProperties.allowedOrigins
+                allowedHeaders = listOf("*")
+                allowedMethods = listOf("GET", "POST", "PUT", "DELETE", "OPTIONS")
+            }
 
         return UrlBasedCorsConfigurationSource().apply { registerCorsConfiguration("/**", config) }
     }

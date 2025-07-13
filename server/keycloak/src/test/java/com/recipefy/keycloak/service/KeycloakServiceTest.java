@@ -27,22 +27,22 @@ class KeycloakServiceTest {
 
     @Mock
     private WebClient keycloakClient;
-    
+
     @Mock
     private WebClient keycloakAdminClient;
-    
+
     @Mock
     private WebClient.RequestBodyUriSpec requestBodyUriSpec;
-    
+
     @Mock
     private WebClient.RequestBodySpec requestBodySpec;
-    
+
     @Mock
     private WebClient.RequestHeadersUriSpec requestHeadersUriSpec;
-    
+
     @Mock
     private WebClient.RequestHeadersSpec requestHeadersSpec;
-    
+
     @Mock
     private WebClient.ResponseSpec responseSpec;
 
@@ -56,20 +56,20 @@ class KeycloakServiceTest {
         keycloakProperties.setRealm("test-realm");
         keycloakProperties.setKeycloakUri("/realms/test-realm/protocol/openid-connect");
         keycloakProperties.setAdminUri("/admin/realms/test-realm");
-        
+
         KeycloakProperties.Credentials credentials = new KeycloakProperties.Credentials();
         KeycloakProperties.Client recipefyClient = new KeycloakProperties.Client();
         recipefyClient.setClientId("web");
         recipefyClient.setClientSecret("web-secret");
-        
+
         KeycloakProperties.Client adminClient = new KeycloakProperties.Client();
         adminClient.setClientId("admin-cli");
         adminClient.setClientSecret("admin-secret");
-        
+
         credentials.setRecipefy(recipefyClient);
         credentials.setAdmin(adminClient);
         keycloakProperties.setCredentials(credentials);
-        
+
         keycloakService = new KeycloakService(keycloakProperties, keycloakClient, keycloakAdminClient);
     }
 
@@ -79,13 +79,13 @@ class KeycloakServiceTest {
         LoginRequest loginRequest = new LoginRequest();
         loginRequest.setEmail("test@example.com");
         loginRequest.setPassword("password");
-        
+
         TokenResponse expectedResponse = new TokenResponse();
         expectedResponse.setAccessToken("access-token");
         expectedResponse.setRefreshToken("refresh-token");
         expectedResponse.setExpiresIn(3600);
         expectedResponse.setTokenType("Bearer");
-        
+
         when(keycloakClient.post()).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodySpec);
         when(requestBodySpec.bodyValue(any())).thenReturn(requestHeadersSpec);
@@ -97,15 +97,15 @@ class KeycloakServiceTest {
 
         // Then
         StepVerifier.create(result)
-            .expectNextMatches(response -> {
-                assertEquals("access-token", response.getAccessToken());
-                assertEquals("refresh-token", response.getRefreshToken());
-                assertEquals(3600, response.getExpiresIn());
-                assertEquals("Bearer", response.getTokenType());
-                return true;
-            })
-            .verifyComplete();
-            
+                .expectNextMatches(response -> {
+                    assertEquals("access-token", response.getAccessToken());
+                    assertEquals("refresh-token", response.getRefreshToken());
+                    assertEquals(3600, response.getExpiresIn());
+                    assertEquals("Bearer", response.getTokenType());
+                    return true;
+                })
+                .verifyComplete();
+
         verify(keycloakClient).post();
         verify(requestBodyUriSpec).uri("/realms/test-realm/protocol/openid-connect/token");
         verify(requestBodySpec).bodyValue(any());
@@ -117,21 +117,21 @@ class KeycloakServiceTest {
         LoginRequest loginRequest = new LoginRequest();
         loginRequest.setEmail("test@example.com");
         loginRequest.setPassword("wrong-password");
-        
+
         when(keycloakClient.post()).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodySpec);
         when(requestBodySpec.bodyValue(any())).thenReturn(requestHeadersSpec);
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(TokenResponse.class))
-            .thenReturn(Mono.error(new WebClientResponseException(401, "Unauthorized", null, null, null)));
+                .thenReturn(Mono.error(new WebClientResponseException(401, "Unauthorized", null, null, null)));
 
         // When
         Mono<TokenResponse> result = keycloakService.login(loginRequest);
 
         // Then
         StepVerifier.create(result)
-            .expectError(WebClientResponseException.class)
-            .verify();
+                .expectError(WebClientResponseException.class)
+                .verify();
     }
 
     @Test
@@ -142,7 +142,7 @@ class KeycloakServiceTest {
         registerRequest.setFirstName("John");
         registerRequest.setLastName("Doe");
         registerRequest.setPassword("password");
-        
+
         when(keycloakAdminClient.post()).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodySpec);
         when(requestBodySpec.bodyValue(any())).thenReturn(requestHeadersSpec);
@@ -154,12 +154,12 @@ class KeycloakServiceTest {
 
         // Then
         StepVerifier.create(result)
-            .expectNextMatches(response -> {
-                assertEquals(HttpStatus.CREATED, response.getStatusCode());
-                return true;
-            })
-            .verifyComplete();
-            
+                .expectNextMatches(response -> {
+                    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+                    return true;
+                })
+                .verifyComplete();
+
         verify(keycloakAdminClient).post();
         verify(requestBodyUriSpec).uri("/admin/realms/test-realm/users");
         verify(requestBodySpec).bodyValue(any(UserPayload.class));
@@ -173,21 +173,21 @@ class KeycloakServiceTest {
         registerRequest.setFirstName("John");
         registerRequest.setLastName("Doe");
         registerRequest.setPassword("password");
-        
+
         when(keycloakAdminClient.post()).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodySpec);
         when(requestBodySpec.bodyValue(any())).thenReturn(requestHeadersSpec);
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.toBodilessEntity())
-            .thenReturn(Mono.error(new WebClientResponseException(409, "Conflict", null, null, null)));
+                .thenReturn(Mono.error(new WebClientResponseException(409, "Conflict", null, null, null)));
 
         // When
         Mono<ResponseEntity<Void>> result = keycloakService.register(registerRequest);
 
         // Then
         StepVerifier.create(result)
-            .expectError(WebClientResponseException.class)
-            .verify();
+                .expectError(WebClientResponseException.class)
+                .verify();
     }
 
     @Test
@@ -200,7 +200,7 @@ class KeycloakServiceTest {
         expectedResponse.setGivenName("John");
         expectedResponse.setFamilyName("Doe");
         expectedResponse.setEmailVerified(true);
-        
+
         when(keycloakClient.get()).thenReturn(requestHeadersUriSpec);
         when(requestHeadersUriSpec.uri(anyString())).thenReturn(requestHeadersSpec);
         when(requestHeadersSpec.headers(any())).thenReturn(requestHeadersSpec);
@@ -212,16 +212,16 @@ class KeycloakServiceTest {
 
         // Then
         StepVerifier.create(result)
-            .expectNextMatches(response -> {
-                assertEquals("user-id", response.getSub());
-                assertEquals("test@example.com", response.getEmail());
-                assertEquals("John", response.getGivenName());
-                assertEquals("Doe", response.getFamilyName());
-                assertEquals(true, response.getEmailVerified());
-                return true;
-            })
-            .verifyComplete();
-            
+                .expectNextMatches(response -> {
+                    assertEquals("user-id", response.getSub());
+                    assertEquals("test@example.com", response.getEmail());
+                    assertEquals("John", response.getGivenName());
+                    assertEquals("Doe", response.getFamilyName());
+                    assertEquals(true, response.getEmailVerified());
+                    return true;
+                })
+                .verifyComplete();
+
         verify(keycloakClient).get();
         verify(requestHeadersUriSpec).uri("/realms/test-realm/protocol/openid-connect/userinfo");
     }
@@ -230,21 +230,21 @@ class KeycloakServiceTest {
     void userInfo_ShouldReturnError_WhenTokenIsInvalid() {
         // Given
         String token = "invalid-token";
-        
+
         when(keycloakClient.get()).thenReturn(requestHeadersUriSpec);
         when(requestHeadersUriSpec.uri(anyString())).thenReturn(requestHeadersSpec);
         when(requestHeadersSpec.headers(any())).thenReturn(requestHeadersSpec);
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(UserInfoResponse.class))
-            .thenReturn(Mono.error(new WebClientResponseException(401, "Unauthorized", null, null, null)));
+                .thenReturn(Mono.error(new WebClientResponseException(401, "Unauthorized", null, null, null)));
 
         // When
         Mono<UserInfoResponse> result = keycloakService.userInfo(token);
 
         // Then
         StepVerifier.create(result)
-            .expectError(WebClientResponseException.class)
-            .verify();
+                .expectError(WebClientResponseException.class)
+                .verify();
     }
 
     @Test
@@ -252,13 +252,13 @@ class KeycloakServiceTest {
         // Given
         RefreshTokenRequest refreshRequest = new RefreshTokenRequest();
         refreshRequest.setToken("valid-refresh-token");
-        
+
         TokenResponse expectedResponse = new TokenResponse();
         expectedResponse.setAccessToken("new-access-token");
         expectedResponse.setRefreshToken("new-refresh-token");
         expectedResponse.setExpiresIn(3600);
         expectedResponse.setTokenType("Bearer");
-        
+
         when(keycloakClient.post()).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodySpec);
         when(requestBodySpec.bodyValue(any())).thenReturn(requestHeadersSpec);
@@ -270,15 +270,15 @@ class KeycloakServiceTest {
 
         // Then
         StepVerifier.create(result)
-            .expectNextMatches(response -> {
-                assertEquals("new-access-token", response.getAccessToken());
-                assertEquals("new-refresh-token", response.getRefreshToken());
-                assertEquals(3600, response.getExpiresIn());
-                assertEquals("Bearer", response.getTokenType());
-                return true;
-            })
-            .verifyComplete();
-            
+                .expectNextMatches(response -> {
+                    assertEquals("new-access-token", response.getAccessToken());
+                    assertEquals("new-refresh-token", response.getRefreshToken());
+                    assertEquals(3600, response.getExpiresIn());
+                    assertEquals("Bearer", response.getTokenType());
+                    return true;
+                })
+                .verifyComplete();
+
         verify(keycloakClient).post();
         verify(requestBodyUriSpec).uri("/realms/test-realm/protocol/openid-connect/token");
     }
@@ -288,21 +288,21 @@ class KeycloakServiceTest {
         // Given
         RefreshTokenRequest refreshRequest = new RefreshTokenRequest();
         refreshRequest.setToken("invalid-refresh-token");
-        
+
         when(keycloakClient.post()).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodySpec);
         when(requestBodySpec.bodyValue(any())).thenReturn(requestHeadersSpec);
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(TokenResponse.class))
-            .thenReturn(Mono.error(new WebClientResponseException(400, "Bad Request", null, null, null)));
+                .thenReturn(Mono.error(new WebClientResponseException(400, "Bad Request", null, null, null)));
 
         // When
         Mono<TokenResponse> result = keycloakService.refreshToken(refreshRequest);
 
         // Then
         StepVerifier.create(result)
-            .expectError(WebClientResponseException.class)
-            .verify();
+                .expectError(WebClientResponseException.class)
+                .verify();
     }
 
     @Test
@@ -316,7 +316,7 @@ class KeycloakServiceTest {
         expectedResponse.setLastName("Doe");
         expectedResponse.setEmail("test@example.com");
         expectedResponse.setEmailVerified(true);
-        
+
         when(keycloakAdminClient.get()).thenReturn(requestHeadersUriSpec);
         when(requestHeadersUriSpec.uri(anyString())).thenReturn(requestHeadersSpec);
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
@@ -327,17 +327,17 @@ class KeycloakServiceTest {
 
         // Then
         StepVerifier.create(result)
-            .expectNextMatches(response -> {
-                assertEquals(userId.toString(), response.getId());
-                assertEquals("testuser", response.getUsername());
-                assertEquals("John", response.getFirstName());
-                assertEquals("Doe", response.getLastName());
-                assertEquals("test@example.com", response.getEmail());
-                assertEquals(true, response.getEmailVerified());
-                return true;
-            })
-            .verifyComplete();
-            
+                .expectNextMatches(response -> {
+                    assertEquals(userId.toString(), response.getId());
+                    assertEquals("testuser", response.getUsername());
+                    assertEquals("John", response.getFirstName());
+                    assertEquals("Doe", response.getLastName());
+                    assertEquals("test@example.com", response.getEmail());
+                    assertEquals(true, response.getEmailVerified());
+                    return true;
+                })
+                .verifyComplete();
+
         verify(keycloakAdminClient).get();
         verify(requestHeadersUriSpec).uri("/admin/realms/test-realm/users/" + userId);
     }
@@ -346,20 +346,20 @@ class KeycloakServiceTest {
     void getUser_ShouldReturnError_WhenUserNotFound() {
         // Given
         UUID userId = UUID.randomUUID();
-        
+
         when(keycloakAdminClient.get()).thenReturn(requestHeadersUriSpec);
         when(requestHeadersUriSpec.uri(anyString())).thenReturn(requestHeadersSpec);
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(UserDetails.class))
-            .thenReturn(Mono.error(new WebClientResponseException(404, "Not Found", null, null, null)));
+                .thenReturn(Mono.error(new WebClientResponseException(404, "Not Found", null, null, null)));
 
         // When
         Mono<UserDetails> result = keycloakService.getUser(userId);
 
         // Then
         StepVerifier.create(result)
-            .expectError(WebClientResponseException.class)
-            .verify();
+                .expectError(WebClientResponseException.class)
+                .verify();
     }
 
     @Test
@@ -368,10 +368,10 @@ class KeycloakServiceTest {
         LoginRequest loginRequest = new LoginRequest();
         loginRequest.setEmail("test@example.com");
         loginRequest.setPassword("password");
-        
+
         TokenResponse expectedResponse = new TokenResponse();
         expectedResponse.setAccessToken("access-token");
-        
+
         when(keycloakClient.post()).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodySpec);
         when(requestBodySpec.bodyValue(any())).thenReturn(requestHeadersSpec);
@@ -385,14 +385,14 @@ class KeycloakServiceTest {
         verify(requestBodySpec).bodyValue(argThat(body -> {
             if (body instanceof org.springframework.util.MultiValueMap) {
                 @SuppressWarnings("unchecked")
-                org.springframework.util.MultiValueMap<String, String> multiValueMap = 
-                    (org.springframework.util.MultiValueMap<String, String>) body;
+                org.springframework.util.MultiValueMap<String, String> multiValueMap =
+                        (org.springframework.util.MultiValueMap<String, String>) body;
                 return "password".equals(multiValueMap.getFirst("grant_type")) &&
-                       "web".equals(multiValueMap.getFirst("client_id")) &&
-                       "web-secret".equals(multiValueMap.getFirst("client_secret")) &&
-                       "test@example.com".equals(multiValueMap.getFirst("username")) &&
-                       "password".equals(multiValueMap.getFirst("password")) &&
-                       "openid".equals(multiValueMap.getFirst("scope"));
+                        "web".equals(multiValueMap.getFirst("client_id")) &&
+                        "web-secret".equals(multiValueMap.getFirst("client_secret")) &&
+                        "test@example.com".equals(multiValueMap.getFirst("username")) &&
+                        "password".equals(multiValueMap.getFirst("password")) &&
+                        "openid".equals(multiValueMap.getFirst("scope"));
             }
             return false;
         }));
@@ -406,7 +406,7 @@ class KeycloakServiceTest {
         registerRequest.setFirstName("John");
         registerRequest.setLastName("Doe");
         registerRequest.setPassword("password");
-        
+
         when(keycloakAdminClient.post()).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodySpec);
         when(requestBodySpec.bodyValue(any())).thenReturn(requestHeadersSpec);
@@ -421,15 +421,15 @@ class KeycloakServiceTest {
             if (body instanceof UserPayload) {
                 UserPayload userPayload = (UserPayload) body;
                 return "newuser@example.com".equals(userPayload.getEmail()) &&
-                       "John".equals(userPayload.getFirstName()) &&
-                       "Doe".equals(userPayload.getLastName()) &&
-                       Boolean.TRUE.equals(userPayload.getEnabled()) &&
-                       Boolean.TRUE.equals(userPayload.getEmailVerified()) &&
-                       userPayload.getCredentials() != null &&
-                       userPayload.getCredentials().size() == 1 &&
-                       "password".equals(userPayload.getCredentials().get(0).getType()) &&
-                       "password".equals(userPayload.getCredentials().get(0).getValue()) &&
-                       Boolean.FALSE.equals(userPayload.getCredentials().get(0).getTemporary());
+                        "John".equals(userPayload.getFirstName()) &&
+                        "Doe".equals(userPayload.getLastName()) &&
+                        Boolean.TRUE.equals(userPayload.getEnabled()) &&
+                        Boolean.TRUE.equals(userPayload.getEmailVerified()) &&
+                        userPayload.getCredentials() != null &&
+                        userPayload.getCredentials().size() == 1 &&
+                        "password".equals(userPayload.getCredentials().get(0).getType()) &&
+                        "password".equals(userPayload.getCredentials().get(0).getValue()) &&
+                        Boolean.FALSE.equals(userPayload.getCredentials().get(0).getTemporary());
             }
             return false;
         }));
@@ -440,10 +440,10 @@ class KeycloakServiceTest {
         // Given
         RefreshTokenRequest refreshRequest = new RefreshTokenRequest();
         refreshRequest.setToken("refresh-token");
-        
+
         TokenResponse expectedResponse = new TokenResponse();
         expectedResponse.setAccessToken("new-access-token");
-        
+
         when(keycloakClient.post()).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodySpec);
         when(requestBodySpec.bodyValue(any())).thenReturn(requestHeadersSpec);
@@ -457,12 +457,12 @@ class KeycloakServiceTest {
         verify(requestBodySpec).bodyValue(argThat(body -> {
             if (body instanceof org.springframework.util.MultiValueMap) {
                 @SuppressWarnings("unchecked")
-                org.springframework.util.MultiValueMap<String, String> multiValueMap = 
-                    (org.springframework.util.MultiValueMap<String, String>) body;
+                org.springframework.util.MultiValueMap<String, String> multiValueMap =
+                        (org.springframework.util.MultiValueMap<String, String>) body;
                 return "refresh_token".equals(multiValueMap.getFirst("grant_type")) &&
-                       "web".equals(multiValueMap.getFirst("client_id")) &&
-                       "web-secret".equals(multiValueMap.getFirst("client_secret")) &&
-                       "refresh-token".equals(multiValueMap.getFirst("refresh_token"));
+                        "web".equals(multiValueMap.getFirst("client_id")) &&
+                        "web-secret".equals(multiValueMap.getFirst("client_secret")) &&
+                        "refresh-token".equals(multiValueMap.getFirst("refresh_token"));
             }
             return false;
         }));
@@ -474,7 +474,7 @@ class KeycloakServiceTest {
         String token = "bearer-token";
         UserInfoResponse expectedResponse = new UserInfoResponse();
         expectedResponse.setSub("user-id");
-        
+
         when(keycloakClient.get()).thenReturn(requestHeadersUriSpec);
         when(requestHeadersUriSpec.uri(anyString())).thenReturn(requestHeadersSpec);
         when(requestHeadersSpec.headers(any())).thenReturn(requestHeadersSpec);
@@ -497,21 +497,21 @@ class KeycloakServiceTest {
         LoginRequest loginRequest = new LoginRequest();
         loginRequest.setEmail("test@example.com");
         loginRequest.setPassword("password");
-        
+
         when(keycloakClient.post()).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodySpec);
         when(requestBodySpec.bodyValue(any())).thenReturn(requestHeadersSpec);
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(TokenResponse.class))
-            .thenReturn(Mono.error(new java.net.ConnectException("Connection timeout")));
+                .thenReturn(Mono.error(new java.net.ConnectException("Connection timeout")));
 
         // When
         Mono<TokenResponse> result = keycloakService.login(loginRequest);
 
         // Then
         StepVerifier.create(result)
-            .expectError(java.net.ConnectException.class)
-            .verify();
+                .expectError(java.net.ConnectException.class)
+                .verify();
     }
 
     @Test
@@ -520,20 +520,20 @@ class KeycloakServiceTest {
         LoginRequest loginRequest = new LoginRequest();
         loginRequest.setEmail("test@example.com");
         loginRequest.setPassword("password");
-        
+
         when(keycloakClient.post()).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodySpec);
         when(requestBodySpec.bodyValue(any())).thenReturn(requestHeadersSpec);
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(TokenResponse.class))
-            .thenReturn(Mono.error(new WebClientResponseException(500, "Internal Server Error", null, null, null)));
+                .thenReturn(Mono.error(new WebClientResponseException(500, "Internal Server Error", null, null, null)));
 
         // When
         Mono<TokenResponse> result = keycloakService.login(loginRequest);
 
         // Then
         StepVerifier.create(result)
-            .expectError(WebClientResponseException.class)
-            .verify();
+                .expectError(WebClientResponseException.class)
+                .verify();
     }
 } 
