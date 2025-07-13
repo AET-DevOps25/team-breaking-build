@@ -11,8 +11,8 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: client
   WORKING_DIRECTORY: client
-  HELM_NAMESPACE: team-breaking-build
-  HELM_RELEASE_NAME: recipefy-client
+  HELM_NAMESPACE: recipefy
+  HELM_RELEASE_NAME: client
   CHART_PATH: ./helm/client
 
 jobs:
