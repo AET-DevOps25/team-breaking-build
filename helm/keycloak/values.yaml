@@ -1,6 +1,6 @@
 auth:
   existingSecret: keycloak-auth-credentials
-  passwordSecretKey: KEYCLOAK_ADMIN_PASSWORD
+  passwordSecretKey: admin-password
 
 proxyAddressForwarding: true
 
@@ -27,9 +27,9 @@ postgresql:
 externalDatabase:
   enabled: true
   existingSecret: keycloak-postgres-credentials
-  existingSecretUserKey: KEYCLOAK_USER
-  existingSecretDatabaseKey: KEYCLOAK_DB_NAME
-  existingSecretPasswordKey: KEYCLOAK_PASSWORD
+  existingSecretUserKey: db-user
+  existingSecretDatabaseKey: db-name
+  existingSecretPasswordKey: db-password
 
 image:
   registry: docker.io
@@ -62,14 +62,9 @@ metrics:
       prometheus.io/scrape: "true"
       prometheus.io/port: "{{ .Values.metrics.service.ports.metrics }}"
 
-extraEnvVars:
-  - name: KEYCLOAK_DATABASE_HOST
-    valueFrom:
-      configMapKeyRef:
-        name: recipefy-config
-        key: KEYCLOAK_DATABASE_HOST
-  - name: KEYCLOAK_DATABASE_PORT
-    valueFrom:
-      configMapKeyRef:
-        name: recipefy-config
-        key: KEYCLOAK_DATABASE_PORT
+extraEnvVarsCM: keycloak-config
+
+keycloakConfigCli:
+  enabled: true
+  extraEnvVarsSecret: keycloak-realms-credentials
+  existingConfigmap: keycloak-realm-import
