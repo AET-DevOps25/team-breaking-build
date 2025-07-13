@@ -1,10 +1,6 @@
 name: CI/CD Pipeline for Keycloak
 
 on:
-  push:
-    paths:
-      - ".github/workflows/keycloak-ci-cd.yml"
-      - 'helm/keycloak/**'
   workflow_dispatch:
 
 env:
@@ -62,5 +58,5 @@ jobs:
         run: |
           helm repo add bitnami https://charts.bitnami.com/bitnami
           helm repo update
-          helm upgrade ${{ env.RELEASE_NAME }} ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} \
-            -n ${{ env.HNAMESPACE }} -f ${{ env.CHART_PATH }}/values.yaml
+          helm upgrade --install ${{ env.RELEASE_NAME }} ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} \
+            -n ${{ env.NAMESPACE }} -f ${{ env.CHART_PATH }}/values.yaml
