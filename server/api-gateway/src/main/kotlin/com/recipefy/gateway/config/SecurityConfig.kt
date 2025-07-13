@@ -27,21 +27,19 @@ class SecurityConfig(
                         "/actuator/**",
                         "/webjars/swagger-ui/**",
                         "/v3/api-docs/**"
-                    )
-                    .permitAll()
+                    ).permitAll()
                     .anyExchange()
                     .authenticated()
-            }
-            .oauth2ResourceServer { oauth2 ->
+            }.oauth2ResourceServer { oauth2 ->
                 oauth2.opaqueToken { opaque ->
-                    opaque.introspectionUri(keycloakProperties.introspectUrl)
+                    opaque
+                        .introspectionUri(keycloakProperties.introspectUrl)
                         .introspectionClientCredentials(
                             keycloakProperties.clientId,
                             keycloakProperties.clientSecret
                         )
                 }
-            }
-            .csrf { csrf -> csrf.disable() }
+            }.csrf { csrf -> csrf.disable() }
             .cors { cors -> cors.configurationSource(corsConfigurationSource()) }
         return http.build()
     }

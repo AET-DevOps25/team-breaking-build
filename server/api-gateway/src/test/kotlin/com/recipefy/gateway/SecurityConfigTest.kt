@@ -20,7 +20,6 @@ import org.springframework.test.web.reactive.server.WebTestClient
 @SpringBootTest
 @ActiveProfiles("test")
 class SecurityConfigTest {
-
     @Autowired
     private lateinit var context: ApplicationContext
 
@@ -36,12 +35,22 @@ class SecurityConfigTest {
 
     @Test
     fun `should allow access to actuator endpoints without authentication`() {
-        webTestClient.get().uri("/actuator/health").exchange().expectStatus().isOk
+        webTestClient
+            .get()
+            .uri("/actuator/health")
+            .exchange()
+            .expectStatus()
+            .isOk
     }
 
     @Test
     fun `should require authentication for protected endpoints`() {
-        webTestClient.get().uri("/protected-endpoint").exchange().expectStatus().isUnauthorized
+        webTestClient
+            .get()
+            .uri("/protected-endpoint")
+            .exchange()
+            .expectStatus()
+            .isUnauthorized
     }
 
     @Test
@@ -71,11 +80,11 @@ class SecurityConfigTest {
         assert(corsConfiguration != null)
         assert(
             corsConfiguration!!.allowedOrigins ==
-                    listOf("http://localhost:3000", "https://example.com")
+                listOf("http://localhost:3000", "https://example.com")
         )
         assert(
             corsConfiguration.allowedMethods ==
-                    listOf("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                listOf("GET", "POST", "PUT", "DELETE", "OPTIONS")
         )
         assert(corsConfiguration.allowedHeaders == listOf("*"))
         assert(corsConfiguration.allowCredentials == true)
@@ -134,7 +143,7 @@ class SecurityConfigTest {
         // Verify the introspection URL is correctly configured
         assert(
             keycloakProperties.introspectUrl ==
-                    "http://localhost:8080/realms/test-realm/protocol/openid-connect/token/introspect"
+                "http://localhost:8080/realms/test-realm/protocol/openid-connect/token/introspect"
         )
         assert(keycloakProperties.clientId == "test-client")
         assert(keycloakProperties.clientSecret == "test-secret")

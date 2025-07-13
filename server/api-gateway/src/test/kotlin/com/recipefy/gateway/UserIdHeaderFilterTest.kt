@@ -1,7 +1,6 @@
 package com.recipefy.gateway
 
 import com.recipefy.gateway.config.UserIdHeaderFilter
-import java.util.UUID
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mock
@@ -19,9 +18,9 @@ import org.springframework.security.oauth2.server.resource.authentication.Bearer
 import org.springframework.web.server.ServerWebExchange
 import reactor.core.publisher.Mono
 import reactor.test.StepVerifier
+import java.util.UUID
 
 class UserIdHeaderFilterTest {
-
     @Mock
     private lateinit var chain: GatewayFilterChain
 
@@ -65,7 +64,8 @@ class UserIdHeaderFilterTest {
 
         // When
         val result =
-            filter.filter(exchange, chain)
+            filter
+                .filter(exchange, chain)
                 .contextWrite(
                     ReactiveSecurityContextHolder.withSecurityContext(
                         Mono.just(securityContext)
@@ -98,7 +98,8 @@ class UserIdHeaderFilterTest {
 
         // When
         val result =
-            filter.filter(exchange, chain)
+            filter
+                .filter(exchange, chain)
                 .contextWrite(
                     ReactiveSecurityContextHolder.withSecurityContext(
                         Mono.just(securityContext)
@@ -129,7 +130,8 @@ class UserIdHeaderFilterTest {
 
         // When
         val result =
-            filter.filter(exchange, chain)
+            filter
+                .filter(exchange, chain)
                 .contextWrite(
                     ReactiveSecurityContextHolder.withSecurityContext(
                         Mono.just(securityContext)
@@ -145,7 +147,8 @@ class UserIdHeaderFilterTest {
         // Given
         val userId = UUID.randomUUID().toString()
         val request =
-            MockServerHttpRequest.get("/test")
+            MockServerHttpRequest
+                .get("/test")
                 .header("Authorization", "Bearer token")
                 .header("Content-Type", "application/json")
                 .build()
@@ -174,7 +177,8 @@ class UserIdHeaderFilterTest {
 
         // When
         val result =
-            filter.filter(exchange, chain)
+            filter
+                .filter(exchange, chain)
                 .contextWrite(
                     ReactiveSecurityContextHolder.withSecurityContext(
                         Mono.just(securityContext)
@@ -197,11 +201,12 @@ class UserIdHeaderFilterTest {
 
         methods.forEach { method ->
             val request =
-                MockServerHttpRequest.method(
-                    org.springframework.http.HttpMethod.valueOf(method),
-                    "/test"
-                )
-                    .build()
+                MockServerHttpRequest
+                    .method(
+                        org.springframework.http.HttpMethod
+                            .valueOf(method),
+                        "/test"
+                    ).build()
             val exchange = MockServerWebExchange.from(request)
 
             whenever(chain.filter(any<ServerWebExchange>())).thenAnswer { invocation ->
@@ -214,7 +219,8 @@ class UserIdHeaderFilterTest {
             }
 
             val result =
-                filter.filter(exchange, chain)
+                filter
+                    .filter(exchange, chain)
                     .contextWrite(
                         ReactiveSecurityContextHolder.withSecurityContext(
                             Mono.just(securityContext)
@@ -249,7 +255,8 @@ class UserIdHeaderFilterTest {
             }
 
             val result =
-                filter.filter(exchange, chain)
+                filter
+                    .filter(exchange, chain)
                     .contextWrite(
                         ReactiveSecurityContextHolder.withSecurityContext(
                             Mono.just(securityContext)
@@ -275,7 +282,8 @@ class UserIdHeaderFilterTest {
 
         // When
         val result =
-            filter.filter(exchange, chain)
+            filter
+                .filter(exchange, chain)
                 .contextWrite(
                     ReactiveSecurityContextHolder.withSecurityContext(
                         Mono.just(securityContext)
@@ -314,7 +322,8 @@ class UserIdHeaderFilterTest {
 
         // When
         val result =
-            filter.filter(exchange, chain)
+            filter
+                .filter(exchange, chain)
                 .contextWrite(
                     ReactiveSecurityContextHolder.withSecurityContext(
                         Mono.just(securityContext)
@@ -346,7 +355,8 @@ class UserIdHeaderFilterTest {
 
         // When
         val result =
-            filter.filter(exchange, chain)
+            filter
+                .filter(exchange, chain)
                 .contextWrite(
                     ReactiveSecurityContextHolder.withSecurityContext(
                         Mono.just(securityContext)
@@ -378,7 +388,8 @@ class UserIdHeaderFilterTest {
 
         // When
         val result =
-            filter.filter(exchange, chain)
+            filter
+                .filter(exchange, chain)
                 .contextWrite(
                     ReactiveSecurityContextHolder.withSecurityContext(
                         Mono.just(securityContext)
@@ -411,7 +422,8 @@ class UserIdHeaderFilterTest {
 
         // When
         val result =
-            filter.filter(exchange, chain)
+            filter
+                .filter(exchange, chain)
                 .contextWrite(
                     ReactiveSecurityContextHolder.withSecurityContext(
                         Mono.just(securityContext)

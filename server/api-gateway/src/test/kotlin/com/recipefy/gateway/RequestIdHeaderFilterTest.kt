@@ -1,7 +1,6 @@
 package com.recipefy.gateway
 
 import com.recipefy.gateway.config.RequestIdHeaderFilter
-import java.util.UUID
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mock
@@ -15,9 +14,9 @@ import org.springframework.mock.web.server.MockServerWebExchange
 import org.springframework.web.server.ServerWebExchange
 import reactor.core.publisher.Mono
 import reactor.test.StepVerifier
+import java.util.UUID
 
 class RequestIdHeaderFilterTest {
-
     @Mock
     private lateinit var chain: GatewayFilterChain
 
@@ -97,7 +96,8 @@ class RequestIdHeaderFilterTest {
         val firstRequestId = "first-request-id"
         val secondRequestId = "second-request-id"
         val request =
-            MockServerHttpRequest.get("/test")
+            MockServerHttpRequest
+                .get("/test")
                 .header("X-Request-Id", firstRequestId, secondRequestId)
                 .build()
         val exchange = MockServerWebExchange.from(request)
@@ -118,7 +118,6 @@ class RequestIdHeaderFilterTest {
         // Then
         StepVerifier.create(result).verifyComplete()
     }
-
 
     @Test
     fun `should handle null request ID header`() {
@@ -151,7 +150,8 @@ class RequestIdHeaderFilterTest {
     fun `should maintain other headers while adding request ID`() {
         // Given
         val request =
-            MockServerHttpRequest.get("/test")
+            MockServerHttpRequest
+                .get("/test")
                 .header("Authorization", "Bearer token")
                 .header("Content-Type", "application/json")
                 .build()
@@ -191,11 +191,12 @@ class RequestIdHeaderFilterTest {
 
         methods.forEach { method ->
             val request =
-                MockServerHttpRequest.method(
-                    org.springframework.http.HttpMethod.valueOf(method),
-                    "/test"
-                )
-                    .build()
+                MockServerHttpRequest
+                    .method(
+                        org.springframework.http.HttpMethod
+                            .valueOf(method),
+                        "/test"
+                    ).build()
             val exchange = MockServerWebExchange.from(request)
 
             whenever(chain.filter(any<ServerWebExchange>())).thenAnswer { invocation ->
@@ -292,12 +293,11 @@ class RequestIdHeaderFilterTest {
         assert(isValidUUID(capturedRequestIds[1])) { "Second request ID should be valid UUID" }
     }
 
-    private fun isValidUUID(uuid: String): Boolean {
-        return try {
+    private fun isValidUUID(uuid: String): Boolean =
+        try {
             UUID.fromString(uuid)
             true
         } catch (e: IllegalArgumentException) {
             false
         }
-    }
 }
