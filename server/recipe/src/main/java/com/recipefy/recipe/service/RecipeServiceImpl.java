@@ -1,5 +1,16 @@
 package com.recipefy.recipe.service;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.recipefy.recipe.client.GenAIClient;
 import com.recipefy.recipe.client.VersionClient;
 import com.recipefy.recipe.exception.UnauthorizedException;
@@ -13,19 +24,10 @@ import com.recipefy.recipe.model.request.CopyBranchRequest;
 import com.recipefy.recipe.model.request.CreateRecipeRequest;
 import com.recipefy.recipe.repository.RecipeRepository;
 import com.recipefy.recipe.repository.TagRepository;
+
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -53,6 +55,14 @@ public class RecipeServiceImpl implements RecipeService {
         RecipeMetadata recipe = recipeRepository.findById(recipeId)
                 .orElseThrow(() -> new EntityNotFoundException("Recipe not found with ID: " + recipeId));
         return RecipeMetadataDTOMapper.toDTO(recipe);
+    }
+
+    @Override
+    public List<RecipeMetadataDTO> getRecipesByIds(List<Long> recipeIds) {
+        List<RecipeMetadata> recipes = recipeRepository.findAllById(recipeIds);
+        return recipes.stream()
+                .map(RecipeMetadataDTOMapper::toDTO)
+                .collect(Collectors.toList());
     }
 
     @Override

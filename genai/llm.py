@@ -678,7 +678,7 @@ class RecipeLLM:
         if not search_results:
             logger.info("No search results found for recipe search request")
             return ChatResponse(
-                reply="I couldn't find any recipes matching your request. Try searching with different keywords or ask me to create a new recipe for you.",
+                reply="Sorry, I could not find anything matching your request. Try searching with different keywords or ask me to create a new recipe for you.",
                 sources=None,
                 recipe_suggestion=None
             )
@@ -702,7 +702,7 @@ class RecipeLLM:
         )
         
         return ChatResponse(
-            reply=f"I found {len(recipe_ids)} recipes matching your request. Here are the recipe IDs: {', '.join(recipe_ids)}",
+            reply="I have found some recipes for you!",
             sources=recipe_ids,  # Return recipe IDs instead of full metadata
             recipe_suggestion=None
         )

@@ -14,6 +14,7 @@ public interface RecipeService {
     Page<RecipeMetadataDTO> getAllRecipes(Pageable pageable);
     Page<RecipeMetadataDTO> getAllRecipes(UUID userId, Pageable pageable);
     RecipeMetadataDTO getRecipe(Long recipeId);
+    List<RecipeMetadataDTO> getRecipesByIds(List<Long> recipeIds);
     RecipeMetadataDTO createRecipe(CreateRecipeRequest request, UUID userId);
     RecipeMetadataDTO updateRecipe(Long recipeId, RecipeMetadataDTO metadataDTO, UUID userId);
     RecipeMetadataDTO copyRecipe(Long recipeId, UUID userId, Long branchId);

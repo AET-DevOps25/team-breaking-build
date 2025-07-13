@@ -93,6 +93,21 @@ export async function getRecipe(id: number): Promise<Recipe | null> {
   }
 }
 
+export async function getRecipesByIds(ids: number[]): Promise<Recipe[]> {
+  try {
+    if (ids.length === 0) {
+      return [];
+    }
+    
+    const idsParam = ids.join(',');
+    const response = await api.get<RecipeAPIResponse[]>(`/recipes/batch?ids=${idsParam}`);
+    return response.map(convertRecipeFromAPI);
+  } catch (error) {
+    console.error('Error fetching recipes by IDs:', error);
+    return [];
+  }
+}
+
 export async function getRecipeDetails(recipeId: number): Promise<CommitDetailsResponse['recipeDetails'] | null> {
   try {
     // First, get the branches for the recipe

@@ -5,6 +5,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { MessageCircle, X, Send, ChefHat } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api';
+import { getRecipesByIds } from '@/lib/services/recipeService';
+import { Recipe } from '@/lib/types/recipe';
+import { RecipeSearchResults } from '@/components/recipe/recipe-search-results';
 
 import { useNavigate } from 'react-router-dom';
 
@@ -27,6 +30,9 @@ interface ChatMessage {
       details: string;
     }>;
   };
+  sources?: string[];
+  searchedRecipes?: Recipe[];
+  isLoadingRecipes?: boolean;
 }
 
 interface ChatResponse {
@@ -76,6 +82,7 @@ export function Chatbot() {
   ]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [hasScrollbar, setHasScrollbar] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const navigate = useNavigate();
@@ -87,6 +94,10 @@ export function Chatbot() {
         const scrollElement = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
         if (scrollElement) {
           scrollElement.scrollTop = scrollElement.scrollHeight;
+          
+          // Check if scrollbar is visible
+          const hasVerticalScrollbar = scrollElement.scrollHeight > scrollElement.clientHeight;
+          setHasScrollbar(hasVerticalScrollbar);
         }
       }
     };
@@ -100,6 +111,22 @@ export function Chatbot() {
       textareaRef.current.focus();
     }
   }, [isOpen]);
+
+  // Check for scrollbar on window resize
+  useEffect(() => {
+    const checkScrollbar = () => {
+      if (scrollAreaRef.current) {
+        const scrollElement = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
+        if (scrollElement) {
+          const hasVerticalScrollbar = scrollElement.scrollHeight > scrollElement.clientHeight;
+          setHasScrollbar(hasVerticalScrollbar);
+        }
+      }
+    };
+
+    window.addEventListener('resize', checkScrollbar);
+    return () => window.removeEventListener('resize', checkScrollbar);
+  }, []);
 
   // Auto-resize textarea
   useEffect(() => {
@@ -136,9 +163,38 @@ export function Chatbot() {
         isUser: false,
         timestamp: new Date(data.timestamp),
         recipe: data.recipe || data.recipe_suggestion,
+        sources: data.sources,
+        isLoadingRecipes: data.sources && data.sources.length > 0,
       };
 
       setMessages((prev) => [...prev, aiMessage]);
+
+      // If there are sources (recipe IDs), fetch the recipe details
+      if (data.sources && data.sources.length > 0) {
+        try {
+          const recipeIds = data.sources.map((id) => parseInt(id, 10)).filter((id) => !isNaN(id));
+          const recipes = await getRecipesByIds(recipeIds);
+
+          // Update the message with the fetched recipes
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === aiMessage.id
+                ? { ...msg, searchedRecipes: recipes, isLoadingRecipes: false }
+                : msg
+            )
+          );
+        } catch (error) {
+          console.error('Error fetching recipes:', error);
+          // Update the message to stop loading state
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === aiMessage.id
+                ? { ...msg, isLoadingRecipes: false }
+                : msg
+            )
+          );
+        }
+      }
     } catch (error) {
       console.error('Error sending message:', error);
       const errorMessage: ChatMessage = {
@@ -261,10 +317,10 @@ export function Chatbot() {
 
             {/* Messages */}
             <ScrollArea
-              className='flex-1 p-4'
+              className='flex-1'
               ref={scrollAreaRef}
             >
-              <div className='space-y-4'>
+              <div className={cn('space-y-4 p-4', hasScrollbar ? 'pr-6' : 'pr-4')}>
                 {messages.map((message) => (
                   <div
                     key={message.id}
@@ -272,7 +328,7 @@ export function Chatbot() {
                   >
                     <div
                       className={cn(
-                        'max-w-[80%] rounded-lg px-3 py-2 text-sm',
+                        'max-w-[75%] rounded-lg px-3 py-2 text-sm',
                         message.isUser ? 'text-white' : 'bg-gray-100 text-gray-900',
                       )}
                       style={message.isUser ? { backgroundColor: '#FF7C75' } : {}}
@@ -292,6 +348,14 @@ export function Chatbot() {
                             Let&apos;s Create
                           </Button>
                         </div>
+                      )}
+
+                      {/* Recipe Search Results */}
+                      {!message.isUser && (message.searchedRecipes || message.isLoadingRecipes) && (
+                        <RecipeSearchResults
+                          recipes={message.searchedRecipes}
+                          isLoading={message.isLoadingRecipes}
+                        />
                       )}
                     </div>
                   </div>
