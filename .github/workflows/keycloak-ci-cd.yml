@@ -4,86 +4,20 @@ on:
   push:
     paths:
       - ".github/workflows/keycloak-ci-cd.yml"
-      - 'server/keycloak/**'
       - 'helm/keycloak/**'
   workflow_dispatch:
 
 env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: server/keycloak-service
-  WORKING_DIRECTORY: server/keycloak
-  HELM_NAMESPACE: team-breaking-build
-  HELM_RELEASE_NAME: recipefy-keycloak-service
-  CHART_PATH: ./helm/keycloak-spi
+  REGISTRY: oci://registry-1.docker.io
+  IMAGE_NAME: bitnamicharts/keycloak
+  NAMESPACE: recipefy
+  RELEASE_NAME: keycloak
+  CHART_PATH: ./helm/keycloak
+  SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
+  SECRET_FOLDER: ./helm/keycloak/templates/secrets
+  CONFIG_FOLDER: ./helm/keycloak/templates/configmaps
 
 jobs:
-  test:
-    name: Test
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ${{ env.WORKING_DIRECTORY }}
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
-        with:
-          java-version: '21'
-          distribution: 'temurin'
-
-      - name: Run Gradle Build
-        run: ./gradlew build --no-daemon
-
-  build:
-    name: Build and Push Docker Images
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    needs: test
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: all
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Generate Docker Image Metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ github.repository }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=sha
-          labels: |
-            org.opencontainers.image.source=https://github.com/${{ github.repository }}
-
-      - name: Build and Push Docker Image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./${{ env.WORKING_DIRECTORY }}
-          file: ./${{ env.WORKING_DIRECTORY }}/Dockerfile
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-
-
   deploy:
     name: Deploy to Rancher with Helm
     if: github.ref == 'refs/heads/main'
@@ -103,7 +37,31 @@ jobs:
           method: kubeconfig
           kubeconfig: ${{ secrets.KUBE_CONFIG }}
 
+      - name: Set up SOPS
+        uses: nhedger/setup-sops@v2
+        with:
+          version: 3.8.1
+
+      - name: Decrypt secret
+        run: |
+          sops --decrypt "$SECRET_FOLDER/auth-secret.yaml" > tmp && mv tmp "$SECRET_FOLDER/auth-secret.decrypted.yaml" && \
+          sops --decrypt "$SECRET_FOLDER/db-secret.yaml" > tmp && mv tmp "$SECRET_FOLDER/db-secret.decrypted.yaml" && \
+          sops --decrypt "$SECRET_FOLDER/realms-secret.yaml" > tmp && mv tmp "$SECRET_FOLDER/realms-secret.decrypted.yaml"
+
+      - name: Apply secret to Kubernetes
+        run: |
+          kubectl apply -f "$SECRET_FOLDER/auth-secret.decrypted.yaml" --namespace "$NAMESPACE" && \
+          kubectl apply -f "$SECRET_FOLDER/db-secret.decrypted.yaml" --namespace "$NAMESPACE" && \
+          kubectl apply -f "$SECRET_FOLDER/realms-secret.decrypted.yaml" --namespace "$NAMESPACE"
+
+      - name: Apply configMaps to Kubernetes
+        run: |
+          kubectl apply -f "$CONFIG_FOLDER/keycloak-configmaps.yaml" --namespace "$NAMESPACE" && \
+          kubectl apply -f "$CONFIG_FOLDER/realm-import-configmaps.yaml" --namespace "$NAMESPACE"
+
       - name: Deploy Helm Chart
         run: |
-          helm upgrade --install ${{ env.HELM_RELEASE_NAME }} ${{ env.CHART_PATH }} \
-            --namespace ${{ env.HELM_NAMESPACE }}
+          helm repo add bitnami https://charts.bitnami.com/bitnami
+          helm repo update
+          helm upgrade ${{ env.RELEASE_NAME }} ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} \
+            -n ${{ env.HNAMESPACE }} -f ${{ env.CHART_PATH }}/values.yaml

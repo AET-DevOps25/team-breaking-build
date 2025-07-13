@@ -60,49 +60,8 @@ readinessProbe:
   initialDelaySeconds: 20
   periodSeconds: 5
 
-env:
-  - name: RECIPE_POSTGRES_URL_HOST
-    valueFrom:
-      configMapKeyRef:
-        name: recipefy-recipe-config
-        key: RECIPE_POSTGRES_URL_HOST
-  - name: RECIPE_POSTGRES_URL_PORT
-    valueFrom:
-      configMapKeyRef:
-        name: recipefy-recipe-config
-        key: RECIPE_POSTGRES_URL_PORT
-  - name: RECIPE_POSTGRES_DB_NAME
-    valueFrom:
-      configMapKeyRef:
-        name: recipefy-recipe-config
-        key: RECIPE_POSTGRES_DB_NAME
-  - name: RECIPE_POSTGRES_USER
-    valueFrom:
-      secretKeyRef:
-        name: recipefy-recipe-secret
-        key: RECIPE_POSTGRES_USER
-  - name: RECIPE_POSTGRES_PASSWORD
-    valueFrom:
-      secretKeyRef:
-        name: recipefy-recipe-secret
-        key: RECIPE_POSTGRES_PASSWORD
-  - name: VERSION_SERVICE_HOST
-    valueFrom:
-      configMapKeyRef:
-        name: recipefy-config
-        key: VERSION_SERVICE_HOST
-  - name: VERSION_SERVICE_PORT
-    valueFrom:
-      configMapKeyRef:
-        name: recipefy-config
-        key: VERSION_SERVICE_PORT
-  - name: GENAI_SERVICE_HOST
-    valueFrom:
-      configMapKeyRef:
-        name: recipefy-config
-        key: GENAI_SERVICE_HOST
-  - name: GENAI_SERVICE_PORT
-    valueFrom:
-      configMapKeyRef:
-        name: recipefy-config
-        key: GENAI_SERVICE_PORT
+envFrom:
+  - configMapRef:
+      name: recipe-config
+  - secretRef:
+      name: recipe-secret

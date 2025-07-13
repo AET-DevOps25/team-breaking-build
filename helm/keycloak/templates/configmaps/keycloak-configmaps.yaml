@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-config
+data:
+  KEYCLOAK_DATABASE_HOST: 'postgresql-pgpool.recipefy-database.svc.cluster.local'
+  KEYCLOAK_DATABASE_PORT: '5432'
