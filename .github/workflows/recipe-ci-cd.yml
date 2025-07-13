@@ -87,18 +87,6 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-      - name: Set up SOPS
-        uses: nhedger/setup-sops@v2
-        with:
-          version: 3.8.1
-
-      - name: Decrypt secret
-        run: |
-          sops --decrypt "$SECRET_FILE" > tmp && mv tmp "$SECRET_FILE"
-
-      - name: Set image tag
-        run: echo "IMAGE_TAG=$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_ENV
-
   deploy:
     name: Deploy to Rancher with Helm
     if: github.ref == 'refs/heads/main'
@@ -117,6 +105,23 @@ jobs:
         with:
           method: kubeconfig
           kubeconfig: ${{ secrets.KUBE_CONFIG }}
+
+      - name: Set up SOPS
+        uses: nhedger/setup-sops@v2
+        with:
+          version: 3.8.1
+
+      - name: Decrypt secret
+        run: |
+          sops --decrypt "$SECRET_FILE" > tmp && mv tmp "$SECRET_FILE"
+
+      - name: Set image tag
+        run: |
+          if [ -z "$GITHUB_SHA" ]; then
+            echo "IMAGE_TAG=latest" >> $GITHUB_ENV
+          else
+            echo "IMAGE_TAG=sha-$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_ENV
+          fi
 
       - name: Deploy Helm Chart
         run: |
