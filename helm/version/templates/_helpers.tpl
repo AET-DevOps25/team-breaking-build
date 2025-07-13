@@ -24,6 +24,20 @@ Return the full service name
 {{- end }}
 
 {{/*
+Return the full config name
+*/}}
+{{- define "version.configName" -}}
+{{ include "version.fullname" . }}-config
+{{- end }}
+
+{{/*
+Return the full config name
+*/}}
+{{- define "version.secretName" -}}
+{{ include "version.fullname" . }}-secret
+{{- end }}
+
+{{/*
 Return the full service account name
 */}}
 {{- define "version.serviceAccountName" -}}
