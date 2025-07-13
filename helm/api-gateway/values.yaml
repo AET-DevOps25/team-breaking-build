@@ -54,6 +54,6 @@ readinessProbe:
 
 envFrom:
   - configMapRef:
-      name: recipefy-gateway-config
+      name: api-gateway-config
   - secretRef:
-      name: recipefy-gateway-secret
+      name: keycloak-realms-credentials

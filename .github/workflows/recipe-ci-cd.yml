@@ -3,6 +3,7 @@ name: CI/CD Pipeline for Recipe Microservice
 on:
   push:
     paths:
+      - ".github/workflows/recipe-ci-cd.yml"
       - 'server/recipe/**'
       - 'helm/recipe/**'
   workflow_dispatch:

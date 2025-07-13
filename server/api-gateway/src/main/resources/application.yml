@@ -34,8 +34,8 @@ keycloak:
   base-url: http://localhost:8085
   realms: recipfy
   introspect-url: ${keycloak.base-url}/realms/${keycloak.realms}/protocol/openid-connect/token/introspect
-  client-id: ${CLIENT_ID}
-  client-secret: ${CLIENT_SECRET}
+  client-id: ${KEYCLOAK_CREDENTIALS_RECIPEFY_CLIENT_ID}
+  client-secret: ${KEYCLOAK_CREDENTIALS_RECIPEFY_CLIENT_SECRET}
 
 management:
   endpoint:

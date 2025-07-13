@@ -3,6 +3,7 @@ name: CI/CD Pipeline for API-Gateway
 on:
   push:
     paths:
+      - ".github/workflows/api-gateway-ci-cd.yml"
       - 'server/api-gateway/**'
       - 'helm/api-gateway/**'
   workflow_dispatch:
@@ -11,8 +12,8 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: server/api-gateway
   WORKING_DIRECTORY: server/api-gateway
-  HELM_NAMESPACE: team-breaking-build
-  HELM_RELEASE_NAME: recipefy-api-gateway
+  NAMESPACE: recipefy
+  RELEASE_NAME: api-gateway
   CHART_PATH: ./helm/api-gateway
 
 jobs:
@@ -102,7 +103,17 @@ jobs:
           method: kubeconfig
           kubeconfig: ${{ secrets.KUBE_CONFIG }}
 
+      - name: Set image tag
+        run: |
+          if [ -z "$GITHUB_SHA" ]; then
+            echo "IMAGE_TAG=latest" >> $GITHUB_ENV
+          else
+            echo "IMAGE_TAG=sha-$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_ENV
+          fi
+
       - name: Deploy Helm Chart
         run: |
-          helm upgrade --install ${{ env.HELM_RELEASE_NAME }} ${{ env.CHART_PATH }} \
-            --namespace ${{ env.HELM_NAMESPACE }}
+          helm upgrade --install ${{ env.RELEASE_NAME }} ${{ env.CHART_PATH }} \
+            --set image.tag=sha-${{ env.IMAGE_TAG }} \
+            --namespace ${{ env.NAMESPACE }} \
+            --wait --timeout 5m
