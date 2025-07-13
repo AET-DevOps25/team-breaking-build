@@ -1,4 +1,4 @@
-name: CI/CD Pipeline for Keycloak SPI
+name: CI/CD Pipeline for Keycloak Service
 
 on:
   push:
