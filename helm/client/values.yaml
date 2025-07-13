@@ -1,4 +1,3 @@
-prefix: recipefy
 name: client
 
 replicaCount: 2
