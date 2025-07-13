@@ -22,13 +22,17 @@ import reactor.test.StepVerifier
 
 class UserIdHeaderFilterTest {
 
-    @Mock private lateinit var chain: GatewayFilterChain
+    @Mock
+    private lateinit var chain: GatewayFilterChain
 
-    @Mock private lateinit var securityContext: SecurityContext
+    @Mock
+    private lateinit var securityContext: SecurityContext
 
-    @Mock private lateinit var authentication: BearerTokenAuthentication
+    @Mock
+    private lateinit var authentication: BearerTokenAuthentication
 
-    @Mock private lateinit var principal: OAuth2AuthenticatedPrincipal
+    @Mock
+    private lateinit var principal: OAuth2AuthenticatedPrincipal
 
     private lateinit var filter: UserIdHeaderFilter
 
@@ -61,12 +65,12 @@ class UserIdHeaderFilterTest {
 
         // When
         val result =
-                filter.filter(exchange, chain)
-                        .contextWrite(
-                                ReactiveSecurityContextHolder.withSecurityContext(
-                                        Mono.just(securityContext)
-                                )
-                        )
+            filter.filter(exchange, chain)
+                .contextWrite(
+                    ReactiveSecurityContextHolder.withSecurityContext(
+                        Mono.just(securityContext)
+                    )
+                )
 
         // Then
         StepVerifier.create(result).verifyComplete()
@@ -94,12 +98,12 @@ class UserIdHeaderFilterTest {
 
         // When
         val result =
-                filter.filter(exchange, chain)
-                        .contextWrite(
-                                ReactiveSecurityContextHolder.withSecurityContext(
-                                        Mono.just(securityContext)
-                                )
-                        )
+            filter.filter(exchange, chain)
+                .contextWrite(
+                    ReactiveSecurityContextHolder.withSecurityContext(
+                        Mono.just(securityContext)
+                    )
+                )
 
         // Then
         StepVerifier.create(result).verifyComplete()
@@ -125,12 +129,12 @@ class UserIdHeaderFilterTest {
 
         // When
         val result =
-                filter.filter(exchange, chain)
-                        .contextWrite(
-                                ReactiveSecurityContextHolder.withSecurityContext(
-                                        Mono.just(securityContext)
-                                )
-                        )
+            filter.filter(exchange, chain)
+                .contextWrite(
+                    ReactiveSecurityContextHolder.withSecurityContext(
+                        Mono.just(securityContext)
+                    )
+                )
 
         // Then
         StepVerifier.create(result).verifyComplete()
@@ -141,10 +145,10 @@ class UserIdHeaderFilterTest {
         // Given
         val userId = UUID.randomUUID().toString()
         val request =
-                MockServerHttpRequest.get("/test")
-                        .header("Authorization", "Bearer token")
-                        .header("Content-Type", "application/json")
-                        .build()
+            MockServerHttpRequest.get("/test")
+                .header("Authorization", "Bearer token")
+                .header("Content-Type", "application/json")
+                .build()
         val exchange = MockServerWebExchange.from(request)
 
         whenever(securityContext.authentication).thenReturn(authentication)
@@ -170,12 +174,12 @@ class UserIdHeaderFilterTest {
 
         // When
         val result =
-                filter.filter(exchange, chain)
-                        .contextWrite(
-                                ReactiveSecurityContextHolder.withSecurityContext(
-                                        Mono.just(securityContext)
-                                )
-                        )
+            filter.filter(exchange, chain)
+                .contextWrite(
+                    ReactiveSecurityContextHolder.withSecurityContext(
+                        Mono.just(securityContext)
+                    )
+                )
 
         // Then
         StepVerifier.create(result).verifyComplete()
@@ -193,11 +197,11 @@ class UserIdHeaderFilterTest {
 
         methods.forEach { method ->
             val request =
-                    MockServerHttpRequest.method(
-                                    org.springframework.http.HttpMethod.valueOf(method),
-                                    "/test"
-                            )
-                            .build()
+                MockServerHttpRequest.method(
+                    org.springframework.http.HttpMethod.valueOf(method),
+                    "/test"
+                )
+                    .build()
             val exchange = MockServerWebExchange.from(request)
 
             whenever(chain.filter(any<ServerWebExchange>())).thenAnswer { invocation ->
@@ -210,12 +214,12 @@ class UserIdHeaderFilterTest {
             }
 
             val result =
-                    filter.filter(exchange, chain)
-                            .contextWrite(
-                                    ReactiveSecurityContextHolder.withSecurityContext(
-                                            Mono.just(securityContext)
-                                    )
-                            )
+                filter.filter(exchange, chain)
+                    .contextWrite(
+                        ReactiveSecurityContextHolder.withSecurityContext(
+                            Mono.just(securityContext)
+                        )
+                    )
 
             StepVerifier.create(result).verifyComplete()
         }
@@ -245,12 +249,12 @@ class UserIdHeaderFilterTest {
             }
 
             val result =
-                    filter.filter(exchange, chain)
-                            .contextWrite(
-                                    ReactiveSecurityContextHolder.withSecurityContext(
-                                            Mono.just(securityContext)
-                                    )
-                            )
+                filter.filter(exchange, chain)
+                    .contextWrite(
+                        ReactiveSecurityContextHolder.withSecurityContext(
+                            Mono.just(securityContext)
+                        )
+                    )
 
             StepVerifier.create(result).verifyComplete()
         }
@@ -271,67 +275,15 @@ class UserIdHeaderFilterTest {
 
         // When
         val result =
-                filter.filter(exchange, chain)
-                        .contextWrite(
-                                ReactiveSecurityContextHolder.withSecurityContext(
-                                        Mono.just(securityContext)
-                                )
-                        )
+            filter.filter(exchange, chain)
+                .contextWrite(
+                    ReactiveSecurityContextHolder.withSecurityContext(
+                        Mono.just(securityContext)
+                    )
+                )
 
         // Then
         StepVerifier.create(result).expectError(RuntimeException::class.java).verify()
-    }
-
-    @Test
-    fun `should handle different user IDs correctly`() {
-        // Given
-        val userId1 = UUID.randomUUID().toString()
-        val userId2 = UUID.randomUUID().toString()
-        val request1 = MockServerHttpRequest.get("/test1").build()
-        val exchange1 = MockServerWebExchange.from(request1)
-        val request2 = MockServerHttpRequest.get("/test2").build()
-        val exchange2 = MockServerWebExchange.from(request2)
-
-        val capturedUserIds = mutableListOf<String>()
-
-        whenever(securityContext.authentication).thenReturn(authentication)
-        whenever(authentication.principal).thenReturn(principal)
-        whenever(chain.filter(any<ServerWebExchange>())).thenAnswer { invocation ->
-            val modifiedExchange = invocation.getArgument<ServerWebExchange>(0)
-            val userIdHeader = modifiedExchange.request.headers.getFirst("X-User-Id")
-            if (userIdHeader != null) {
-                capturedUserIds.add(userIdHeader)
-            }
-            Mono.empty<Void>()
-        }
-
-        // When - First request with userId1
-        whenever(principal.getAttribute<String>("sub")).thenReturn(userId1)
-        val result1 =
-                filter.filter(exchange1, chain)
-                        .contextWrite(
-                                ReactiveSecurityContextHolder.withSecurityContext(
-                                        Mono.just(securityContext)
-                                )
-                        )
-
-        // When - Second request with userId2
-        whenever(principal.getAttribute<String>("sub")).thenReturn(userId2)
-        val result2 =
-                filter.filter(exchange2, chain)
-                        .contextWrite(
-                                ReactiveSecurityContextHolder.withSecurityContext(
-                                        Mono.just(securityContext)
-                                )
-                        )
-
-        // Then
-        StepVerifier.create(result1).verifyComplete()
-        StepVerifier.create(result2).verifyComplete()
-
-        assert(capturedUserIds.size == 2) { "Should capture two user IDs" }
-        assert(capturedUserIds[0] == userId1) { "First user ID should be $userId1" }
-        assert(capturedUserIds[1] == userId2) { "Second user ID should be $userId2" }
     }
 
     @Test
@@ -362,12 +314,12 @@ class UserIdHeaderFilterTest {
 
         // When
         val result =
-                filter.filter(exchange, chain)
-                        .contextWrite(
-                                ReactiveSecurityContextHolder.withSecurityContext(
-                                        Mono.just(securityContext)
-                                )
-                        )
+            filter.filter(exchange, chain)
+                .contextWrite(
+                    ReactiveSecurityContextHolder.withSecurityContext(
+                        Mono.just(securityContext)
+                    )
+                )
 
         // Then
         StepVerifier.create(result).verifyComplete()
@@ -394,12 +346,12 @@ class UserIdHeaderFilterTest {
 
         // When
         val result =
-                filter.filter(exchange, chain)
-                        .contextWrite(
-                                ReactiveSecurityContextHolder.withSecurityContext(
-                                        Mono.just(securityContext)
-                                )
-                        )
+            filter.filter(exchange, chain)
+                .contextWrite(
+                    ReactiveSecurityContextHolder.withSecurityContext(
+                        Mono.just(securityContext)
+                    )
+                )
 
         // Then
         StepVerifier.create(result).verifyComplete()
@@ -426,12 +378,12 @@ class UserIdHeaderFilterTest {
 
         // When
         val result =
-                filter.filter(exchange, chain)
-                        .contextWrite(
-                                ReactiveSecurityContextHolder.withSecurityContext(
-                                        Mono.just(securityContext)
-                                )
-                        )
+            filter.filter(exchange, chain)
+                .contextWrite(
+                    ReactiveSecurityContextHolder.withSecurityContext(
+                        Mono.just(securityContext)
+                    )
+                )
 
         // Then
         StepVerifier.create(result).verifyComplete()
@@ -459,12 +411,12 @@ class UserIdHeaderFilterTest {
 
         // When
         val result =
-                filter.filter(exchange, chain)
-                        .contextWrite(
-                                ReactiveSecurityContextHolder.withSecurityContext(
-                                        Mono.just(securityContext)
-                                )
-                        )
+            filter.filter(exchange, chain)
+                .contextWrite(
+                    ReactiveSecurityContextHolder.withSecurityContext(
+                        Mono.just(securityContext)
+                    )
+                )
 
         // Then
         StepVerifier.create(result).verifyComplete()

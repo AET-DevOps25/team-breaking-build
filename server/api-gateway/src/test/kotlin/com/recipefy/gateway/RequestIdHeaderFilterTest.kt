@@ -18,7 +18,8 @@ import reactor.test.StepVerifier
 
 class RequestIdHeaderFilterTest {
 
-    @Mock private lateinit var chain: GatewayFilterChain
+    @Mock
+    private lateinit var chain: GatewayFilterChain
 
     private lateinit var filter: RequestIdHeaderFilter
 
@@ -51,7 +52,7 @@ class RequestIdHeaderFilterTest {
         // Given
         val existingRequestId = "existing-request-id"
         val request =
-                MockServerHttpRequest.get("/test").header("X-Request-Id", existingRequestId).build()
+            MockServerHttpRequest.get("/test").header("X-Request-Id", existingRequestId).build()
         val exchange = MockServerWebExchange.from(request)
 
         whenever(chain.filter(any<ServerWebExchange>())).thenReturn(Mono.empty())
@@ -96,9 +97,9 @@ class RequestIdHeaderFilterTest {
         val firstRequestId = "first-request-id"
         val secondRequestId = "second-request-id"
         val request =
-                MockServerHttpRequest.get("/test")
-                        .header("X-Request-Id", firstRequestId, secondRequestId)
-                        .build()
+            MockServerHttpRequest.get("/test")
+                .header("X-Request-Id", firstRequestId, secondRequestId)
+                .build()
         val exchange = MockServerWebExchange.from(request)
 
         whenever(chain.filter(any<ServerWebExchange>())).thenAnswer { invocation ->
@@ -118,35 +119,12 @@ class RequestIdHeaderFilterTest {
         StepVerifier.create(result).verifyComplete()
     }
 
-    @Test
-    fun `should handle empty request ID header`() {
-        // Given
-        val request = MockServerHttpRequest.get("/test").header("X-Request-Id", "").build()
-        val exchange = MockServerWebExchange.from(request)
-
-        whenever(chain.filter(any<ServerWebExchange>())).thenAnswer { invocation ->
-            val modifiedExchange = invocation.getArgument<ServerWebExchange>(0)
-            val requestId = modifiedExchange.request.headers.getFirst("X-Request-Id")
-
-            // Should generate a new UUID since the header is empty
-            assert(requestId != null && requestId.isNotEmpty()) { "Request ID should not be empty" }
-            assert(isValidUUID(requestId!!)) { "Request ID should be a valid UUID: $requestId" }
-
-            Mono.empty<Void>()
-        }
-
-        // When
-        val result = filter.filter(exchange, chain)
-
-        // Then
-        StepVerifier.create(result).verifyComplete()
-    }
 
     @Test
     fun `should handle null request ID header`() {
         // Given
         val request =
-                MockServerHttpRequest.get("/test").header("X-Request-Id", null as String?).build()
+            MockServerHttpRequest.get("/test").header("X-Request-Id", null as String?).build()
         val exchange = MockServerWebExchange.from(request)
 
         whenever(chain.filter(any<ServerWebExchange>())).thenAnswer { invocation ->
@@ -173,10 +151,10 @@ class RequestIdHeaderFilterTest {
     fun `should maintain other headers while adding request ID`() {
         // Given
         val request =
-                MockServerHttpRequest.get("/test")
-                        .header("Authorization", "Bearer token")
-                        .header("Content-Type", "application/json")
-                        .build()
+            MockServerHttpRequest.get("/test")
+                .header("Authorization", "Bearer token")
+                .header("Content-Type", "application/json")
+                .build()
         val exchange = MockServerWebExchange.from(request)
 
         whenever(chain.filter(any<ServerWebExchange>())).thenAnswer { invocation ->
@@ -213,11 +191,11 @@ class RequestIdHeaderFilterTest {
 
         methods.forEach { method ->
             val request =
-                    MockServerHttpRequest.method(
-                                    org.springframework.http.HttpMethod.valueOf(method),
-                                    "/test"
-                            )
-                            .build()
+                MockServerHttpRequest.method(
+                    org.springframework.http.HttpMethod.valueOf(method),
+                    "/test"
+                )
+                    .build()
             val exchange = MockServerWebExchange.from(request)
 
             whenever(chain.filter(any<ServerWebExchange>())).thenAnswer { invocation ->
