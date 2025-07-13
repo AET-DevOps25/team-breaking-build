@@ -89,7 +89,7 @@ extraObjects:
     kind: Role
     metadata:
       name: loki-role
-      namespace: team-breaking-build
+      namespace: recipefy-monitoring
     rules:
       - apiGroups: [""]
         resources: ["configmaps", "secrets"]
@@ -98,11 +98,11 @@ extraObjects:
     kind: RoleBinding
     metadata:
       name: loki-role
-      namespace: team-breaking-build
+      namespace: recipefy-monitoring
     subjects:
       - kind: ServiceAccount
         name: loki
-        namespace: team-breaking-build
+        namespace: recipefy-monitoring
     roleRef:
       apiGroup: rbac.authorization.k8s.io
       kind: Role
