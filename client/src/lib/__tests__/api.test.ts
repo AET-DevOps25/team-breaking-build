@@ -63,6 +63,14 @@ describe('API Library', () => {
     it('should redirect to login when no tokens available', async () => {
       mockLocalStorage.getItem.mockReturnValue(null);
 
+      // Mock fetch to return a proper response since apiRequest still calls fetch
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => ({ data: 'test-data' }),
+      });
+
       await apiRequest('/test-endpoint');
 
       expect(window.location.href).toBe('/login');
@@ -74,6 +82,14 @@ describe('API Library', () => {
           refreshToken: 'test-refresh-token',
         })
       );
+
+      // Mock fetch to return a proper response since apiRequest still calls fetch
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => ({ data: 'test-data' }),
+      });
 
       await apiRequest('/test-endpoint');
 

@@ -7,10 +7,8 @@ import {
   updateRecipe,
   deleteRecipe,
   getUserRecipes,
-  getRecipeTags,
-  convertRecipeFromAPI,
+  getTags,
   Tag,
-  PaginatedRecipeResponse,
 } from '../recipeService';
 import { Recipe, RecipeMetadataDTO, BranchDTO, CommitDetailsResponse } from '../../types/recipe';
 
@@ -37,7 +35,7 @@ describe('Recipe Service', () => {
 
   describe('getRecipes', () => {
     it('should fetch recipes with default pagination', async () => {
-      const mockResponse: PaginatedRecipeResponse = {
+      const mockResponse = {
         content: [
           {
             id: 1,
@@ -77,7 +75,7 @@ describe('Recipe Service', () => {
     });
 
     it('should fetch recipes with custom pagination', async () => {
-      const mockResponse: PaginatedRecipeResponse = {
+      const mockResponse = {
         content: [],
         totalElements: 0,
         totalPages: 0,
@@ -174,7 +172,7 @@ describe('Recipe Service', () => {
 
   describe('createRecipe', () => {
     it('should create recipe successfully', async () => {
-      const mockRecipeData: RecipeMetadataDTO = {
+      const mockRecipeResponse = {
         id: 1,
         title: 'New Recipe',
         description: 'New Description',
@@ -187,28 +185,32 @@ describe('Recipe Service', () => {
         forkedFrom: null,
       };
 
-      const recipeDetails = {
-        servingSize: 4,
-        recipeIngredients: [
-          { name: 'flour', amount: 2, unit: 'cups' },
-        ],
-        recipeSteps: [
-          { order: 1, details: 'Mix ingredients' },
-        ],
-      };
-
-      (api.post as any).mockResolvedValue(mockRecipeData);
-
-      const result = await createRecipe(mockRecipeData, recipeDetails);
-
-      expect(api.post).toHaveBeenCalledWith('/recipes', {
-        recipe: expect.objectContaining({
+      const createRecipeRequest = {
+        metadata: {
           title: 'New Recipe',
           description: 'New Description',
           servingSize: 4,
-        }),
-        recipeDetails: recipeDetails,
-      });
+          thumbnail: { base64String: 'thumbnail-data' },
+          tags: [{ id: 1, name: 'Italian' }],
+        },
+        initRequest: {
+          recipeDetails: {
+            servingSize: 4,
+            recipeIngredients: [
+              { name: 'flour', amount: 2, unit: 'cups' },
+            ],
+            recipeSteps: [
+              { order: 1, details: 'Mix ingredients' },
+            ],
+          },
+        },
+      };
+
+      (api.post as any).mockResolvedValue(mockRecipeResponse);
+
+      const result = await createRecipe(createRecipeRequest);
+
+      expect(api.post).toHaveBeenCalledWith('/recipes', createRecipeRequest);
       expect(result).toEqual(expect.objectContaining({
         id: 1,
         title: 'New Recipe',
@@ -217,28 +219,31 @@ describe('Recipe Service', () => {
     });
 
     it('should handle create recipe errors', async () => {
-      const mockRecipeData: RecipeMetadataDTO = {
-        id: 1,
-        title: 'New Recipe',
-        description: 'New Description',
-        servingSize: 4,
-        tags: [],
-        thumbnail: null,
-        userId: 'user-123',
-        createdAt: '2023-01-01T00:00:00Z',
-        updatedAt: '2023-01-01T00:00:00Z',
-        forkedFrom: null,
+      const createRecipeRequest = {
+        metadata: {
+          title: 'New Recipe',
+          description: 'New Description',
+          servingSize: 4,
+          tags: [],
+        },
+        initRequest: {
+          recipeDetails: {
+            servingSize: 4,
+            recipeIngredients: [],
+            recipeSteps: [],
+          },
+        },
       };
 
       (api.post as any).mockRejectedValue(new Error('Create Error'));
 
-      await expect(createRecipe(mockRecipeData, {})).rejects.toThrow('Create Error');
+      await expect(createRecipe(createRecipeRequest)).rejects.toThrow('Create Error');
     });
   });
 
   describe('updateRecipe', () => {
     it('should update recipe successfully', async () => {
-      const mockRecipeData: RecipeMetadataDTO = {
+      const mockRecipeResponse = {
         id: 1,
         title: 'Updated Recipe',
         description: 'Updated Description',
@@ -251,28 +256,23 @@ describe('Recipe Service', () => {
         forkedFrom: null,
       };
 
-      const recipeDetails = {
+      const recipeMetadata = {
+        title: 'Updated Recipe',
+        description: 'Updated Description',
         servingSize: 6,
-        recipeIngredients: [
-          { name: 'flour', amount: 3, unit: 'cups' },
-        ],
-        recipeSteps: [
-          { order: 1, details: 'Mix ingredients well' },
-        ],
+        tags: [{ id: 1, name: 'Italian' }],
+        thumbnail: { base64String: 'updated-thumbnail' },
       };
 
-      (api.put as any).mockResolvedValue(mockRecipeData);
+      (api.put as any).mockResolvedValue(mockRecipeResponse);
 
-      const result = await updateRecipe(1, mockRecipeData, recipeDetails);
+      const result = await updateRecipe(1, recipeMetadata);
 
-      expect(api.put).toHaveBeenCalledWith('/recipes/1', {
-        recipe: expect.objectContaining({
-          title: 'Updated Recipe',
-          description: 'Updated Description',
-          servingSize: 6,
-        }),
-        recipeDetails: recipeDetails,
-      });
+      expect(api.put).toHaveBeenCalledWith('/recipes/1', expect.objectContaining({
+        title: 'Updated Recipe',
+        description: 'Updated Description',
+        servingSize: 6,
+      }));
       expect(result).toEqual(expect.objectContaining({
         id: 1,
         title: 'Updated Recipe',
@@ -318,7 +318,7 @@ describe('Recipe Service', () => {
 
   describe('getUserRecipes', () => {
     it('should fetch user recipes with default pagination', async () => {
-      const mockResponse: PaginatedRecipeResponse = {
+      const mockResponse = {
         content: [
           {
             id: 1,
@@ -355,7 +355,7 @@ describe('Recipe Service', () => {
     });
 
     it('should fetch user recipes with custom pagination', async () => {
-      const mockResponse: PaginatedRecipeResponse = {
+      const mockResponse = {
         content: [],
         totalElements: 0,
         totalPages: 0,
@@ -378,7 +378,7 @@ describe('Recipe Service', () => {
     });
   });
 
-  describe('getRecipeTags', () => {
+  describe('getTags', () => {
     it('should fetch recipe tags successfully', async () => {
       const mockTags: Tag[] = [
         { id: 1, name: 'Italian' },
@@ -388,130 +388,23 @@ describe('Recipe Service', () => {
 
       (api.get as any).mockResolvedValue(mockTags);
 
-      const result = await getRecipeTags();
+      const result = await getTags();
 
       expect(api.get).toHaveBeenCalledWith('/recipes/tags');
       expect(result).toEqual(mockTags);
     });
 
-    it('should handle getRecipeTags errors', async () => {
+    it('should handle getTags errors', async () => {
       (api.get as any).mockRejectedValue(new Error('Tags Error'));
 
-      await expect(getRecipeTags()).rejects.toThrow('Tags Error');
+      await expect(getTags()).rejects.toThrow('Tags Error');
     });
   });
 
-  describe('convertRecipeFromAPI', () => {
-    it('should convert recipe from API format correctly', () => {
-      const mockRecipeDTO: RecipeMetadataDTO = {
-        id: 1,
-        userId: 'user-123',
-        title: 'Test Recipe',
-        description: 'Test Description',
-        servingSize: 4,
-        createdAt: '2023-01-01T00:00:00Z',
-        updatedAt: '2023-01-01T00:00:00Z',
-        tags: [{ id: 1, name: 'Italian' }],
-        thumbnail: { base64String: 'thumbnail-data' },
-        forkedFrom: 2,
-      };
-
-      const result = convertRecipeFromAPI(mockRecipeDTO);
-
-      expect(result).toEqual({
-        id: 1,
-        userId: 'user-123',
-        title: 'Test Recipe',
-        description: 'Test Description',
-        servingSize: 4,
-        createdAt: '2023-01-01T00:00:00Z',
-        updatedAt: '2023-01-01T00:00:00Z',
-        tags: [{ id: 1, name: 'Italian' }],
-        thumbnail: { base64String: 'thumbnail-data' },
-        forkedFrom: 2,
-      });
-    });
-
-    it('should handle null thumbnail', () => {
-      const mockRecipeDTO: RecipeMetadataDTO = {
-        id: 1,
-        userId: 'user-123',
-        title: 'Test Recipe',
-        description: 'Test Description',
-        servingSize: 4,
-        createdAt: '2023-01-01T00:00:00Z',
-        updatedAt: '2023-01-01T00:00:00Z',
-        tags: [],
-        thumbnail: null,
-        forkedFrom: null,
-      };
-
-      const result = convertRecipeFromAPI(mockRecipeDTO);
-
-      expect(result.thumbnail).toBeUndefined();
-    });
-
-    it('should handle undefined thumbnail', () => {
-      const mockRecipeDTO: RecipeMetadataDTO = {
-        id: 1,
-        userId: 'user-123',
-        title: 'Test Recipe',
-        description: 'Test Description',
-        servingSize: 4,
-        createdAt: '2023-01-01T00:00:00Z',
-        updatedAt: '2023-01-01T00:00:00Z',
-        tags: [],
-        thumbnail: undefined,
-        forkedFrom: null,
-      };
-
-      const result = convertRecipeFromAPI(mockRecipeDTO);
-
-      expect(result.thumbnail).toBeUndefined();
-    });
-
-    it('should handle null forkedFrom', () => {
-      const mockRecipeDTO: RecipeMetadataDTO = {
-        id: 1,
-        userId: 'user-123',
-        title: 'Test Recipe',
-        description: 'Test Description',
-        servingSize: 4,
-        createdAt: '2023-01-01T00:00:00Z',
-        updatedAt: '2023-01-01T00:00:00Z',
-        tags: [],
-        thumbnail: null,
-        forkedFrom: null,
-      };
-
-      const result = convertRecipeFromAPI(mockRecipeDTO);
-
-      expect(result.forkedFrom).toBeUndefined();
-    });
-
-    it('should handle undefined forkedFrom', () => {
-      const mockRecipeDTO: RecipeMetadataDTO = {
-        id: 1,
-        userId: 'user-123',
-        title: 'Test Recipe',
-        description: 'Test Description',
-        servingSize: 4,
-        createdAt: '2023-01-01T00:00:00Z',
-        updatedAt: '2023-01-01T00:00:00Z',
-        tags: [],
-        thumbnail: null,
-        forkedFrom: undefined,
-      };
-
-      const result = convertRecipeFromAPI(mockRecipeDTO);
-
-      expect(result.forkedFrom).toBeUndefined();
-    });
-  });
 
   describe('Edge cases and error handling', () => {
     it('should handle empty recipe list', async () => {
-      const mockResponse: PaginatedRecipeResponse = {
+      const mockResponse = {
         content: [],
         totalElements: 0,
         totalPages: 0,
@@ -542,7 +435,7 @@ describe('Recipe Service', () => {
 
       await expect(getRecipes()).rejects.toThrow('Network Error');
       await expect(getUserRecipes('user-123')).rejects.toThrow('Network Error');
-      await expect(getRecipeTags()).rejects.toThrow('Network Error');
+      await expect(getTags()).rejects.toThrow('Network Error');
       await expect(deleteRecipe(1)).rejects.toThrow('Network Error');
     });
   });
