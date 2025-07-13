@@ -1,4 +1,4 @@
-prefix: recipefy
+namespace: recipefy
 name: recipe
 
 replicaCount: 2
