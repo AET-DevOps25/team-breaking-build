@@ -9,19 +9,44 @@ import logging
 from typing import Callable
 
 # Prometheus metrics imports
-from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
+from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST, REGISTRY
 
 from request_models import ChatRequest, RecipeIndexRequest, RecipeDeleteRequest, RecipeSuggestionRequest
 from response_models import ChatResponse, RecipeIndexResponse, RecipeDeleteResponse, RecipeSuggestionResponse, HealthResponse
 from llm import RecipeLLM
 
-# Prometheus metrics
-REQUEST_COUNT = Counter('genai_requests_total', 'Total number of requests', ['method', 'endpoint', 'status'])
-REQUEST_DURATION = Histogram('genai_request_duration_seconds', 'Request duration in seconds', ['method', 'endpoint'])
-ACTIVE_REQUESTS = Gauge('genai_active_requests', 'Number of active requests')
-LLM_OPERATIONS = Counter('genai_llm_operations_total', 'Total number of LLM operations', ['operation_type', 'status'])
-VECTOR_OPERATIONS = Counter('genai_vector_operations_total', 'Total number of vector operations', ['operation_type', 'status'])
-SERVICE_HEALTH = Gauge('genai_service_health', 'Service health status (1=healthy, 0=unhealthy)')
+# Prometheus metrics - handle potential duplicates gracefully
+import logging
+
+# Function to safely create or get existing metrics
+def safe_metric_creation(metric_class, name, description, labels=None):
+    """Safely create a metric or skip if it already exists"""
+    try:
+        if labels:
+            return metric_class(name, description, labels)
+        else:
+            return metric_class(name, description)
+    except ValueError as e:
+        if "Duplicated timeseries" in str(e):
+            logging.warning(f"Metric {name} already exists, skipping creation")
+            # Return a no-op metric to avoid errors
+            class NoOpMetric:
+                def inc(self, *args, **kwargs): pass
+                def observe(self, *args, **kwargs): pass
+                def set(self, *args, **kwargs): pass
+                def labels(self, *args, **kwargs): return self
+                def __call__(self, *args, **kwargs): return self
+            return NoOpMetric()
+        else:
+            raise e
+
+# Initialize Prometheus metrics with safe creation
+REQUEST_COUNT = safe_metric_creation(Counter, 'genai_requests_total', 'Total number of requests', ['method', 'endpoint', 'status'])
+REQUEST_DURATION = safe_metric_creation(Histogram, 'genai_request_duration_seconds', 'Request duration in seconds', ['method', 'endpoint'])
+ACTIVE_REQUESTS = safe_metric_creation(Gauge, 'genai_active_requests', 'Number of active requests')
+LLM_OPERATIONS = safe_metric_creation(Counter, 'genai_llm_operations_total', 'Total number of LLM operations', ['operation_type', 'status'])
+VECTOR_OPERATIONS = safe_metric_creation(Counter, 'genai_vector_operations_total', 'Total number of vector operations', ['operation_type', 'status'])
+SERVICE_HEALTH = safe_metric_creation(Gauge, 'genai_service_health', 'Service health status (1=healthy, 0=unhealthy)')
 
 # Enhanced logging configuration
 class StructuredFormatter(logging.Formatter):
