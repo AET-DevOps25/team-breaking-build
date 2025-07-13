@@ -105,12 +105,19 @@ describe('Recipe Service', () => {
           id: 1,
           name: 'main',
           recipeId: 1,
-          headCommitId: 'commit-123',
+          headCommitId: 123,
           createdAt: '2023-01-01T00:00:00Z',
         },
       ];
 
       const mockCommitDetails: CommitDetailsResponse = {
+        commitMetadata: {
+          id: 1,
+          userId: 'user-123',
+          message: 'Initial commit',
+          parentId: null,
+          createdAt: '2023-01-01T00:00:00Z',
+        },
         recipeDetails: {
           servingSize: 4,
           recipeIngredients: [
@@ -129,7 +136,7 @@ describe('Recipe Service', () => {
       const result = await getRecipeDetails(1);
 
       expect(api.get).toHaveBeenCalledWith('/vcs/recipes/1/branches');
-      expect(api.get).toHaveBeenCalledWith('/vcs/commits/commit-123');
+      expect(api.get).toHaveBeenCalledWith('/vcs/commits/123');
       expect(result).toEqual(mockCommitDetails.recipeDetails);
     });
 
@@ -139,7 +146,7 @@ describe('Recipe Service', () => {
           id: 1,
           name: 'feature',
           recipeId: 1,
-          headCommitId: 'commit-123',
+          headCommitId: 123,
           createdAt: '2023-01-01T00:00:00Z',
         },
       ];
@@ -287,16 +294,16 @@ describe('Recipe Service', () => {
         description: 'Updated Description',
         servingSize: 6,
         tags: [],
-        thumbnail: null,
+        thumbnail: undefined,
         userId: 'user-123',
         createdAt: '2023-01-01T00:00:00Z',
         updatedAt: '2023-01-02T00:00:00Z',
-        forkedFrom: null,
+        forkedFrom: undefined,
       };
 
       (api.put as any).mockRejectedValue(new Error('Update Error'));
 
-      await expect(updateRecipe(1, mockRecipeData, {})).rejects.toThrow('Update Error');
+      await expect(updateRecipe(1, mockRecipeData)).rejects.toThrow('Update Error');
     });
   });
 
