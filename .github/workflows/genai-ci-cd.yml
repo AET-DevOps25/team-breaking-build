@@ -136,11 +136,16 @@ jobs:
           sops --decrypt "$SECRET_FILE" > tmp && mv tmp "$SECRET_FILE"
 
       - name: Set image tag
-        run: echo "IMAGE_TAG=$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_ENV
+        run: |
+          if [ -z "$GITHUB_SHA" ]; then
+            echo "IMAGE_TAG=latest" >> $GITHUB_ENV
+          else
+            echo "IMAGE_TAG=sha-$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_ENV
+          fi
 
       - name: Deploy Helm Chart
         run: |
           helm upgrade --install ${{ env.HELM_RELEASE_NAME }} ${{ env.CHART_PATH }} \
             --namespace ${{ env.HELM_NAMESPACE }} \
-            --set image.tag=sha-${{ env.IMAGE_TAG }} \
+            --set image.tag=${{ env.IMAGE_TAG }} \
             --wait --timeout 5m
