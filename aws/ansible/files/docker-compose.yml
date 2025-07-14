@@ -8,16 +8,16 @@ services:
     env_file:
       - ./.env_vault
     depends_on:
-      - recipefy-api-gateway
-      - recipefy-keycloak-service-keycloak-spi
+      - api-gateway
+      - keycloak-service
 
   # ----  KEYCLOAK SPI MICROSERVICE ----
-  recipefy-keycloak-service-keycloak-spi:
+  keycloak-service:
     image: ghcr.io/aet-devops25/team-breaking-build/server/keycloak-service:latest
     env_file:
       - ./.env_vault
     restart: always
-    container_name: recipefy-keycloak-service-keycloak-spi
+    container_name: keycloak-service
     depends_on:
       - keycloak
     environment:
@@ -25,12 +25,12 @@ services:
 
 
   # ----  GATEWAY MICROSERVICE ----
-  recipefy-api-gateway:
+  api-gateway:
     image: ghcr.io/aet-devops25/team-breaking-build/server/api-gateway:latest
     env_file:
       - ./.env_vault
     restart: always
-    container_name: recipefy-api-gateway
+    container_name: api-gateway
     depends_on:
       - keycloak
       - recipe
