@@ -29,7 +29,7 @@ jobs:
           method: kubeconfig
           kubeconfig: ${{ env.KUBE_CONFIG }}
 
-      - name: Deploy MongoDB with Helm
+      - name: Deploy Alloy with Helm
         run: |
           helm repo add grafana https://grafana.github.io/helm-charts
           helm repo update
