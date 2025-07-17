@@ -6,11 +6,11 @@ metadata:
     grafana_datasource: "1"
 data:
   SPRING_CLOUD_GATEWAY_ROUTES_0_ID: 'version-control-system'
-  SPRING_CLOUD_GATEWAY_ROUTES_0_URI: 'http://version:8080'
+  SPRING_CLOUD_GATEWAY_ROUTES_0_URI: 'http://version-service:8080'
   SPRING_CLOUD_GATEWAY_ROUTES_0_PREDICATES_0: 'Path=/vcs/**'
 
   SPRING_CLOUD_GATEWAY_ROUTES_1_ID: 'recipes'
-  SPRING_CLOUD_GATEWAY_ROUTES_1_URI: 'http://recipe:8080'
+  SPRING_CLOUD_GATEWAY_ROUTES_1_URI: 'http://recipe-service:8080'
   SPRING_CLOUD_GATEWAY_ROUTES_1_PREDICATES_0: 'Path=/recipes/**'
 
   SPRING_CLOUD_GATEWAY_ROUTES_2_ID: 'genai'
@@ -18,13 +18,13 @@ data:
   SPRING_CLOUD_GATEWAY_ROUTES_2_PREDICATES_0: 'Path=/genai/**'
 
   SPRING_CLOUD_GATEWAY_ROUTES_3_ID: 'user-recipes'
-  SPRING_CLOUD_GATEWAY_ROUTES_3_URI: 'http://recipe:8080'
+  SPRING_CLOUD_GATEWAY_ROUTES_3_URI: 'http://recipe-service:8080'
   SPRING_CLOUD_GATEWAY_ROUTES_3_PREDICATES_0: 'Path=/users/*/recipes/**'
 
   APP_SECURITY_CORS_ALLOWED_ORIGINS_0: 'http://localhost:3000'
   APP_SECURITY_CORS_ALLOWED_ORIGINS_1: 'https://team-breaking-build.student.k8s.aet.cit.tum.de/'
 
-  KEYCLOAK_BASE_URL: 'http://keycloak:8080'
+  KEYCLOAK_BASE_URL: 'http://keycloak'
   KEYCLOAK_REALMS: 'recipefy'
 
 

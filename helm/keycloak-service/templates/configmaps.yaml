@@ -3,4 +3,4 @@ kind: ConfigMap
 metadata:
   name: keycloak-service-config
 data:
-  KEYCLOAK_BASE_URL: 'http://keycloak:8080'
+  KEYCLOAK_BASE_URL: 'http://keycloak'

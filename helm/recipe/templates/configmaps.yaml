@@ -8,7 +8,7 @@ data:
   RECIPE_POSTGRES_URL_HOST: 'postgresql-pgpool.recipefy-database.svc.cluster.local'
   RECIPE_POSTGRES_URL_PORT: '5432'
   RECIPE_POSTGRES_DB_NAME: 'recipe'
-  VERSION_SERVICE_HOST: 'http://version'
+  VERSION_SERVICE_HOST: 'http://version-service'
   VERSION_SERVICE_PORT: '8080'
   GENAI_SERVICE_HOST: 'http://genai'
   GENAI_SERVICE_PORT: '8080'

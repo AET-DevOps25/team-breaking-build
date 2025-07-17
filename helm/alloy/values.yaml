@@ -45,19 +45,67 @@ alloy:
         level  = "info"
         format = "logfmt"
       }
-        
+ 
       discovery.kubernetes "pods_ns" {
         role       = "pod"
-        namespaces {
-          names = ["recipefy"]
+        namespaces = ["recipefy"]
+      }
+ 
+      discovery.relabel "pods_ns" {
+        targets = discovery.kubernetes.pods_ns.targets
+        
+        rule {
+          action = "replace"
+          target_label = "log_type"
+          replacement = "pod"
+        }
+          
+        rule {
+          source_labels = ["__meta_kubernetes_pod_container_name"]
+          target_label  = "container"
+        }
+          
+        rule {
+          source_labels = ["__meta_kubernetes_pod_container_id"]
+          target_label  = "container_id"
+        }
+          
+        rule {
+          source_labels = ["__meta_kubernetes_pod_node_name"]
+          target_label  = "host"
+        }
+          
+        rule {
+          source_labels = ["__meta_kubernetes_pod_name"]
+          target_label  = "pod"
+        }
+          
+        rule {
+          source_labels = ["__meta_kubernetes_pod_uid"]
+          target_label  = "pod_id"
+        }
+          
+        rule {
+          action = "labelmap"
+          regex = "__meta_kubernetes_pod_label_(.*)"
+          replacement = "${1}"
         }
       }
-      
-      loki.source.kubernetes "pods" {
-        targets    = discovery.kubernetes.pods_ns.targets
-        forward_to = [loki.write.local.receiver]
+        
+      local.file_match "pods_ns" {
+        path_targets = discovery.relabel.pods_ns.output
       }
-      
+        
+      loki.source.file "pods_ns" {
+        targets = local.file_match.pods_ns.targets
+        forward_to = [loki.process.pods_ns.receiver]
+      }
+        
+      loki.process "pods_ns" {
+        forward_to = [loki.write.local.receiver]
+        stage.cri { }
+      }
+
       loki.write "local" {
         endpoint {
           url = "http://loki.recipefy-monitoring.svc.cluster.local:3100/loki/api/v1/push"
