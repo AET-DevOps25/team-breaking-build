@@ -48,7 +48,9 @@ alloy:
  
       discovery.kubernetes "pods_ns" {
         role       = "pod"
-        namespaces = ["recipefy"]
+        namespaces {
+          names = ["recipefy"]
+        }
       }
  
       discovery.relabel "pods_ns" {
