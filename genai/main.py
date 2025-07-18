@@ -174,7 +174,12 @@ app = FastAPI(
 )
 
 # Add Prometheus metrics
-Instrumentator().instrument(app).expose(app)
+Instrumentator(
+    should_group_status_codes=False,
+    should_ignore_untemplated=False,
+    should_respect_env_var=False,
+    should_instrument_requests_inprogress=True
+).instrument(app).expose(app)
 
 # Add middleware
 app.middleware("http")(add_request_id_middleware)

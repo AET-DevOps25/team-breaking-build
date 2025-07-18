@@ -111,9 +111,28 @@ jobs:
             echo "IMAGE_TAG=sha-$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_ENV
           fi
 
+      - name: Record deployment timestamp
+        run: echo "DEPLOYMENT_TIMESTAMP=$(($(date +%s) * 1000))" >> $GITHUB_ENV
+
       - name: Deploy Helm Chart
         run: |
           helm upgrade --install ${{ env.RELEASE_NAME }} ${{ env.CHART_PATH }} \
             --set image.tag=${{ env.IMAGE_TAG }} \
             --namespace ${{ env.NAMESPACE }} \
             --wait --timeout 5m
+
+      - name: Annotate Grafana with deployment
+        env:
+          GRAFANA_URL: https://grafana.team-breaking-build.student.k8s.aet.cit.tum.de
+          GRAFANA_DASHBOARD_UID: gateway-service
+          GRAFANA_SERVICE_TOKEN: ${{ secrets.GRAFANA_SERVICE_TOKEN }}
+        run: |
+          curl -X POST "$GRAFANA_URL/api/annotations" \
+            -H "Authorization: Bearer $GRAFANA_SERVICE_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"dashboardUID\": \"$GRAFANA_DASHBOARD_UID\",
+              \"time\": $DEPLOYMENT_TIMESTAMP,
+              \"tags\": [\"deployment\"],
+              \"text\": \"🚀 Deployed gateway-service"
+            }"
