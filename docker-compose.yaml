@@ -32,6 +32,8 @@ services:
             context: ./server/api-gateway
         env_file:
             - ./.env
+        ports:
+            - "8080:8080"
         restart: always
         container_name: api-gateway
         depends_on:
