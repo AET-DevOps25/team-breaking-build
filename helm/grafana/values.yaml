@@ -34,6 +34,22 @@ certificate:
     - digital signature
     - key encipherment
 
+# Dashboard provisioning configuration
+dashboards:
+  enabled: true
+  default:
+    timezone: "browser"
+    time:
+      from: "now-6h"
+      to: "now"
+    refresh: "5s"
+    schemaVersion: 16
+    version: 0
+    links: []
+    tags: []
+    templating:
+      list: []
+
 resources:
   requests:
     memory: 256Mi
