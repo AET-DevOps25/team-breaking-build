@@ -34,6 +34,10 @@ certificate:
     - digital signature
     - key encipherment
 
+# Dashboard provisioning configuration
+dashboards:
+  enabled: true
+
 resources:
   requests:
     memory: 256Mi

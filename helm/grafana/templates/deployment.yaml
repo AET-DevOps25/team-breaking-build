@@ -42,6 +42,10 @@ spec:
               mountPath: /var/lib/grafana
             - name: grafana-datasources
               mountPath: /etc/grafana/provisioning/datasources
+            {{- if .Values.dashboards.enabled }}
+            - name: grafana-dashboards
+              mountPath: /etc/grafana/provisioning/dashboards
+            {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           {{- with .Values.livenessProbe }}
@@ -59,3 +63,8 @@ spec:
         - name: grafana-datasources
           configMap:
             name: {{ include "grafana.configName" . }}
+        {{- if .Values.dashboards.enabled }}
+        - name: grafana-dashboards
+          configMap:
+            name: {{ include "grafana.fullname" . }}-dashboards
+        {{- end }}
