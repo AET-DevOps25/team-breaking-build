@@ -1,0 +1,1675 @@
+openapi: 3.0.3
+info:
+  title: Recipefy API
+  description: |
+    Comprehensive API for the Recipefy application - a recipe management platform with version control and AI-powered features.
+    
+    ## Overview
+    This API provides endpoints for:
+    - **Authentication**: User registration, login, and token management via Keycloak
+    - **Recipe Management**: CRUD operations for recipes with metadata and details
+    - **Version Control**: Git-like versioning system for recipes with branches and commits
+    - **AI-Powered Features**: Chat interface and recipe suggestions using GenAI
+    - **User Management**: User profile and recipe ownership management
+    
+    ## Architecture
+    All requests are routed through the API Gateway which handles authentication and routes to appropriate microservices.
+    
+    ## Authentication
+    The API uses OAuth2 with Keycloak. Most endpoints require a valid Bearer token in the Authorization header.
+    Public endpoints (marked with 🔓) do not require authentication.
+    
+    ## Rate Limiting
+    API requests are subject to rate limiting. Please implement appropriate retry logic with exponential backoff.
+    
+    ## Error Handling
+    The API returns standard HTTP status codes and detailed error messages in JSON format.
+  version: 1.0.0
+  contact:
+    name: Recipefy Team
+    email: apprecipefy@gmail.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+
+security:
+  - BearerAuth: []
+
+paths:
+  # =============================================================================
+  # AUTHENTICATION ENDPOINTS (Keycloak Service)
+  # =============================================================================
+  
+  /auth/login:
+    post:
+      summary: User login
+      description: Authenticate user with email and password
+      tags: [Authentication]
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: Invalid request format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/register:
+    post:
+      summary: User registration
+      description: Register a new user account
+      tags: [Authentication]
+      operationId: register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: User registered successfully
+        '400':
+          description: Invalid request or user already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: User with this email already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/refresh:
+    post:
+      summary: Refresh access token
+      description: Get a new access token using a refresh token
+      tags: [Authentication]
+      operationId: refreshToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '401':
+          description: Invalid or expired refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/userinfo:
+    get:
+      summary: Get user information
+      description: Retrieve current user information from the access token
+      tags: [Authentication]
+      operationId: getUserInfo
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: User information retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserInfoResponse'
+        '401':
+          description: Invalid or missing token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/users/{userId}:
+    get:
+      summary: Get user details by ID
+      description: Retrieve detailed user information by user ID
+      tags: [Authentication]
+      operationId: getUserById
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: User ID (UUID)
+      responses:
+        '200':
+          description: User details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDetails'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # =============================================================================
+  # RECIPE MANAGEMENT ENDPOINTS (Recipe Service)
+  # =============================================================================
+
+  /recipes:
+    get:
+      summary: Get all recipes
+      description: Retrieve a paginated list of all recipes
+      tags: [Recipes]
+      operationId: getAllRecipes
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: Page number (zero-based)
+        - name: size
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Page size
+        - name: sort
+          in: query
+          schema:
+            type: string
+          description: Sort criteria (e.g., "title,asc" or "createdAt,desc")
+      responses:
+        '200':
+          description: Recipes retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RecipeMetadataDTO'
+                  totalElements:
+                    type: integer
+                  totalPages:
+                    type: integer
+                  size:
+                    type: integer
+                  number:
+                    type: integer
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      summary: Create a new recipe
+      description: Create a new recipe with metadata and details
+      tags: [Recipes]
+      operationId: createRecipe
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRecipeRequest'
+      responses:
+        '200':
+          description: Recipe created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipeMetadataDTO'
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /recipes/{recipeId}:
+    get:
+      summary: Get recipe by ID
+      description: Retrieve a specific recipe by its ID
+      tags: [Recipes]
+      operationId: getRecipe
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: recipeId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Recipe ID
+      responses:
+        '200':
+          description: Recipe retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipeMetadataDTO'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Recipe not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      summary: Update recipe
+      description: Update an existing recipe's metadata
+      tags: [Recipes]
+      operationId: updateRecipe
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: recipeId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Recipe ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecipeMetadataDTO'
+      responses:
+        '200':
+          description: Recipe updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipeMetadataDTO'
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - user does not own this recipe
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Recipe not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      summary: Delete recipe
+      description: Delete a recipe (only by the owner)
+      tags: [Recipes]
+      operationId: deleteRecipe
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: recipeId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Recipe ID
+      responses:
+        '204':
+          description: Recipe deleted successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - user does not own this recipe
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Recipe not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /recipes/batch:
+    get:
+      summary: Get recipes by IDs
+      description: Retrieve multiple recipes by their IDs
+      tags: [Recipes]
+      operationId: getRecipesByIds
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: ids
+          in: query
+          required: true
+          schema:
+            type: array
+            items:
+              type: integer
+          style: form
+          explode: true
+          description: Array of recipe IDs
+      responses:
+        '200':
+          description: Recipes retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RecipeMetadataDTO'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /recipes/tags:
+    get:
+      summary: Get all available tags
+      description: Retrieve all available recipe tags
+      tags: [Recipes]
+      operationId: getAllTags
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Tags retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RecipeTagDTO'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # =============================================================================
+  # USER RECIPE ENDPOINTS (Recipe Service)
+  # =============================================================================
+
+  /users/{userId}/recipes:
+    get:
+      summary: Get user's recipes
+      description: Retrieve all recipes owned by a specific user
+      tags: [User Recipes]
+      operationId: getUserRecipes
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: User ID (UUID)
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: Page number (zero-based)
+        - name: size
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Page size
+        - name: sort
+          in: query
+          schema:
+            type: string
+          description: Sort criteria
+      responses:
+        '200':
+          description: User recipes retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RecipeMetadataDTO'
+                  totalElements:
+                    type: integer
+                  totalPages:
+                    type: integer
+                  size:
+                    type: integer
+                  number:
+                    type: integer
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # =============================================================================
+  # VERSION CONTROL ENDPOINTS (Version Control Service)
+  # =============================================================================
+
+  /vcs/recipes/{recipeId}/init:
+    post:
+      summary: Initialize recipe version control
+      description: Initialize version control for a recipe with initial details
+      tags: [Version Control]
+      operationId: initRecipe
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: recipeId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Recipe ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InitRecipeRequest'
+      responses:
+        '200':
+          description: Recipe version control initialized successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BranchDTO'
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Recipe not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /vcs/recipes/{recipeId}/branches:
+    get:
+      summary: Get recipe branches
+      description: Retrieve all branches for a specific recipe
+      tags: [Version Control]
+      operationId: getBranches
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: recipeId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Recipe ID
+      responses:
+        '200':
+          description: Branches retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BranchDTO'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Recipe not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      summary: Create new branch
+      description: Create a new branch for a recipe
+      tags: [Version Control]
+      operationId: createBranch
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: recipeId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Recipe ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBranchRequest'
+      responses:
+        '200':
+          description: Branch created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BranchDTO'
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Recipe or source branch not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /vcs/branches/{branchId}/commit:
+    post:
+      summary: Commit changes to branch
+      description: Create a new commit with recipe changes
+      tags: [Version Control]
+      operationId: commitToBranch
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: branchId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Branch ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommitToBranchRequest'
+      responses:
+        '200':
+          description: Commit created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommitDTO'
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Branch not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /vcs/branches/{branchId}/history:
+    get:
+      summary: Get branch history
+      description: Retrieve commit history for a branch
+      tags: [Version Control]
+      operationId: getBranchHistory
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: branchId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Branch ID
+      responses:
+        '200':
+          description: Branch history retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CommitDTO'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Branch not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /vcs/branches/{branchId}/copy:
+    post:
+      summary: Copy recipe branch
+      description: Create a copy of a recipe from a specific branch
+      tags: [Version Control]
+      operationId: copyRecipe
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: branchId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Branch ID to copy from
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CopyBranchRequest'
+      responses:
+        '200':
+          description: Recipe copied successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BranchDTO'
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Branch not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /vcs/commits/{commitId}:
+    get:
+      summary: Get commit details
+      description: Retrieve detailed information about a specific commit
+      tags: [Version Control]
+      operationId: getCommit
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: commitId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Commit ID
+      responses:
+        '200':
+          description: Commit details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommitDetailsResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Commit not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # =============================================================================
+  # GENAI ENDPOINTS (GenAI Service)
+  # =============================================================================
+
+  /genai:
+    get:
+      summary: Get GenAI service status
+      description: Get the status and version information of the GenAI service
+      tags: [GenAI]
+      operationId: getGenAIStatus
+      responses:
+        '200':
+          description: Service status retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "GenAI Recipe Service"
+                  version:
+                    type: string
+                    example: "1.0.0"
+                  status:
+                    type: string
+                    example: "running"
+                  request_id:
+                    type: string
+
+  /genai/health:
+    get:
+      summary: Health check
+      description: Check the health status of the GenAI service and its dependencies
+      tags: [GenAI]
+      operationId: getGenAIHealth
+      responses:
+        '200':
+          description: Health status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /genai/chat:
+    post:
+      summary: Chat with AI assistant
+      description: Send a message to the AI assistant for recipe search and creation
+      tags: [GenAI]
+      operationId: chatWithAI
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+      responses:
+        '200':
+          description: Chat response received successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatResponse'
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /genai/vector/index:
+    post:
+      summary: Index recipe in vector store
+      description: Index a recipe in the vector database for AI-powered search
+      tags: [GenAI]
+      operationId: indexRecipe
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecipeIndexRequest'
+      responses:
+        '200':
+          description: Recipe indexed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipeIndexResponse'
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /genai/vector/delete:
+    post:
+      summary: Delete recipe from vector store
+      description: Remove a recipe from the vector database
+      tags: [GenAI]
+      operationId: deleteRecipeFromVector
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecipeDeleteRequest'
+      responses:
+        '200':
+          description: Recipe deleted from vector store successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipeDeleteResponse'
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /genai/vector/suggest:
+    post:
+      summary: Generate recipe suggestion
+      description: Generate a recipe suggestion based on query and similar recipes
+      tags: [GenAI]
+      operationId: suggestRecipe
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecipeSuggestionRequest'
+      responses:
+        '200':
+          description: Recipe suggestion generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipeSuggestionResponse'
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT token obtained from the `/auth/login` endpoint.
+        Include the token in the Authorization header as `Bearer <token>`.
+
+  schemas:
+    # =============================================================================
+    # AUTHENTICATION SCHEMAS
+    # =============================================================================
+    
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          description: User's email address
+          example: "user@example.com"
+        password:
+          type: string
+          description: User's password
+          example: "password123"
+          minLength: 6
+
+    RegisterRequest:
+      type: object
+      required:
+        - email
+        - firstName
+        - lastName
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          description: User's email address
+          example: "user@example.com"
+        firstName:
+          type: string
+          description: User's first name
+          example: "John"
+          minLength: 1
+        lastName:
+          type: string
+          description: User's last name
+          example: "Doe"
+          minLength: 1
+        password:
+          type: string
+          description: User's password
+          example: "password123"
+          minLength: 6
+
+    RefreshTokenRequest:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+          description: Refresh token
+          example: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+    TokenResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+          description: JWT access token
+          example: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
+        refresh_token:
+          type: string
+          description: Refresh token for obtaining new access tokens
+          example: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
+        expires_in:
+          type: integer
+          description: Access token expiration time in seconds
+          example: 300
+        refresh_expires_in:
+          type: integer
+          description: Refresh token expiration time in seconds
+          example: 1800
+        token_type:
+          type: string
+          description: Token type
+          example: "Bearer"
+        scope:
+          type: string
+          description: Token scope
+          example: "openid"
+
+    UserInfoResponse:
+      type: object
+      properties:
+        sub:
+          type: string
+          description: User ID
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        name:
+          type: string
+          description: Full name
+          example: "John Doe"
+        given_name:
+          type: string
+          description: First name
+          example: "John"
+        family_name:
+          type: string
+          description: Last name
+          example: "Doe"
+        preferred_username:
+          type: string
+          description: Preferred username
+          example: "johndoe"
+        email:
+          type: string
+          format: email
+          description: Email address
+          example: "user@example.com"
+        email_verified:
+          type: boolean
+          description: Whether email is verified
+          example: true
+
+    UserDetails:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: User ID
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        username:
+          type: string
+          description: Username
+          example: "johndoe"
+        firstName:
+          type: string
+          description: First name
+          example: "John"
+        lastName:
+          type: string
+          description: Last name
+          example: "Doe"
+        email:
+          type: string
+          format: email
+          description: Email address
+          example: "user@example.com"
+        emailVerified:
+          type: boolean
+          description: Whether email is verified
+          example: true
+
+    # =============================================================================
+    # RECIPE SCHEMAS
+    # =============================================================================
+
+    RecipeMetadataDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Recipe ID
+          example: 1
+        userId:
+          type: string
+          format: uuid
+          description: User ID of the recipe owner
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        forkedFrom:
+          type: integer
+          description: ID of the recipe this was forked from (if any)
+          example: 5
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+          example: "2024-01-15T10:30:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+          example: "2024-01-15T14:45:00Z"
+        title:
+          type: string
+          description: Recipe title
+          example: "Spaghetti Carbonara"
+          minLength: 1
+        description:
+          type: string
+          description: Recipe description
+          example: "A classic Italian pasta dish with eggs, cheese, and pancetta"
+        thumbnail:
+          $ref: '#/components/schemas/RecipeImageDTO'
+        servingSize:
+          type: integer
+          description: Number of servings
+          example: 4
+          minimum: 1
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecipeTagDTO'
+          description: Recipe tags
+
+    RecipeDetailsDTO:
+      type: object
+      required:
+        - servingSize
+        - recipeIngredients
+        - recipeSteps
+      properties:
+        servingSize:
+          type: integer
+          description: Number of servings
+          example: 4
+          minimum: 1
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecipeImageDTO'
+          description: Recipe images
+        recipeIngredients:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecipeIngredientDTO'
+          description: Recipe ingredients
+          minItems: 1
+        recipeSteps:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecipeStepDTO'
+          description: Recipe steps
+          minItems: 1
+
+    RecipeIngredientDTO:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: Ingredient name
+          example: "Spaghetti"
+          minLength: 1
+        unit:
+          type: string
+          description: Unit of measurement
+          example: "grams"
+        amount:
+          type: number
+          format: float
+          description: Amount of ingredient
+          example: 400.0
+          minimum: 0
+
+    RecipeStepDTO:
+      type: object
+      required:
+        - order
+        - details
+      properties:
+        order:
+          type: integer
+          description: Step order
+          example: 1
+          minimum: 1
+        details:
+          type: string
+          description: Step instructions
+          example: "Bring a large pot of salted water to boil"
+          minLength: 1
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecipeImageDTO'
+          description: Step images
+
+    RecipeImageDTO:
+      type: object
+      properties:
+        base64Image:
+          type: string
+          format: byte
+          description: Base64 encoded image data
+          example: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+
+    RecipeTagDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Tag ID
+          example: 1
+        name:
+          type: string
+          description: Tag name
+          example: "Italian"
+          minLength: 1
+
+    CreateRecipeRequest:
+      type: object
+      required:
+        - metadata
+        - initRequest
+      properties:
+        metadata:
+          $ref: '#/components/schemas/RecipeMetadataDTO'
+        initRequest:
+          $ref: '#/components/schemas/InitRecipeRequest'
+
+    InitRecipeRequest:
+      type: object
+      required:
+        - recipeDetails
+      properties:
+        recipeDetails:
+          $ref: '#/components/schemas/RecipeDetailsDTO'
+
+    # =============================================================================
+    # VERSION CONTROL SCHEMAS
+    # =============================================================================
+
+    BranchDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Branch ID
+          example: 1
+        name:
+          type: string
+          description: Branch name
+          example: "main"
+        recipeId:
+          type: integer
+          description: Associated recipe ID
+          example: 1
+        createdAt:
+          type: string
+          format: date-time
+          description: Branch creation timestamp
+          example: "2024-01-15T10:30:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+          example: "2024-01-15T14:45:00Z"
+
+    CommitDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Commit ID
+          example: 1
+        message:
+          type: string
+          description: Commit message
+          example: "Add new ingredients and improve instructions"
+        branchId:
+          type: integer
+          description: Associated branch ID
+          example: 1
+        authorId:
+          type: string
+          format: uuid
+          description: Author user ID
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        createdAt:
+          type: string
+          format: date-time
+          description: Commit creation timestamp
+          example: "2024-01-15T10:30:00Z"
+
+    CommitDetailsResponse:
+      type: object
+      properties:
+        commit:
+          $ref: '#/components/schemas/CommitDTO'
+        changes:
+          $ref: '#/components/schemas/RecipeDetailsDTO'
+        diff:
+          type: object
+          description: Changes made in this commit
+
+    CreateBranchRequest:
+      type: object
+      required:
+        - branchName
+        - sourceBranchId
+      properties:
+        branchName:
+          type: string
+          description: Name for the new branch
+          example: "feature/new-ingredients"
+          minLength: 1
+        sourceBranchId:
+          type: integer
+          description: ID of the source branch to branch from
+          example: 1
+
+    CommitToBranchRequest:
+      type: object
+      required:
+        - message
+        - recipeDetails
+      properties:
+        message:
+          type: string
+          description: Commit message
+          example: "Update recipe with new ingredients"
+          minLength: 1
+        recipeDetails:
+          $ref: '#/components/schemas/RecipeDetailsDTO'
+
+    CopyBranchRequest:
+      type: object
+      required:
+        - newRecipeTitle
+        - userId
+      properties:
+        newRecipeTitle:
+          type: string
+          description: Title for the new recipe
+          example: "My Carbonara Recipe"
+          minLength: 1
+        userId:
+          type: string
+          format: uuid
+          description: User ID for the new recipe owner
+          example: "123e4567-e89b-12d3-a456-426614174000"
+
+    # =============================================================================
+    # GENAI SCHEMAS
+    # =============================================================================
+
+    ChatRequest:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          description: User's message to the AI assistant
+          example: "I want to make a pasta dish with tomatoes and basil"
+          minLength: 1
+
+    ChatResponse:
+      type: object
+      properties:
+        reply:
+          type: string
+          description: AI assistant's response
+          example: "I found some great pasta recipes that match your request..."
+        sources:
+          type: array
+          items:
+            type: string
+          description: IDs of relevant recipes found
+          example: ["1", "5", "12"]
+        recipe_suggestion:
+          type: object
+          description: Suggested recipe structure (if user wants to create a recipe)
+        timestamp:
+          type: string
+          format: date-time
+          description: Response timestamp
+          example: "2024-01-15T10:30:00Z"
+
+    RecipeIndexRequest:
+      type: object
+      required:
+        - recipe
+      properties:
+        recipe:
+          $ref: '#/components/schemas/RecipeData'
+
+    RecipeIndexResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Success message
+          example: "Recipe indexed successfully"
+        recipe_id:
+          type: integer
+          description: ID of the indexed recipe
+          example: 1
+
+    RecipeDeleteRequest:
+      type: object
+      required:
+        - recipe_id
+      properties:
+        recipe_id:
+          type: string
+          description: Recipe ID to delete from vector store
+          example: "1"
+
+    RecipeDeleteResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Success message
+          example: "Recipe deleted from vector store successfully"
+        recipe_id:
+          type: string
+          description: ID of the deleted recipe
+          example: "1"
+
+    RecipeSuggestionRequest:
+      type: object
+      required:
+        - query
+      properties:
+        query:
+          type: string
+          description: Query for recipe suggestion
+          example: "I want to make a vegetarian pasta dish"
+          minLength: 1
+
+    RecipeSuggestionResponse:
+      type: object
+      properties:
+        suggestion:
+          type: string
+          description: AI-generated recipe suggestion
+          example: "Here's a delicious vegetarian pasta recipe..."
+        recipe_data:
+          type: object
+          description: Structured recipe data
+        timestamp:
+          type: string
+          format: date-time
+          description: Response timestamp
+          example: "2024-01-15T10:30:00Z"
+
+    RecipeData:
+      type: object
+      required:
+        - metadata
+        - details
+      properties:
+        metadata:
+          $ref: '#/components/schemas/RecipeMetadataDTO'
+        details:
+          $ref: '#/components/schemas/RecipeDetailsDTO'
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          description: Overall health status
+          example: "healthy"
+          enum: [healthy, unhealthy]
+        services:
+          type: object
+          description: Health status of individual services
+          example:
+            llm: "healthy"
+            vector_store: "healthy"
+            database: "healthy"
+        timestamp:
+          type: string
+          format: date-time
+          description: Health check timestamp
+          example: "2024-01-15T10:30:00Z"
+
+    # =============================================================================
+    # ERROR SCHEMAS
+    # =============================================================================
+
+    ErrorResponse:
+      type: object
+      properties:
+        timestamp:
+          type: integer
+          description: Error timestamp
+          example: 1705312200000
+        exception:
+          type: string
+          description: Exception type
+          example: "BusinessException"
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErrorDetail'
+          description: List of error details
+
+    ErrorDetail:
+      type: object
+      properties:
+        key:
+          type: string
+          description: Error field key
+          example: "email"
+        message:
+          type: string
+          description: Error message
+          example: "Email is required"
+        errorCode:
+          type: string
+          description: Error code
+          example: "VALIDATION_ERROR"
+        args:
+          type: array
+          items:
+            type: string
+          description: Error arguments
+
+tags:
+  - name: Authentication
+    description: User authentication and authorization endpoints
+  - name: Recipes
+    description: Recipe management operations
+  - name: User Recipes
+    description: User-specific recipe operations
+  - name: Version Control
+    description: Git-like version control for recipes
+  - name: GenAI
+    description: AI-powered features for recipe search and suggestions
