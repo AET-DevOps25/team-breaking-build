@@ -126,6 +126,7 @@ jobs:
           GRAFANA_URL: https://grafana.team-breaking-build.student.k8s.aet.cit.tum.de
           GRAFANA_DASHBOARD_UID: gateway-service
           GRAFANA_SERVICE_TOKEN: ${{ secrets.GRAFANA_SERVICE_TOKEN }}
+          DEPLOYMENT_TIMESTAMP: ${{ env.DEPLOYMENT_TIMESTAMP }}
         run: |
           curl -X POST "$GRAFANA_URL/api/annotations" \
             -H "Authorization: Bearer $GRAFANA_SERVICE_TOKEN" \
@@ -134,5 +135,5 @@ jobs:
               \"dashboardUID\": \"$GRAFANA_DASHBOARD_UID\",
               \"time\": $DEPLOYMENT_TIMESTAMP,
               \"tags\": [\"deployment\"],
-              \"text\": \"🚀 Deployed gateway-service"
+              \"text\": \"🚀 Deployed gateway-service\"
             }"
