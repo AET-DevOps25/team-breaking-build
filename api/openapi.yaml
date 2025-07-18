@@ -16,12 +16,8 @@ info:
     All requests are routed through the API Gateway which handles authentication and routes to appropriate microservices.
     
     ## Authentication
-    The API uses OAuth2 with Keycloak. Most endpoints require a valid Bearer token in the Authorization header.
-    Public endpoints (marked with 🔓) do not require authentication.
-    
-    ## Rate Limiting
-    API requests are subject to rate limiting. Please implement appropriate retry logic with exponential backoff.
-    
+    The API uses OAuth2 with Keycloak. Endpoints require a valid Bearer token in the Authorization header.
+
     ## Error Handling
     The API returns standard HTTP status codes and detailed error messages in JSON format.
   version: 1.0.0

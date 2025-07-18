@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - feature/api-docs
     paths:
       - 'api/openapi.yaml'
       - '.github/workflows/deploy-api-docs.yml'
