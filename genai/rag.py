@@ -701,11 +701,11 @@ class RAGHelper:
             
             result = {
                 "collection_name": "recipes",
-                "total_objects": stats.total,
+                "total_objects": len(stats),
                 "status": "healthy"
             }
             
-            logger.info(f"Retrieved collection statistics in {total_duration}ms: {stats.total} objects")
+            logger.info(f"Retrieved collection statistics in {total_duration}ms: {len(stats)} objects")
             structured_logger.info(
                 f"Collection statistics retrieval completed",
                 extra={
@@ -715,7 +715,7 @@ class RAGHelper:
                         'operation': 'get_collection_stats',
                         'collection_name': 'recipes',
                         'status': 'success',
-                        'total_objects': stats.total,
+                        'total_objects': len(stats),
                         'stats_duration_ms': stats_duration
                     }
                 }
