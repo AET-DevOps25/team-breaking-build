@@ -1,28 +1,28 @@
-# Recipify
+# Recipefy
 
-Recipify is available at [`https://team-breaking-build.student.k8s.aet.cit.tum.de/`](https://team-breaking-build.student.k8s.aet.cit.tum.de/) (k8s) and deployable via Docker Compose locally.
+Recipefy is available at [`https://team-breaking-build.student.k8s.aet.cit.tum.de/`](https://team-breaking-build.student.k8s.aet.cit.tum.de/) (k8s) and deployable via Docker Compose locally.
 
-For running it on docker please see [dockerized-deployment](#dockerized-deployment) and [.env.template](.env.template).
+For running it on docker please see [running-the-application](#running-the-application) and [.env.example](.env.example).
 
 ## Project Description
 
 ### Application Overview
 
 #### Main Page
-![Recipify Main](docs/assets/client_recipes.png)
+![Recipefy Main](docs/assets/client_recipes.png)
 
 #### Recipe Detail View
-![Recipify Detail](docs/assets/client_detail.png)
+![Recipefy Detail](docs/assets/client_detail.png)
 
 #### Version Control Interface
-![Recipify Version Control](docs/assets/client_commit.png)
+![Recipefy Version Control](docs/assets/client_commit.png)
 
 #### Recipe History
-![Recipify History](docs/assets/client_history.png)
+![Recipefy History](docs/assets/client_history.png)
 
 ### Main Functionality
 
-The primary functionality of the application is to enable users to create, fork, and branch recipes in a Git-like collaborative platform. The application allows users to track version history, view diffs between recipe iterations, search semantically using natural language queries, and collaborate on recipe variations. Recipify combines traditional recipe management with intelligent AI assistance for personalizing and understanding recipes.
+The primary functionality of the application is to enable users to create, fork, and branch recipes in a Git-like collaborative platform. The application allows users to track version history, view diffs between recipe iterations, search semantically using natural language queries, and collaborate on recipe variations. Recipefy combines traditional recipe management with intelligent AI assistance for personalizing and understanding recipes.
 
 ### Intended Users
 
@@ -37,10 +37,7 @@ The application is designed for:
 Generative AI is integrated meaningfully through a dedicated LangChain-based microservice that provides:
 
 1. **Semantic Recipe Search**: Uses vector embeddings to find recipes based on natural language queries
-2. **Recipe Generation**: Creates new recipes from ingredient lists or cooking descriptions
-3. **Recipe Modification**: Adapts existing recipes for dietary restrictions or preferences
-4. **Intelligent Recommendations**: Suggests recipe variations based on user preferences and history
-5. **Conversational Interface**: Multi-turn chat with context preservation for recipe assistance
+2. **Recipe Generation**: Creates new recipes with ingredient lists and cooking descriptions
 
 The AI system uses Retrieval-Augmented Generation (RAG) with Weaviate vector store to provide contextually relevant and personalized recipe assistance while maintaining accuracy and relevance.
 
@@ -130,10 +127,10 @@ The AI system uses Retrieval-Augmented Generation (RAG) with Weaviate vector sto
 **Responsibilities:**
 
 - Implement Git-like version control for recipes.
-- Manage branching and merging operations.
+- Manage branching operations.
 - Track commit history and changes.
 - Provide diff viewing capabilities.
-- Handle recipe snapshots and rollbacks.
+- Handle recipe snapshots.
 
 ### 5. GenAI Microservice (Python with FastAPI + LangChain + Weaviate)
 
@@ -211,7 +208,7 @@ The AI system uses Retrieval-Augmented Generation (RAG) with Weaviate vector sto
 
 - Prometheus metrics collection and visualization
 - Grafana dashboards for service monitoring
-- Loki and Alloy for log aggregation
+- Loki and Alloy for log aggregation and request tracing
 - Alert management and notification systems
 
 ### Communication Flow Example
@@ -246,13 +243,8 @@ The AI system uses Retrieval-Augmented Generation (RAG) with Weaviate vector sto
 
 ### Prerequisites
 
-- Node.js (v18 or later)
-- Java JDK 21+
-- Python 3.12
-- Gradle
-- Docker and Docker Compose
 - Git
-- Kubernetes and Helm (for Kubernetes deployment)
+- Docker
 
 ### Clone the Repository
 
@@ -261,149 +253,15 @@ git clone https://github.com/AET-DevOps25/team-breaking-build.git
 cd team-breaking-build
 ```
 
-### Client Setup
-
-1. Navigate to the `client` directory:
-   ```bash
-   cd client
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-### Server Setup
-
-1. Navigate to the `server` directory:
-   ```bash
-   cd server
-   ```
-2. Build the project:
-   ```bash
-   ./gradlew build
-   ```
-
-### GenAI Service Setup
-
-1. Navigate to the `genai` directory:
-   ```bash
-   cd genai
-   ```
-2. Install dependencies:
-   ```bash
-   python3 -m venv .venv
-   source .venv/bin/activate
-   pip3 install -r requirements.txt
-   ```
-
-## Test Instructions
-
-### Running Tests in Server
-
-1. Navigate to the `server` directory:
-   ```bash
-   cd server
-   ```
-2. Test the microservice - API Gateway:
-   ```bash
-   ./gradlew :api-gateway:test
-   ```
-3. Test the microservice - Recipe:
-   ```bash
-   ./gradlew :recipe:test
-   ```
-4. Test the microservice - Version:
-   ```bash
-   ./gradlew :version:test
-   ```
-5. Test the microservice - Keycloak:
-   ```bash
-   ./gradlew :keycloak:test
-   ```
-
-### Running Tests in GenAI
-1. Navigate to the `genai` directory:
-   ```bash
-   cd genai
-   ```
-2. Test the microservice - GenAI:
-   ```bash
-   pytest
-   ```
-
-### Running Tests in Client
-1. Navigate to the `client` directory:
-   ```bash
-   cd client
-   ```
-2. Test the microservice - Client:
-   ```bash
-   npm run test -- --run
-   ```
-
 ## Running the Application
-
-### Start the Databases
-
-```bash
-docker compose -f docker-compose.yaml up -d postgres mongo weaviate transformers
-```
-
-### Start the Client
-
-```bash
-cd client
-npm run dev
-```
-
-The client will be available at [http://localhost:3000](http://localhost:3000).
-
-### Start the Server Services
-
-```bash
-cd server
-```
-
-#### API-Gateway Service
-
-```bash
-./gradlew :api-gateway:bootRun
-```
-
-The API-Gateway Service API will be available at [http://localhost:8080](http://localhost:8080).
-
-#### Recipe Service
-
-```bash
-./gradlew :recipe:bootRun
-```
-
-The Recipe Service API will be available at [http://localhost:8082](http://localhost:8082).
-
-#### Version Service
-
-```bash
-./gradlew :version:bootRun
-```
-
-The Version Service API will be available at [http://localhost:8083](http://localhost:8083).
-
-#### Keycloak Service
-
-```bash
-./gradlew :keycloak:bootRun
-```
-
-The Keycloak Service API will be available at [http://localhost:8084](http://localhost:8084).
-
-### Start the GenAI Service
-
-```bash
-cd genai
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
-```
-
-The GenAI service will be available at [http://localhost:8000](http://localhost:8000).
+1. Setup env -- HOW??
+2. Build and start all services:
+   ```bash
+   docker compose -f docker-compose.yaml up -d
+   ```
+3. Access the application:
+   - Client: [http://localhost:3000](http://localhost:3000)
+   - API Gateway Service: [http://localhost:8080](http://localhost:8080)
 
 ## Development Workflow
 
@@ -434,7 +292,7 @@ The GenAI service will be available at [http://localhost:8000](http://localhost:
 
 #### GenAI Usage
 
-- The GenAI service is responsible for all interactions with the language model used to generate and modify recipes in Recipify. It receives user inputs as free-text prompts and responds with structured outputs such as complete recipes, meal plans, or modified instructions. It is implemented using FastAPI, LangChain, and integrates with OpenAI and local large language models.
+- The GenAI service is responsible for all interactions with the language model used to generate and modify recipes in Recipefy. It receives user inputs as free-text prompts and responds with structured outputs such as complete recipes, meal plans, or modified instructions. It is implemented using FastAPI, LangChain, and integrates with OpenAI and local large language models.
 
 ##### Retrieval-Augmented Generation
 
@@ -446,106 +304,27 @@ The GenAI service will be available at [http://localhost:8000](http://localhost:
 
 ##### Vector Database - Weaviate
 
-We use Weaviate as the vector database to enable semantic search and retrieval-augmented generation (RAG) in Recipify. Embeddings are generated using HuggingFace's sentence-transformers model.
+We use Weaviate as the vector database to enable semantic search and retrieval-augmented generation (RAG) in Recipefy. Embeddings are generated using HuggingFace's sentence-transformers model.
 
 ```python
 # Example: Creating HuggingFace embeddings for ingestion
 embeddings_model = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 ```
 
-##### Environment Variables for GenAI
-
-- The GenAI service uses OpenWebUI for local LLM inference. Required `.env` variables:
-
-```bash
-# LLM Configuration
-LLM_MODEL=your_llm_model_here
-LLM_TEMPERATURE=temperature_between_0.0_and_1.0
-OPEN_WEBUI_API_KEY=your_api_key_here
-LLM_BASE_URL=your_llm_base_url_here
-
-# Weaviate Configuration
-WEAVIATE_HOST=weaviate
-WEAVIATE_PORT=8080
-
-# Application Configuration
-DEBUG=false
-LOG_LEVEL=INFO
-```
-
-## Building for Production
-
-### Client Build
-
-```bash
-cd client
-npm run build
-```
-
-### Server Build
-
-```bash
-cd server
-./gradlew clean build
-```
-
-## Dockerized Deployment
-
-The project includes Docker configurations for containerized deployment.
-
-### Build and Run with Docker Compose
-
-1. Build and start all services:
-   ```bash
-   docker compose -f docker-compose.yaml up -d
-   ```
-2. Access the application:
-   - Client: [http://localhost:3000](http://localhost:3000)
-   - API Gateway Service: [http://localhost:8080](http://localhost:8080)
-   - Recipe Service: [http://localhost:8082](http://localhost:8082)
-   - Version Service: [http://localhost:8083](http://localhost:8083)
-   - Keycloak Service: [http://localhost:8084](http://localhost:8084)
-   - GenAI Service: [http://localhost:8000](http://localhost:8000)
-   - Keycloak: [http://localhost:8081](http://localhost:8081)
-   - PostgreSQL: [http://localhost:5432](http://localhost:5432)
-   - MongoDB: [http://localhost:27017](http://localhost:27017)
-   - Weaviate: [http://localhost:8080](http://localhost:8080)
-   - Grafana Dashboard: [http://localhost:3001](http://localhost:3001)
-   - Prometheus: [http://localhost:9090](http://localhost:9090)
-   - Loki: [http://localhost:3100](http://localhost:3100)
-
 ## Kubernetes Deployment
 
 The project includes Helm charts for Kubernetes deployment in the `helm` directory.
-
-### Deploy with Helm
-
-1. Install the Helm chart:
-   ```bash
-   helm -n <your namespace> install recipify ./helm \
-            --set secrets.keycloakAdminPassword="your keycloak admin password" \
-            --set secrets.postgresPassword="your postgres password" \
-            --set secrets.mongoPassword="your mongo password" \
-            --set secrets.openaiApiKey="your openai api key"
-   ```
+- Project is publicly accessible at: 
 
 ## AWS Deployment
 
 ### Deploy with Ansible
 
-1. Change the host name of the server on [hosts.ini](./aws/ansible/hosts.ini) to the server or ip address of VM.
-2. The application is now deployable through GitHub Actions with the following steps:
-   - Run Manual Ansible Playbook Execution action with install_docker.yml
-   - Run Manual Ansible Playbook Execution action with docker_compose_up.yml
-
-## CI/CD Pipeline
-
-The project includes GitHub Actions workflows for:
-- **Building Docker Images**: Automatically builds and pushes Docker images to GitHub Container Registry.
-- **Deploying Docker Images**: Automatically deploys the application to a production environment using deployment manifests in helm for K8s cluster.
-- **Running Server Tests**: For each push, server tests on server microservices are run.
-- **Running GenAI Tests**: Automatically runs the tests defined in the `genai/tests` directory on every code push in genai module.
-- **Running Client Tests**: Automatically runs the UI tests defined in the `client/src/components/__tests__` directory on every code push in client module.
+1. The application is deployable through GitHub Actions with the following steps:
+   - Encrypt env variables with `ANSIBLE_VAULT_PASSWORD`.
+   - Add `AWS_SSH_KEY` and `ANSIBLE_VAULT_PASSWORD` to GitHub secrets.
+   - Run AWS deployment action with deploy_aws.yml, with the parameters `aws_access_key_id`, `aws_secret_access_key` and `aws_session_token`.
+2. Access the application with the link outputted by the action.
 
 ### CI/CD Pipeline Workflow
 
@@ -559,16 +338,15 @@ The project includes GitHub Actions workflows for:
 - **Multi-stage Pipeline**: Build → Test → Docker → Deploy
 
 **Jobs:**
-- `detect-changes`: Identifies which services need building/testing
-- `build-genai`: Python linting, dependency installation, and genai tests
-- `build-server`: Java microservices build and test (API Gateway, Recipe, Version, Keycloak)
-- `build-client`: Node.js build and test
-- `docker-release-*`: Builds and pushes Docker images to GitHub Container Registry
-- `helm-deploy`: Deploys to Kubernetes using Helm charts
+- Identifies which services need building/testing
+- Builds and tests services
+- Builds and pushes Docker images to GitHub Container Registry
+- Deploys to Kubernetes using Helm charts
 
 ## API Documentation
 
 REST API documentation for all services is available in the [`api/openapi.yaml`](api/openapi.yaml) file.
+Swagger UI is accessible through GitHub Pages at [https://aet-devops25.github.io/team-breaking-build/](https://aet-devops25.github.io/team-breaking-build/)
 
 ### Key API Endpoints
 
@@ -635,7 +413,7 @@ POST   /genai/search         # Semantic recipe search
 
 ## Monitoring and Observability
 
-Recipify is equipped with a comprehensive monitoring stack powered by Prometheus, Grafana, Loki, and Alloy, deployed in a Kubernetes environment. This setup enables real-time observability across all microservices.
+Recipefy is equipped with a comprehensive monitoring stack powered by Prometheus, Grafana, Loki, and Alloy, deployed in a Kubernetes environment. This setup enables real-time observability across all microservices.
 
 ### Prometheus Configuration
 
@@ -671,7 +449,7 @@ Grafana is used to visualize metrics collected by Prometheus. It is deployed via
 
 ### Logging with Loki and Alloy
 
-Recipify collects all service logs via Loki and Alloy for centralized logging. This enables log aggregation and visualization through Grafana's built-in log viewer.
+Recipefy collects all service logs via Loki and Alloy for centralized logging. This enables log aggregation and visualization through Grafana's built-in log viewer.
 
 #### Example Log Views
 
@@ -684,10 +462,6 @@ Recipify collects all service logs via Loki and Alloy for centralized logging. T
 ### Accessing Grafana
 
 - **Production**: [https://grafana.team-breaking-build.student.k8s.aet.cit.tum.de/](https://grafana.team-breaking-build.student.k8s.aet.cit.tum.de/)
-- **Local Access**: Use port-forwarding for local development
-  ```bash
-  kubectl port-forward svc/grafana 3000:3000
-  ```
 
 **Credentials**: Grafana login credentials can be found in the [Kubernetes secret](https://rancher.ase.cit.tum.de/dashboard/c/c-m-nhcfjg9h/explorer/secret/recipefy-monitoring/grafana-secret#data).
 
