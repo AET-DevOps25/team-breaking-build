@@ -100,7 +100,7 @@ The AI system uses Retrieval-Augmented Generation (RAG) with Weaviate vector sto
 
 - Route requests to appropriate microservices.
 - Handle authentication and authorization.
-- Manage CORS and rate limiting.
+- Manage CORS to accept request from only allowed origins.
 - Provide unified API entry point for all services.
 - Expose health checks and monitoring endpoints.
 
@@ -254,7 +254,7 @@ cd team-breaking-build
 ```
 
 ## Running the Application
-1. Setup env -- HOW??
+1. Setup env -- use env.example to setup one
 2. Build and start all services:
    ```bash
    docker compose -f docker-compose.yaml up -d
@@ -313,8 +313,24 @@ embeddings_model = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 
 ## Kubernetes Deployment
 
-The project includes Helm charts for Kubernetes deployment in the `helm` directory.
-- Project is publicly accessible at: 
+### Deploy with Helm
+
+1. The application is deployable through GitHub Actions with individual CI/CD workflows for each service:
+   - Configure SOPS authentication secrets in GitHub repository secrets.
+   - Add `KUBE_CONFIG` and `SOPS_AGE_KEY` to GitHub secrets.
+   - Each service has its own deployment workflow (e.g., `client-ci-cd.yml`, `recipe-ci-cd.yml`)
+   - Run the respective service deployment action with SOPS decryption enabled.
+2. Access the application with the cluster URL after successful deployment.
+
+The project includes comprehensive Helm charts for Kubernetes deployment in the `helm` directory. Each microservice has its own Helm chart with proper service discovery, configmaps, and deployment configurations.
+
+### Prerequisites for Kubernetes Deployment
+
+- **SOPS Secret Encryption**: The deployment pipeline uses SOPS to encrypt Kubernetes secret files. The `SOPS_AGE_KEY` must be configured in the GitHub repository secrets to decrypt these files during deployment.
+- **Kubeconfig**: A valid Kubernetes configuration file (`KUBE_CONFIG`) must be defined in the pipeline secrets to specify the target cluster.
+- **Helm**: The deployment leverages Helm charts to deploy directly to the cluster specified in the kubeconfig, enabling seamless service orchestration and configuration management.
+- **Individual Service Workflows**: Each microservice has its own CI/CD pipeline for independent deployment and scaling.
+
 
 ## AWS Deployment
 

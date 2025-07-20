@@ -6,6 +6,10 @@ A Spring Boot WebFlux service that provides authentication and user management c
 
 The Keycloak service acts as an authentication proxy, providing simplified REST endpoints for user authentication, registration, token management, and user information retrieval. It abstracts the complexity of direct Keycloak integration and provides a consistent API for the frontend and other microservices.
 
+### Why This Service is Needed
+
+This service is essential for security reasons - it prevents client-side secret exposure. Instead of having the frontend directly communicate with Keycloak (which would require exposing client secrets in the browser), this service acts as a secure intermediary. The client secrets and admin credentials are kept server-side, ensuring that sensitive authentication information is never exposed to the client application.
+
 ## Key Features
 
 ### 🔐 Authentication Management
@@ -59,12 +63,12 @@ The Keycloak service acts as an authentication proxy, providing simplified REST 
 │ │    Form     │ │    │ │  Service    │ │    │ │    API      │ │
 │ └─────────────┘ │    │ └─────────────┘ │    │ └─────────────┘ │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
-                                │
-                                ▼
-                       ┌─────────────────┐
-                       │   User Store    │
-                       │  (Database)     │
-                       └─────────────────┘
+                                                        │
+                                                        ▼
+                                               ┌─────────────────┐
+                                               │   User Store    │
+                                               │  (Database)     │
+                                               └─────────────────┘
 ```
 
 ## Project Structure
@@ -235,14 +239,27 @@ docker run -p 8080:8080 \
 ./gradlew bootRun
 ```
 
-The service will be available at [http://localhost:8080](http://localhost:8080).
-
 ### Keycloak Setup
 
-1. **Create Realm**: Create a realm named `recipefy`
-2. **Create Client**: Create a public client `web` for frontend
-3. **Create Admin Client**: Create a confidential client `admin-cli` for admin operations
-4. **Configure Flows**: Enable password grant flow and admin API access
+The Keycloak realm configuration is automatically imported on startup using the realm export file. You can run Keycloak with the realm import using Docker:
+
+```bash
+# Run Keycloak with automatic realm import
+docker run -p 8080:8080 \
+  -e KEYCLOAK_ADMIN=admin \
+  -e KEYCLOAK_ADMIN_PASSWORD=admin \
+  -v ./config/realm-export.json:/opt/keycloak/data/import/realm.json \
+  quay.io/keycloak/keycloak:26.2.4 start --import-realm --verbose
+```
+
+The realm export file (`config/realm-export.json`) includes:
+- **Realm Configuration**: Complete `recipefy` realm settings and policies
+- **Client Definitions**: Pre-configured OAuth2 clients (`web` for frontend, `admin-cli` for admin operations)
+- **User Roles**: Default roles and permissions
+- **Authentication Flows**: Custom authentication and authorization flows
+- **Theme Settings**: Custom login and account management themes
+
+This approach ensures consistent realm configuration across different environments and eliminates the need for manual setup or API calls. All secrets are predefined and configured as environment variables in the export JSON, so there is no risk of secret leakage in the configuration files.
 
 ## Service Implementation
 

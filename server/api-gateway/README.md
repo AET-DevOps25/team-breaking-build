@@ -64,7 +64,11 @@ The API Gateway acts as a reverse proxy and single entry point for all client re
                     │                 │ │ • Recipe        │
                     │ ┌─────────────┐ │ │ • Version       │
                     │ │Request ID   │ │ │ • GenAI         │
-                    │ │Filter       │ │ │ • Keycloak-SPI  │
+                    │ │Extraction   │ │ │                 │
+                    │ └─────────────┘ │ │                 │
+                    │ ┌─────────────┐ │ │                 │
+                    │ │User ID      │ │ │                 │
+                    │ │Extraction   │ │ │                 │
                     │ └─────────────┘ │ │                 │
                     └─────────┬───────┘ └─────────────────┘
                               │
